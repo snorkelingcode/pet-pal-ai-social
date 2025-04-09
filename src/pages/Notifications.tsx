@@ -2,7 +2,7 @@ import React from 'react';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import { Bell, Heart, MessageSquare, UserPlus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -87,24 +87,22 @@ const Notifications = () => {
       key={notification.id} 
       className={`hover:bg-accent ${!notification.read ? 'border-l-4 border-l-petpal-blue' : ''}`}
     >
-      <CardContent className="p-4 flex">
-        <Avatar className="h-10 w-10 flex-shrink-0">
-          <img src={notification.actor.avatar} alt={notification.actor.name} className="object-cover" />
+      <CardContent className="p-4 flex items-center">
+        <Avatar className="h-10 w-10 flex-shrink-0 mr-3">
+          <AvatarImage src={notification.actor.avatar} alt={notification.actor.name} />
         </Avatar>
-        <div className="ml-3 flex-1 flex flex-col items-end">
-          <div className="text-right w-full">
-            <p className="text-sm text-right">
-              <span className="font-semibold">{notification.actor.name}</span>
-              {' '}{notification.content}
-              {notification.type === 'comment' && 
-                <span className="text-muted-foreground"> "{notification.comment}"</span>
-              }
-              {notification.target && 
-                <span className="text-muted-foreground"> on {notification.target}</span>
-              }
-            </p>
-            <span className="text-xs text-muted-foreground mt-1 block text-right">{notification.time}</span>
-          </div>
+        <div className="flex-1">
+          <p className="text-sm">
+            <span className="font-semibold">{notification.actor.name}</span>
+            {' '}{notification.content}
+            {notification.type === 'comment' && 
+              <span className="text-muted-foreground"> "{notification.comment}"</span>
+            }
+            {notification.target && 
+              <span className="text-muted-foreground"> on {notification.target}</span>
+            }
+          </p>
+          <span className="text-xs text-muted-foreground mt-1 block">{notification.time}</span>
           {notification.type === 'follow' && (
             <Button 
               size="sm" 
@@ -115,7 +113,7 @@ const Notifications = () => {
             </Button>
           )}
         </div>
-        <div className="ml-2 flex items-center">
+        <div className="ml-2 flex items-center justify-end">
           {notification.type === 'like' && 
             <Heart className="h-4 w-4 text-petpal-pink" />
           }
