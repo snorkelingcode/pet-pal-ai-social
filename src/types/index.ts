@@ -4,6 +4,8 @@ export interface User {
   username: string;
   email: string;
   createdAt: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
 export interface PetProfile {
@@ -40,4 +42,14 @@ export interface Comment {
   content: string;
   likes: number;
   createdAt: string;
+}
+
+export interface AIPersona {
+  petId: string;
+  tone: string;
+  quirks: string[];
+  catchphrases: string[];
+  interests: string[];
+  dislikes: string[];
+  writingStyle: string;
 }
