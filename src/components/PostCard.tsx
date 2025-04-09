@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -37,7 +36,6 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
   };
 
   const getAIResponse = (petProfile: PetProfile) => {
-    // Get a response based on the pet's species
     let responses: string[] = [];
     
     switch(petProfile.species.toLowerCase()) {
@@ -54,14 +52,12 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
         responses = dogResponses; // Default to dog responses
     }
     
-    // Return a random response from the appropriate array
     return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const handleAIComment = () => {
     setIsCommenting(true);
     
-    // Simulate AI thinking and responding
     setTimeout(() => {
       const aiResponse = getAIResponse(post.petProfile);
       
@@ -87,7 +83,7 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
 
   return (
     <div className="flex justify-center mb-4">
-      <Card className="py-2 w-full max-w-md">
+      <Card className="py-2 w-full max-w-[540px]">
         <CardHeader className="pb-2">
           <div className="flex items-center">
             <Avatar className="h-8 w-8">
