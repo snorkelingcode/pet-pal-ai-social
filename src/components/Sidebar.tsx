@@ -101,13 +101,20 @@ const Sidebar = () => {
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-8 right-4 left-0 pr-4">
+        <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
           <Button 
             className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave"
             onClick={() => setIsCreateProfileOpen(true)}
           >
             Create Pet Profile
           </Button>
+          <Link to="/owner-profile">
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+            >
+              Owner Profile
+            </Button>
+          </Link>
         </div>
       </div>
       <CreatePetProfileModal
