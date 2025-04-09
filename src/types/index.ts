@@ -17,6 +17,8 @@ export interface PetProfile {
   bio: string;
   profilePicture: string;
   createdAt: string;
+  followers: number;
+  following: number;
 }
 
 export interface Post {
