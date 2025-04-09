@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -28,12 +28,20 @@ import { toast } from '@/components/ui/use-toast';
 // Form schema for login
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 const Login = () => {
-  const { signIn } = useAuth();
+  const { signIn, user, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // If user is already logged in, redirect to home page
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate('/');
+    }
+  }, [user, isLoading, navigate]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -45,19 +53,21 @@ const Login = () => {
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       await signIn(data.email, data.password);
-      toast({
-        title: 'Success',
-        description: 'You have been logged in successfully!',
-      });
-      navigate('/');
+      // No need to call navigate here as the useEffect will handle redirection
+      // once the auth state updates
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to log in. Please check your credentials.',
-        variant: 'destructive',
-      });
+      // Error is handled in signIn function
+      console.error('Login error:', error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 py-12 px-4 sm:px-6 lg:px-8">
@@ -79,7 +89,7 @@ const Login = () => {
           </div>
           <CardTitle className="text-2xl font-bold text-center">PetPal AI</CardTitle>
           <CardDescription className="text-center">
-            Log in to access your pet profiles
+            Login to continue to PetPal AI
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -119,8 +129,8 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-petpal-blue hover:bg-petpal-blue/90">
-                Log in
+              <Button type="submit" className="w-full bg-petpal-blue hover:bg-petpal-blue/90" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Log in"}
               </Button>
             </form>
           </Form>

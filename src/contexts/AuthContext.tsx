@@ -1,9 +1,13 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { User } from '@/types';
+import { User, DbUser, mapDbUserToUser } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
+import { toast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
@@ -12,50 +16,96 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock authentication for now - would be replaced with Supabase
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mock user data - would come from Supabase
-  const mockUser: User = {
-    id: "1",
-    username: "Alex Johnson",
-    email: "alex@example.com",
-    createdAt: new Date().toISOString(),
-  };
-
   useEffect(() => {
-    // Simulating checking for logged in user
-    const checkAuth = async () => {
-      try {
-        // In a real app, we would check if the user is logged in with Supabase
-        const storedUser = localStorage.getItem('petpal_user');
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
         
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        if (currentSession?.user) {
+          // Use setTimeout to avoid potential deadlocks with Supabase client
+          setTimeout(async () => {
+            try {
+              // Fetch user profile from profiles table
+              const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentSession.user.id)
+                .single();
+                
+              if (error) throw error;
+              
+              if (profileData) {
+                setUser(mapDbUserToUser(profileData as DbUser));
+              } else {
+                console.error('No profile found for user');
+                setUser(null);
+              }
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+              setUser(null);
+            }
+          }, 0);
+        } else {
+          setUser(null);
         }
+      }
+    );
+
+    // THEN check for existing session
+    const initSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
         
-        setIsLoading(false);
+        if (initialSession?.user) {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', initialSession.user.id)
+            .single();
+            
+          if (error) throw error;
+          
+          if (profileData) {
+            setUser(mapDbUserToUser(profileData as DbUser));
+          }
+        }
       } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Error initializing session:', error);
+      } finally {
         setIsLoading(false);
       }
     };
     
-    checkAuth();
+    initSession();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // In a real app, this would be a Supabase auth call
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      // Mock successful login
-      setUser(mockUser);
-      localStorage.setItem('petpal_user', JSON.stringify(mockUser));
-    } catch (error) {
-      console.error('Sign in error:', error);
+      if (error) throw error;
+      
+    } catch (error: any) {
+      toast({
+        title: 'Error signing in',
+        description: error.message || 'An error occurred during sign in',
+        variant: 'destructive',
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -65,14 +115,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, username: string) => {
     try {
       setIsLoading(true);
-      // In a real app, this would be a Supabase auth call
       
-      // Mock successful registration
-      const newUser = { ...mockUser, email, username };
-      setUser(newUser);
-      localStorage.setItem('petpal_user', JSON.stringify(newUser));
-    } catch (error) {
-      console.error('Sign up error:', error);
+      // Check if username already exists
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+        
+      if (existingUsers) {
+        throw new Error('Username already taken');
+      }
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username,
+          },
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Registration successful',
+        description: 'Your account has been created successfully!',
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: 'Error signing up',
+        description: error.message || 'An error occurred during registration',
+        variant: 'destructive',
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -82,13 +159,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setIsLoading(true);
-      // In a real app, this would be a Supabase auth call
-      
-      // Mock successful logout
-      setUser(null);
-      localStorage.removeItem('petpal_user');
-    } catch (error) {
-      console.error('Sign out error:', error);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: 'Error signing out',
+        description: error.message || 'An error occurred during sign out',
+        variant: 'destructive',
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -96,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

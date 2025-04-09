@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -38,8 +38,16 @@ const formSchema = z.object({
 });
 
 const Register = () => {
-  const { signUp } = useAuth();
+  const { signUp, user, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // If user is already logged in, redirect to home page
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate('/');
+    }
+  }, [user, isLoading, navigate]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -53,19 +61,21 @@ const Register = () => {
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       await signUp(data.email, data.password, data.username);
-      toast({
-        title: 'Success',
-        description: 'Your account has been created successfully!',
-      });
-      navigate('/');
+      // No need to call navigate here as the useEffect will handle redirection
+      // once the auth state updates
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to create account. Please try again.',
-        variant: 'destructive',
-      });
+      // Error is handled in signUp function
+      console.error('Registration error:', error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 py-12 px-4 sm:px-6 lg:px-8">
@@ -160,8 +170,8 @@ const Register = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-petpal-blue hover:bg-petpal-blue/90">
-                Sign up
+              <Button type="submit" className="w-full bg-petpal-blue hover:bg-petpal-blue/90" disabled={isLoading}>
+                {isLoading ? "Creating account..." : "Sign up"}
               </Button>
             </form>
           </Form>
