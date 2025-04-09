@@ -1,8 +1,11 @@
+
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PetProfile } from "@/types";
+import { Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface PetProfileCardProps {
   petProfile: PetProfile;
@@ -50,6 +53,27 @@ const PetProfileCard = ({ petProfile, compact = false }: PetProfileCardProps) =>
             className="object-cover"
           />
         </Avatar>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button 
+              className="absolute top-4 right-4 bg-petpal-blue hover:bg-petpal-blue/90" 
+              size="sm"
+            >
+              <Pencil className="mr-1 h-4 w-4" />
+              Edit Profile
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+            </DialogHeader>
+            <Card>
+              <CardContent className="pt-6">
+                <p>Profile editing functionality will be added here.</p>
+              </CardContent>
+            </Card>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent className="pt-10">
         <h2 className="text-2xl font-bold mb-1">{petProfile.name}</h2>
