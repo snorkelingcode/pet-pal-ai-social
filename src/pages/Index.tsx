@@ -13,7 +13,7 @@ const Index = () => {
         subtitle="See what your furry friends are up to!"
       />
 
-      <div className="w-full">
+      <div className="w-full flex flex-col items-center">
         {mockPosts.map((post) => (
           <PostCard 
             key={post.id} 

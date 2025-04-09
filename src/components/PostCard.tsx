@@ -86,109 +86,111 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
   };
 
   return (
-    <Card className="mb-4 py-2">
-      <CardHeader className="pb-2">
-        <div className="flex items-center">
-          <Avatar className="h-8 w-8">
-            <img 
-              src={post.petProfile.profilePicture} 
-              alt={post.petProfile.name}
-              className="object-cover"
-            />
-          </Avatar>
-          <div className="ml-2">
-            <h3 className="font-semibold text-sm">{post.petProfile.name}</h3>
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-            </p>
+    <div className="flex justify-center mb-4">
+      <Card className="py-2 w-full max-w-md">
+        <CardHeader className="pb-2">
+          <div className="flex items-center">
+            <Avatar className="h-8 w-8">
+              <img 
+                src={post.petProfile.profilePicture} 
+                alt={post.petProfile.name}
+                className="object-cover"
+              />
+            </Avatar>
+            <div className="ml-2">
+              <h3 className="font-semibold text-sm">{post.petProfile.name}</h3>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              </p>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="py-2">
-        <p className="text-sm mb-2">{post.content}</p>
-        {post.image && (
-          <div className="rounded-lg overflow-hidden mb-2">
-            <img 
-              src={post.image} 
-              alt="Post content" 
-              className="w-full h-40 object-cover"
-            />
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="pt-0">
-        <div className="w-full">
-          <div className="flex justify-between">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleLike}
-              className={`h-8 px-2 ${liked ? "text-petpal-pink" : ""}`}
-            >
-              <Heart className={`h-4 w-4 mr-1 ${liked ? "fill-petpal-pink text-petpal-pink" : ""}`} />
-              {likesCount}
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleComments}
-              className="h-8 px-2"
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              {localComments.length}
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-2"
-            >
-              <Share className="h-4 w-4 mr-1" />
-              Share
-            </Button>
-          </div>
-          
-          {showComments && (
-            <div className="mt-2 space-y-2">
-              {localComments.slice(0, 2).map((comment) => (
-                <div key={comment.id} className="flex space-x-2">
-                  <Avatar className="h-6 w-6">
-                    <img 
-                      src={comment.petProfile.profilePicture} 
-                      alt={comment.petProfile.name}
-                      className="object-cover"
-                    />
-                  </Avatar>
-                  <div className="bg-muted p-1 rounded-lg flex-1">
-                    <p className="text-xs font-semibold">{comment.petProfile.name}</p>
-                    <p className="text-xs">{comment.content}</p>
-                  </div>
-                </div>
-              ))}
-              
-              {localComments.length > 2 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full h-8 text-xs"
-                  onClick={toggleComments}
-                >
-                  View {localComments.length - 2} more comments
-                </Button>
-              )}
-              
-              <Button 
-                variant="outline" 
-                className="w-full mt-1 h-8 text-xs"
-                onClick={handleAIComment}
-                disabled={isCommenting}
-              >
-                {isCommenting ? "AI is thinking..." : "Generate AI Comment"}
-              </Button>
+        </CardHeader>
+        <CardContent className="py-2">
+          <p className="text-sm mb-2">{post.content}</p>
+          {post.image && (
+            <div className="rounded-lg overflow-hidden mb-2">
+              <img 
+                src={post.image} 
+                alt="Post content" 
+                className="w-full object-contain max-h-60"
+              />
             </div>
           )}
-        </div>
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter className="pt-0">
+          <div className="w-full">
+            <div className="flex justify-between">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLike}
+                className={`h-8 px-2 ${liked ? "text-petpal-pink" : ""}`}
+              >
+                <Heart className={`h-4 w-4 mr-1 ${liked ? "fill-petpal-pink text-petpal-pink" : ""}`} />
+                {likesCount}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleComments}
+                className="h-8 px-2"
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                {localComments.length}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2"
+              >
+                <Share className="h-4 w-4 mr-1" />
+                Share
+              </Button>
+            </div>
+            
+            {showComments && (
+              <div className="mt-2 space-y-2">
+                {localComments.slice(0, 2).map((comment) => (
+                  <div key={comment.id} className="flex space-x-2">
+                    <Avatar className="h-6 w-6">
+                      <img 
+                        src={comment.petProfile.profilePicture} 
+                        alt={comment.petProfile.name}
+                        className="object-cover"
+                      />
+                    </Avatar>
+                    <div className="bg-muted p-1 rounded-lg flex-1">
+                      <p className="text-xs font-semibold">{comment.petProfile.name}</p>
+                      <p className="text-xs">{comment.content}</p>
+                    </div>
+                  </div>
+                ))}
+                
+                {localComments.length > 2 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full h-8 text-xs"
+                    onClick={toggleComments}
+                  >
+                    View {localComments.length - 2} more comments
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-1 h-8 text-xs"
+                  onClick={handleAIComment}
+                  disabled={isCommenting}
+                >
+                  {isCommenting ? "AI is thinking..." : "Generate AI Comment"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 
