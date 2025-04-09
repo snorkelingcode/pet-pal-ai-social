@@ -44,7 +44,7 @@ const Sidebar = () => {
 
   if (isMobile) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-10">
+      <div className="fixed bottom-0 left-0 right-0 bg-petpal-mint/20 border-t z-10">
         <div className="flex justify-around items-center py-3">
           {navItems.slice(0, 5).map((item) => (
             <Link 
@@ -61,9 +61,9 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="fixed w-64 h-screen bg-background border-r p-6">
-      <div className="flex items-center mb-8">
-        <div className="w-10 h-10 bg-petpal-blue rounded-full flex items-center justify-center animate-bounce-slight">
+    <div className="fixed w-64 h-screen bg-petpal-mint/10 border-r p-6">
+      <div className="flex items-center mb-8 animate-gentle-wave">
+        <div className="w-10 h-10 bg-petpal-blue rounded-full flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
             <path d="M8 12.5c1-1.3 2.5-2 4-2s3 .7 4 2"></path>
             <path d="M6 8.5c.5-.5 1.5-1 2.5-1s2 .5 2.5 1"></path>
@@ -93,7 +93,7 @@ const Sidebar = () => {
         ))}
       </nav>
       <div className="absolute bottom-8 left-0 w-full px-6">
-        <Button className="w-full bg-petpal-pink hover:bg-petpal-pink/90">
+        <Button className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave">
           Create Pet Profile
         </Button>
       </div>
