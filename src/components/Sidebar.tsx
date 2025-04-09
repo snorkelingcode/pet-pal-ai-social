@@ -5,50 +5,42 @@ import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { User, Home, MessageSquare, Bell, Heart, Settings } from 'lucide-react';
 import CreatePetProfileModal from './CreatePetProfileModal';
-import { useAuth } from '@/contexts/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
-  const { user } = useAuth();
 
   const navItems = [
     { 
       name: 'Feed', 
       path: '/', 
       icon: <Home className="h-5 w-5" />,
-      requiresAuth: false
     },
     { 
       name: 'Profile', 
       path: '/profile', 
       icon: <User className="h-5 w-5" />,
-      requiresAuth: true
     },
     { 
       name: 'Messages', 
       path: '/messages', 
       icon: <MessageSquare className="h-5 w-5" />,
-      requiresAuth: true
     },
     { 
       name: 'Notifications', 
       path: '/notifications', 
       icon: <Bell className="h-5 w-5" />,
-      requiresAuth: true
     },
     { 
       name: 'Favorites', 
       path: '/favorites', 
       icon: <Heart className="h-5 w-5" />,
-      requiresAuth: true
     },
     { 
       name: 'Settings', 
       path: '/settings', 
       icon: <Settings className="h-5 w-5" />,
-      requiresAuth: true
     },
   ];
 
@@ -57,29 +49,15 @@ const Sidebar = () => {
       <>
         <div className="fixed bottom-0 left-0 right-0 bg-petpal-mint/20 border-t z-10">
           <div className="flex justify-around items-center py-3">
-            {navItems.slice(0, 5).map((item) => {
-              if (!user && item.requiresAuth) {
-                return (
-                  <Link 
-                    key={item.path} 
-                    to="/login"
-                    className="flex flex-col items-center p-1 text-muted-foreground"
-                  >
-                    {item.icon}
-                  </Link>
-                );
-              }
-              
-              return (
-                <Link 
-                  key={item.path} 
-                  to={item.path}
-                  className={`flex flex-col items-center p-1 ${location.pathname === item.path ? 'text-petpal-blue' : 'text-muted-foreground'}`}
-                >
-                  {item.icon}
-                </Link>
-              );
-            })}
+            {navItems.slice(0, 5).map((item) => (
+              <Link 
+                key={item.path} 
+                to={item.path}
+                className={`flex flex-col items-center p-1 ${location.pathname === item.path ? 'text-petpal-blue' : 'text-muted-foreground'}`}
+              >
+                {item.icon}
+              </Link>
+            ))}
           </div>
         </div>
         <CreatePetProfileModal
@@ -108,80 +86,36 @@ const Sidebar = () => {
           </div>
           <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
         </div>
-        
         <nav className="space-y-2">
-          {/* Show Home nav item for everyone */}
-          <Link to="/">
-            <Button
-              variant={location.pathname === '/' ? "default" : "ghost"}
-              className={`w-full justify-start text-base ${
-                location.pathname === '/' ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
-              }`}
-            >
-              <Home className="h-5 w-5 mr-2" />
-              Feed
-            </Button>
-          </Link>
-          
-          {/* If user is logged in, show all nav items */}
-          {user ? (
-            <>
-              {navItems.slice(1).map((item) => (
-                <Link key={item.path} to={item.path}>
-                  <Button
-                    variant={location.pathname === item.path ? "default" : "ghost"}
-                    className={`w-full justify-start text-base ${
-                      location.pathname === item.path ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
-                    }`}
-                  >
-                    {item.icon}
-                    <span className="ml-2">{item.name}</span>
-                  </Button>
-                </Link>
-              ))}
-            </>
-          ) : (
-            // If user is not logged in, show login/register buttons
-            <div className="space-y-2 mt-4">
-              <Link to="/login">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-base"
-                >
-                  <User className="h-5 w-5 mr-2" />
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button
-                  variant="default"
-                  className="w-full justify-start text-base bg-petpal-pink hover:bg-petpal-pink/90"
-                >
-                  <User className="h-5 w-5 mr-2" />
-                  Sign up
-                </Button>
-              </Link>
-            </div>
-          )}
-        </nav>
-        
-        {user && (
-          <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
-            <Button 
-              className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave"
-              onClick={() => setIsCreateProfileOpen(true)}
-            >
-              Create Pet Profile
-            </Button>
-            <Link to="/owner-profile">
-              <Button 
-                className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+          {navItems.map((item) => (
+            <Link key={item.path} to={item.path}>
+              <Button
+                variant={location.pathname === item.path ? "default" : "ghost"}
+                className={`w-full justify-start text-base ${
+                  location.pathname === item.path ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
+                }`}
               >
-                Owner Profile
+                {item.icon}
+                <span className="ml-2">{item.name}</span>
               </Button>
             </Link>
-          </div>
-        )}
+          ))}
+        </nav>
+        <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
+          <Button 
+            className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave"
+            onClick={() => setIsCreateProfileOpen(true)}
+          >
+            Create Pet Profile
+          </Button>
+          <Link to="/owner-profile">
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+            >
+              Owner Profile
+            </Button>
+          </Link>
+        </div>
       </div>
       <CreatePetProfileModal
         open={isCreateProfileOpen}
