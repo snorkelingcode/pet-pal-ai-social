@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -13,7 +13,15 @@ interface LayoutProps {
 
 const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const [authReady, setAuthReady] = useState(false);
+  
+  // Only show auth-dependent UI elements after auth state is determined
+  useEffect(() => {
+    if (!isLoading) {
+      setAuthReady(true);
+    }
+  }, [isLoading]);
 
   return (
     <div className="min-h-screen bg-background paw-print-bg flex justify-center">
@@ -27,7 +35,7 @@ const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
             {children}
             
             {/* Show authentication prompt for non-logged in users on mobile */}
-            {isMobile && !user && (
+            {authReady && isMobile && !user && (
               <div className="fixed bottom-0 left-0 right-0 bg-background p-4 border-t shadow-lg flex justify-center z-10">
                 <Link to="/login" className="mx-2">
                   <button className="bg-petpal-blue text-white px-6 py-2 rounded-full">
@@ -45,8 +53,8 @@ const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
           {!isMobile && !hideRightSidebar && <RightSidebar />}
         </main>
         
-        {/* Mobile bottom navigation */}
-        {isMobile && user && (
+        {/* Mobile bottom navigation - only show when auth state is ready */}
+        {authReady && isMobile && user && (
           <div className="fixed bottom-0 left-0 right-0 bg-petpal-mint/20 border-t z-10">
             <div className="flex justify-around items-center py-3">
               <Link to="/" className={`flex flex-col items-center p-1 ${location.pathname === '/' ? 'text-petpal-blue' : 'text-muted-foreground'}`}>

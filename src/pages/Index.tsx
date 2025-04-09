@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<string>("for-you");
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
   
   // For demo purposes, we'll show all posts in "For You" tab
@@ -23,11 +23,15 @@ const Index = () => {
     <Layout>
       <HeaderCard 
         title="Feed" 
-        subtitle={user ? "See what your furry friends are up to!" : "Browse pet posts from around the world!"}
+        subtitle={isLoading ? "Loading..." : (user ? "See what your furry friends are up to!" : "Browse pet posts from around the world!")}
       />
 
       {/* Show tabs only for authenticated users, otherwise only show "For You" content */}
-      {user ? (
+      {isLoading ? (
+        <div className="w-full flex justify-center p-8">
+          <div className="animate-pulse bg-muted rounded-md h-64 w-full max-w-md"></div>
+        </div>
+      ) : user ? (
         <Tabs defaultValue="for-you" className="w-full mb-4" onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="for-you" className="font-medium">For You</TabsTrigger>
