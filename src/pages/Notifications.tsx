@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
@@ -103,17 +104,17 @@ const Notifications = () => {
             }
           </p>
           <span className="text-xs text-muted-foreground mt-1 block">{notification.time}</span>
-          {notification.type === 'follow' && (
-            <Button 
-              size="sm" 
-              className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90"
-              onClick={() => handleFollowBack(notification.actor.name)}
-            >
-              <UserPlus className="mr-1 h-3 w-3" /> Follow Back
-            </Button>
-          )}
         </div>
-        <div className="ml-2 flex items-center justify-end">
+        {notification.type === 'follow' && (
+          <Button 
+            size="sm" 
+            className="mr-3 bg-petpal-blue hover:bg-petpal-blue/90"
+            onClick={() => handleFollowBack(notification.actor.name)}
+          >
+            <UserPlus className="mr-1 h-3 w-3" /> Follow Back
+          </Button>
+        )}
+        <div className="flex items-center justify-end">
           {notification.type === 'like' && 
             <Heart className="h-4 w-4 text-petpal-pink" />
           }
