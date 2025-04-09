@@ -56,7 +56,7 @@ const PetProfileCard = ({ petProfile, compact = false }: PetProfileCardProps) =>
         <Dialog>
           <DialogTrigger asChild>
             <Button 
-              className="absolute top-4 right-4 bg-petpal-blue hover:bg-petpal-blue/90" 
+              className="absolute top-20 right-4 bg-petpal-blue hover:bg-petpal-blue/90" 
               size="sm"
             >
               <Pencil className="mr-1 h-4 w-4" />
