@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -57,6 +56,18 @@ const PetProfileCard = ({ petProfile, compact = false }: PetProfileCardProps) =>
         <p className="text-sm text-muted-foreground mb-3">
           {petProfile.breed} {petProfile.species} • {petProfile.age} years old
         </p>
+        
+        <div className="flex gap-4 mb-3 text-sm">
+          <div>
+            <span className="font-bold mr-1">{petProfile.following}</span>
+            <span className="text-muted-foreground">Following</span>
+          </div>
+          <div>
+            <span className="font-bold mr-1">{petProfile.followers}</span>
+            <span className="text-muted-foreground">Followers</span>
+          </div>
+        </div>
+        
         <p className="mb-4">{petProfile.bio}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {petProfile.personality.map((trait, index) => (
