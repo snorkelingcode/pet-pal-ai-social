@@ -28,7 +28,7 @@ const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
             
             {/* Show authentication prompt for non-logged in users on mobile */}
             {isMobile && !user && (
-              <div className="fixed bottom-0 left-0 right-0 bg-background p-4 border-t shadow-lg flex justify-center">
+              <div className="fixed bottom-0 left-0 right-0 bg-background p-4 border-t shadow-lg flex justify-center z-10">
                 <Link to="/login" className="mx-2">
                   <button className="bg-petpal-blue text-white px-6 py-2 rounded-full">
                     Log in

@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -132,6 +132,11 @@ const Login = () => {
               <Button type="submit" className="w-full bg-petpal-blue hover:bg-petpal-blue/90" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Log in"}
               </Button>
+              <Link to="/">
+                <Button type="button" variant="outline" className="w-full mt-2">
+                  Continue as Guest
+                </Button>
+              </Link>
             </form>
           </Form>
         </CardContent>

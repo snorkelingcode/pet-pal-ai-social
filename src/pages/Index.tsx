@@ -102,7 +102,7 @@ const Index = () => {
       )}
       
       {/* Add extra padding at the bottom on mobile to account for navigation bar */}
-      {isMobile && <div className="h-16"></div>}
+      {isMobile && <div className="h-24"></div>}
     </Layout>
   );
 };

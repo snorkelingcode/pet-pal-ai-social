@@ -52,41 +52,13 @@ const Sidebar = () => {
     },
   ];
 
+  // Mobile sidebar is handled in Layout.tsx with bottom navigation
   if (isMobile) {
     return (
-      <>
-        <div className="fixed bottom-0 left-0 right-0 bg-petpal-mint/20 border-t z-10">
-          <div className="flex justify-around items-center py-3">
-            {navItems.slice(0, 5).map((item) => {
-              if (!user && item.requiresAuth) {
-                return (
-                  <Link 
-                    key={item.path} 
-                    to="/login"
-                    className="flex flex-col items-center p-1 text-muted-foreground"
-                  >
-                    {item.icon}
-                  </Link>
-                );
-              }
-              
-              return (
-                <Link 
-                  key={item.path} 
-                  to={item.path}
-                  className={`flex flex-col items-center p-1 ${location.pathname === item.path ? 'text-petpal-blue' : 'text-muted-foreground'}`}
-                >
-                  {item.icon}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-        <CreatePetProfileModal
-          open={isCreateProfileOpen}
-          onOpenChange={setIsCreateProfileOpen}
-        />
-      </>
+      <CreatePetProfileModal
+        open={isCreateProfileOpen}
+        onOpenChange={setIsCreateProfileOpen}
+      />
     );
   }
 
@@ -110,38 +82,40 @@ const Sidebar = () => {
         </div>
         
         <nav className="space-y-2">
-          {/* Show Home nav item for everyone */}
-          <Link to="/">
-            <Button
-              variant={location.pathname === '/' ? "default" : "ghost"}
-              className={`w-full justify-start text-base ${
-                location.pathname === '/' ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
-              }`}
-            >
-              <Home className="h-5 w-5 mr-2" />
-              Feed
-            </Button>
-          </Link>
-          
-          {/* If user is logged in, show all nav items */}
-          {user ? (
-            <>
-              {navItems.slice(1).map((item) => (
-                <Link key={item.path} to={item.path}>
+          {/* Show all nav items on desktop */}
+          {navItems.map((item) => {
+            // For non-authenticated users, only show Feed and redirect others to login
+            if (!user && item.requiresAuth) {
+              return (
+                <Link key={item.path} to="/login">
                   <Button
-                    variant={location.pathname === item.path ? "default" : "ghost"}
-                    className={`w-full justify-start text-base ${
-                      location.pathname === item.path ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
-                    }`}
+                    variant="ghost"
+                    className="w-full justify-start text-base"
                   >
                     {item.icon}
                     <span className="ml-2">{item.name}</span>
                   </Button>
                 </Link>
-              ))}
-            </>
-          ) : (
-            // If user is not logged in, show login/register buttons
+              );
+            }
+            
+            return (
+              <Link key={item.path} to={item.path}>
+                <Button
+                  variant={location.pathname === item.path ? "default" : "ghost"}
+                  className={`w-full justify-start text-base ${
+                    location.pathname === item.path ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
+                  }`}
+                >
+                  {item.icon}
+                  <span className="ml-2">{item.name}</span>
+                </Button>
+              </Link>
+            );
+          })}
+          
+          {/* If user is not logged in, show login/register buttons */}
+          {!user && (
             <div className="space-y-2 mt-4">
               <Link to="/login">
                 <Button
