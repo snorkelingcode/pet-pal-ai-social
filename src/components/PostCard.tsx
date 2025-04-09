@@ -86,32 +86,32 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
   };
 
   return (
-    <Card className="mb-6">
-      <CardHeader className="pb-3">
+    <Card className="mb-4 py-2">
+      <CardHeader className="pb-2">
         <div className="flex items-center">
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-8 w-8">
             <img 
               src={post.petProfile.profilePicture} 
               alt={post.petProfile.name}
               className="object-cover"
             />
           </Avatar>
-          <div className="ml-3">
-            <h3 className="font-semibold">{post.petProfile.name}</h3>
+          <div className="ml-2">
+            <h3 className="font-semibold text-sm">{post.petProfile.name}</h3>
             <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
             </p>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="mb-4">{post.content}</p>
+      <CardContent className="py-2">
+        <p className="text-sm mb-2">{post.content}</p>
         {post.image && (
-          <div className="rounded-lg overflow-hidden mb-4">
+          <div className="rounded-lg overflow-hidden mb-2">
             <img 
               src={post.image} 
               alt="Post content" 
-              className="w-full h-auto object-cover"
+              className="w-full h-40 object-cover"
             />
           </div>
         )}
@@ -123,42 +123,62 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
               variant="ghost" 
               size="sm" 
               onClick={handleLike}
-              className={liked ? "text-petpal-pink" : ""}
+              className={`h-8 px-2 ${liked ? "text-petpal-pink" : ""}`}
             >
-              <Heart className={`h-5 w-5 mr-1 ${liked ? "fill-petpal-pink text-petpal-pink" : ""}`} />
+              <Heart className={`h-4 w-4 mr-1 ${liked ? "fill-petpal-pink text-petpal-pink" : ""}`} />
               {likesCount}
             </Button>
-            <Button variant="ghost" size="sm" onClick={toggleComments}>
-              <MessageSquare className="h-5 w-5 mr-1" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleComments}
+              className="h-8 px-2"
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
               {localComments.length}
             </Button>
-            <Button variant="ghost" size="sm">
-              <Share className="h-5 w-5 mr-1" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 px-2"
+            >
+              <Share className="h-4 w-4 mr-1" />
               Share
             </Button>
           </div>
           
           {showComments && (
-            <div className="mt-4 space-y-4">
-              {localComments.map((comment) => (
+            <div className="mt-2 space-y-2">
+              {localComments.slice(0, 2).map((comment) => (
                 <div key={comment.id} className="flex space-x-2">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-6 w-6">
                     <img 
                       src={comment.petProfile.profilePicture} 
                       alt={comment.petProfile.name}
                       className="object-cover"
                     />
                   </Avatar>
-                  <div className="bg-muted p-2 rounded-lg flex-1">
-                    <p className="text-sm font-semibold">{comment.petProfile.name}</p>
-                    <p className="text-sm">{comment.content}</p>
+                  <div className="bg-muted p-1 rounded-lg flex-1">
+                    <p className="text-xs font-semibold">{comment.petProfile.name}</p>
+                    <p className="text-xs">{comment.content}</p>
                   </div>
                 </div>
               ))}
               
+              {localComments.length > 2 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full h-8 text-xs"
+                  onClick={toggleComments}
+                >
+                  View {localComments.length - 2} more comments
+                </Button>
+              )}
+              
               <Button 
                 variant="outline" 
-                className="w-full mt-2"
+                className="w-full mt-1 h-8 text-xs"
                 onClick={handleAIComment}
                 disabled={isCommenting}
               >
