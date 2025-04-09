@@ -14,9 +14,11 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background paw-print-bg flex justify-center">
-      <div className="flex w-full max-w-[1200px]">
-        <Sidebar />
-        <main className={`flex-1 ${!isMobile ? 'ml-4' : ''} p-4 flex justify-center`}>
+      <div className="flex w-full max-w-[1200px] px-4 relative">
+        <div className="flex-none w-[275px]">
+          <Sidebar />
+        </div>
+        <main className={`flex-1 p-4 flex justify-center`}>
           <div className="w-full max-w-[600px]">{children}</div>
           {!isMobile && <RightSidebar />}
         </main>
