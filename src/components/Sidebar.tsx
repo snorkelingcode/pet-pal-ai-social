@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { User, Home, MessageSquare, Bell, Heart, Settings } from 'lucide-react';
 import CreatePetProfileModal from './CreatePetProfileModal';
+import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
+  const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
   const { user, isLoading } = useAuth();
   
   const navItems = [
@@ -55,10 +57,16 @@ const Sidebar = () => {
   // Mobile sidebar is handled in Layout.tsx with bottom navigation
   if (isMobile) {
     return (
-      <CreatePetProfileModal
-        open={isCreateProfileOpen}
-        onOpenChange={setIsCreateProfileOpen}
-      />
+      <>
+        <CreatePetProfileModal
+          open={isCreateProfileOpen}
+          onOpenChange={setIsCreateProfileOpen}
+        />
+        <OwnerProfileModal
+          open={isOwnerProfileOpen}
+          onOpenChange={setIsOwnerProfileOpen}
+        />
+      </>
     );
   }
 
@@ -183,19 +191,22 @@ const Sidebar = () => {
             >
               Create Pet Profile
             </Button>
-            <Link to="/owner-profile">
-              <Button 
-                className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
-              >
-                Owner Profile
-              </Button>
-            </Link>
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={() => setIsOwnerProfileOpen(true)}
+            >
+              Owner Profile
+            </Button>
           </div>
         )}
       </div>
       <CreatePetProfileModal
         open={isCreateProfileOpen}
         onOpenChange={setIsCreateProfileOpen}
+      />
+      <OwnerProfileModal
+        open={isOwnerProfileOpen}
+        onOpenChange={setIsOwnerProfileOpen}
       />
     </>
   );
