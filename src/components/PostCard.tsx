@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -83,8 +82,8 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
   };
 
   return (
-    <div className="flex justify-center mb-4">
-      <Card className="py-2 w-full max-w-[600px]">
+    <div className="flex justify-center mb-4 w-full">
+      <Card className="py-2 w-full max-w-[700px]">
         <CardHeader className="pb-2">
           <div className="flex items-center">
             <Avatar className="h-8 w-8">
@@ -102,14 +101,14 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="py-2">
-          <p className="text-sm mb-2">{post.content}</p>
+        <CardContent className="py-4 px-6">
+          <p className="text-sm mb-3">{post.content}</p>
           {post.image && (
-            <div className="rounded-lg overflow-hidden mb-2">
+            <div className="rounded-lg overflow-hidden mb-3">
               <img 
                 src={post.image} 
                 alt="Post content" 
-                className="w-full object-contain max-h-60"
+                className="w-full object-contain max-h-72"
               />
             </div>
           )}
