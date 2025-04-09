@@ -161,6 +161,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Show success message
+      toast({
+        title: 'Signed out successfully',
+        description: 'You have been signed out of your account',
+      });
+      
     } catch (error: any) {
       toast({
         title: 'Error signing out',

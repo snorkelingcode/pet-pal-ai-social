@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,10 +13,11 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { mockPetProfiles } from '@/data/mockData';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Pencil, PawPrint, AlertCircle, Lock, Trash2 } from 'lucide-react';
+import { User, Pencil, PawPrint, AlertCircle, Lock, Trash2, LogOut } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from '@/contexts/AuthContext';
+import { Separator } from '@/components/ui/separator';
 
 // Mock owner data
 const ownerData = {
@@ -53,7 +53,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const navigate = useNavigate();
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   
   // Profile form
   const profileForm = useForm<z.infer<typeof ownerProfileSchema>>({
@@ -100,6 +100,16 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     // Navigate to the selected pet's profile and close the modal
     onOpenChange(false);
     navigate(`/profile?petId=${petId}`);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      onOpenChange(false);
+      navigate('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
@@ -249,9 +259,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                 <Button 
                   className="bg-petpal-pink hover:bg-petpal-pink/90"
                   onClick={() => {
-                    // Close this modal and open the create pet profile modal
                     onOpenChange(false);
-                    // Since this is just a prototype, we'll leave this as a placeholder
                     alert("This would open the Create Pet Profile modal");
                   }}
                 >
@@ -260,7 +268,6 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
               </div>
             </TabsContent>
             
-            {/* New Security tab for password update and account deletion */}
             <TabsContent value="security" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -350,6 +357,25 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                       Delete My Account
                     </Button>
                   )}
+                </CardContent>
+              </Card>
+              
+              <Separator className="my-4" />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sign Out</CardTitle>
+                  <CardDescription>Log out from your account and browse as a guest</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

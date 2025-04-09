@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint } from 'lucide-react';
+import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint, LogIn } from 'lucide-react';
 import CreatePetProfileModal from './CreatePetProfileModal';
 import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +17,7 @@ const Sidebar = () => {
   const isMobile = useIsMobile();
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
   
   const [searchParams] = useSearchParams();
   const selectedPetId = searchParams.get('petId');
@@ -67,6 +67,10 @@ const Sidebar = () => {
 
   const handleSelectPet = (petId) => {
     navigate(`/profile?petId=${petId}`);
+  };
+  
+  const handleLoginClick = () => {
+    navigate('/login');
   };
 
   if (isMobile) {
@@ -148,7 +152,7 @@ const Sidebar = () => {
               <p className="text-xs text-muted-foreground">Active Profile</p>
             </div>
             
-            {/* Pet selection dropdown - only shows the pet list */}
+            {/* Pet selection dropdown - only shows user's pets */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -243,6 +247,19 @@ const Sidebar = () => {
               onClick={() => setIsOwnerProfileOpen(true)}
             >
               Owner Profile
+            </Button>
+          </div>
+        )}
+        
+        {/* Log in button for guests at the bottom */}
+        {!user && (
+          <div className="absolute bottom-8 right-4 left-0 pr-4">
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={handleLoginClick}
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Sign In
             </Button>
           </div>
         )}
