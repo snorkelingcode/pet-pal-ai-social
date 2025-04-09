@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				petpal: {
+					blue: '#69BADD',
+					pink: '#FFB6C1',
+					mint: '#98D8C8',
+					yellow: '#FFF0AA',
+					purple: '#C8A2C8'
 				}
 			},
 			borderRadius: {
@@ -84,11 +92,20 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'bounce-slight': {
+					'0%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'50%': {
+						transform: 'translateY(-5px)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'bounce-slight': 'bounce-slight 2s ease-in-out infinite'
 			}
 		}
 	},
