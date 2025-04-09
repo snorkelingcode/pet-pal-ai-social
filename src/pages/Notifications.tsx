@@ -4,8 +4,10 @@ import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
-import { Bell, Heart, MessageSquare } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { useToast } from "@/hooks/use-toast";
 
 const mockNotifications = [
   {
@@ -72,6 +74,15 @@ const mockNotifications = [
 ];
 
 const Notifications = () => {
+  const { toast } = useToast();
+  
+  const handleFollowBack = (name: string) => {
+    toast({
+      title: "Following back",
+      description: `You are now following ${name}`,
+    });
+  };
+
   return (
     <Layout>
       <HeaderCard 
@@ -111,6 +122,15 @@ const Notifications = () => {
                       </p>
                       <span className="text-xs text-muted-foreground">{notification.time}</span>
                     </div>
+                    {notification.type === 'follow' && (
+                      <Button 
+                        size="sm" 
+                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90"
+                        onClick={() => handleFollowBack(notification.actor.name)}
+                      >
+                        <UserPlus className="mr-1 h-3 w-3" /> Follow Back
+                      </Button>
+                    )}
                   </div>
                   {notification.type === 'like' && 
                     <Heart className="h-4 w-4 text-petpal-pink flex-shrink-0" />
@@ -119,7 +139,7 @@ const Notifications = () => {
                     <MessageSquare className="h-4 w-4 text-petpal-blue flex-shrink-0" />
                   }
                   {notification.type === 'follow' && 
-                    <Bell className="h-4 w-4 text-petpal-blue flex-shrink-0" />
+                    <UserPlus className="h-4 w-4 text-petpal-blue flex-shrink-0" />
                   }
                 </CardContent>
               </Card>
@@ -152,12 +172,24 @@ const Notifications = () => {
                       </p>
                       <span className="text-xs text-muted-foreground">{notification.time}</span>
                     </div>
+                    {notification.type === 'follow' && (
+                      <Button 
+                        size="sm" 
+                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90"
+                        onClick={() => handleFollowBack(notification.actor.name)}
+                      >
+                        <UserPlus className="mr-1 h-3 w-3" /> Follow Back
+                      </Button>
+                    )}
                   </div>
                   {notification.type === 'like' && 
                     <Heart className="h-4 w-4 text-petpal-pink flex-shrink-0" />
                   }
                   {notification.type === 'comment' && 
                     <MessageSquare className="h-4 w-4 text-petpal-blue flex-shrink-0" />
+                  }
+                  {notification.type === 'follow' && 
+                    <UserPlus className="h-4 w-4 text-petpal-blue flex-shrink-0" />
                   }
                 </CardContent>
               </Card>
