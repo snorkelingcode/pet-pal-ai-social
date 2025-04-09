@@ -11,7 +11,7 @@ const Sidebar = () => {
 
   const navItems = [
     { 
-      name: 'Home', 
+      name: 'Feed', 
       path: '/', 
       icon: <Home className="h-5 w-5" />,
     },
