@@ -2,20 +2,22 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { mockPetProfiles } from '@/data/mockData';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Pencil, PawPrint } from 'lucide-react';
+import { User, Pencil, PawPrint, AlertCircle, Lock, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock owner data
 const ownerData = {
@@ -32,6 +34,16 @@ const ownerProfileSchema = z.object({
   bio: z.string().max(300, { message: "Bio must be less than 300 characters." }),
 });
 
+// Password update schema
+const passwordUpdateSchema = z.object({
+  currentPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  newPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  confirmPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 interface OwnerProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,8 +52,11 @@ interface OwnerProfileModalProps {
 const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const navigate = useNavigate();
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { user } = useAuth();
   
-  const form = useForm<z.infer<typeof ownerProfileSchema>>({
+  // Profile form
+  const profileForm = useForm<z.infer<typeof ownerProfileSchema>>({
     resolver: zodResolver(ownerProfileSchema),
     defaultValues: {
       name: ownerData.name,
@@ -50,9 +65,34 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof ownerProfileSchema>) => {
+  // Password update form
+  const passwordForm = useForm<z.infer<typeof passwordUpdateSchema>>({
+    resolver: zodResolver(passwordUpdateSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const onProfileSubmit = (data: z.infer<typeof ownerProfileSchema>) => {
     console.log("Owner profile updated:", data);
     // Here you would update the owner profile in your backend
+  };
+  
+  const onPasswordSubmit = (data: z.infer<typeof passwordUpdateSchema>) => {
+    console.log("Password update requested:", data);
+    // Here you would update the user's password
+    passwordForm.reset();
+    // Show success message (in a real app)
+  };
+
+  const handleDeleteAccount = () => {
+    console.log("Account deletion requested");
+    // Here you would implement account deletion logic
+    setShowDeleteConfirm(false);
+    onOpenChange(false);
+    // In a real app, you'd sign out and redirect to home/login
   };
   
   const handleSelectPet = (petId: string) => {
@@ -69,10 +109,11 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
           <h1 className="text-3xl font-bold mb-6">Owner Profile</h1>
           
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="profile">My Profile</TabsTrigger>
               <TabsTrigger value="pets">My Pets</TabsTrigger>
-              <TabsTrigger value="settings">Account Settings</TabsTrigger>
+              <TabsTrigger value="security">Security</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile" className="space-y-4">
@@ -93,10 +134,10 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
                       <FormField
-                        control={form.control}
+                        control={profileForm.control}
                         name="name"
                         render={({ field }) => (
                           <FormItem>
@@ -108,7 +149,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                         )}
                       />
                       <FormField
-                        control={form.control}
+                        control={profileForm.control}
                         name="email"
                         render={({ field }) => (
                           <FormItem>
@@ -120,7 +161,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                         )}
                       />
                       <FormField
-                        control={form.control}
+                        control={profileForm.control}
                         name="bio"
                         render={({ field }) => (
                           <FormItem>
@@ -217,6 +258,100 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                   Add New Pet
                 </Button>
               </div>
+            </TabsContent>
+            
+            {/* New Security tab for password update and account deletion */}
+            <TabsContent value="security" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Update Password</CardTitle>
+                  <CardDescription>Change your account password</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                      <FormField
+                        control={passwordForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Current Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Enter your current password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Enter new password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Confirm New Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Confirm new password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className="bg-petpal-blue hover:bg-petpal-blue/90">
+                        <Lock className="h-4 w-4 mr-2" />
+                        Update Password
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-destructive">Delete Account</CardTitle>
+                  <CardDescription>Permanently delete your account and all associated data</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {showDeleteConfirm ? (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Are you sure?</AlertTitle>
+                      <AlertDescription>
+                        This action cannot be undone. All your data and pet profiles will be permanently deleted.
+                      </AlertDescription>
+                      <div className="flex justify-end space-x-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                          Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteAccount}>
+                          Yes, delete my account
+                        </Button>
+                      </div>
+                    </Alert>
+                  ) : (
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete My Account
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="settings" className="space-y-4">

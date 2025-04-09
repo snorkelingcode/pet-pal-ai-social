@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint } from 'lucide-react';
@@ -8,9 +9,11 @@ import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockPetProfiles } from '@/data/mockData';
 import { Avatar } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
@@ -61,6 +64,10 @@ const Sidebar = () => {
       requiresAuth: true
     },
   ];
+
+  const handleSelectPet = (petId) => {
+    navigate(`/profile?petId=${petId}`);
+  };
 
   if (isMobile) {
     return (
@@ -140,14 +147,29 @@ const Sidebar = () => {
               <p className="text-sm font-medium">{selectedPet.name}</p>
               <p className="text-xs text-muted-foreground">Active Profile</p>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="ml-auto"
-              onClick={() => setIsOwnerProfileOpen(true)}
-            >
-              <PawPrint className="h-4 w-4" />
-            </Button>
+            
+            {/* Pet selection dropdown - only shows the pet list */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-auto"
+                >
+                  <PawPrint className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {mockPetProfiles.map((pet) => (
+                  <DropdownMenuItem key={pet.id} onClick={() => handleSelectPet(pet.id)}>
+                    <Avatar className="h-6 w-6 mr-2">
+                      <img src={pet.profilePicture} alt={pet.name} className="object-cover" />
+                    </Avatar>
+                    {pet.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
         
