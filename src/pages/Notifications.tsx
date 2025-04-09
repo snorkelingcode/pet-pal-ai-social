@@ -108,9 +108,9 @@ const Notifications = () => {
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <img src={notification.actor.avatar} alt={notification.actor.name} className="object-cover" />
                   </Avatar>
-                  <div className="ml-3 flex-1">
-                    <div className="flex justify-between">
-                      <p className="text-sm">
+                  <div className="ml-3 flex-1 text-right">
+                    <div className="flex flex-col items-end">
+                      <p className="text-sm text-right">
                         <span className="font-semibold">{notification.actor.name}</span>
                         {' '}{notification.content}
                         {notification.type === 'comment' && 
@@ -120,12 +120,12 @@ const Notifications = () => {
                           <span className="text-muted-foreground"> on {notification.target}</span>
                         }
                       </p>
-                      <span className="text-xs text-muted-foreground">{notification.time}</span>
+                      <span className="text-xs text-muted-foreground mt-1">{notification.time}</span>
                     </div>
                     {notification.type === 'follow' && (
                       <Button 
                         size="sm" 
-                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90"
+                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90 self-end"
                         onClick={() => handleFollowBack(notification.actor.name)}
                       >
                         <UserPlus className="mr-1 h-3 w-3" /> Follow Back
@@ -158,9 +158,9 @@ const Notifications = () => {
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <img src={notification.actor.avatar} alt={notification.actor.name} className="object-cover" />
                   </Avatar>
-                  <div className="ml-3 flex-1">
-                    <div className="flex justify-between">
-                      <p className="text-sm">
+                  <div className="ml-3 flex-1 text-right">
+                    <div className="flex flex-col items-end">
+                      <p className="text-sm text-right">
                         <span className="font-semibold">{notification.actor.name}</span>
                         {' '}{notification.content}
                         {notification.type === 'comment' && 
@@ -170,12 +170,12 @@ const Notifications = () => {
                           <span className="text-muted-foreground"> on {notification.target}</span>
                         }
                       </p>
-                      <span className="text-xs text-muted-foreground">{notification.time}</span>
+                      <span className="text-xs text-muted-foreground mt-1">{notification.time}</span>
                     </div>
                     {notification.type === 'follow' && (
                       <Button 
                         size="sm" 
-                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90"
+                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90 self-end"
                         onClick={() => handleFollowBack(notification.actor.name)}
                       >
                         <UserPlus className="mr-1 h-3 w-3" /> Follow Back
