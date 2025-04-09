@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +12,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { mockPetProfiles } from '@/data/mockData';
-import { Link } from 'react-router-dom';
-import { User, Pencil } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Pencil, PawPrint } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Mock owner data
 const ownerData = {
@@ -36,6 +38,9 @@ interface OwnerProfileModalProps {
 }
 
 const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
+  const navigate = useNavigate();
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  
   const form = useForm<z.infer<typeof ownerProfileSchema>>({
     resolver: zodResolver(ownerProfileSchema),
     defaultValues: {
@@ -48,6 +53,13 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const onSubmit = (data: z.infer<typeof ownerProfileSchema>) => {
     console.log("Owner profile updated:", data);
     // Here you would update the owner profile in your backend
+  };
+  
+  const handleSelectPet = (petId: string) => {
+    setSelectedPetId(petId);
+    // Navigate to the selected pet's profile and close the modal
+    onOpenChange(false);
+    navigate(`/profile?petId=${petId}`);
   };
 
   return (
@@ -132,9 +144,29 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
             
             <TabsContent value="pets" className="space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle>My Pets</CardTitle>
-                  <CardDescription>Manage your pet profiles and settings</CardDescription>
+                <CardHeader className="flex justify-between items-end">
+                  <div>
+                    <CardTitle>My Pets</CardTitle>
+                    <CardDescription>Manage your pet profiles and settings</CardDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <PawPrint className="h-4 w-4" />
+                        <span>Switch to Pet</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {mockPetProfiles.map((pet) => (
+                        <DropdownMenuItem key={pet.id} onClick={() => handleSelectPet(pet.id)}>
+                          <Avatar className="h-6 w-6 mr-2">
+                            <img src={pet.profilePicture} alt={pet.name} className="object-cover" />
+                          </Avatar>
+                          {pet.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {mockPetProfiles.map((pet) => (
@@ -157,12 +189,15 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                               Edit
                             </Button>
                           </Link>
-                          <Link to={`/profile`} onClick={() => onOpenChange(false)}>
-                            <Button variant="outline" size="sm">
-                              <User className="h-4 w-4 mr-2" />
-                              View Profile
-                            </Button>
-                          </Link>
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            className="bg-petpal-blue hover:bg-petpal-blue/90"
+                            onClick={() => handleSelectPet(pet.id)}
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            View Profile
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

@@ -1,12 +1,13 @@
-
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { User, Home, MessageSquare, Bell, Heart, Settings } from 'lucide-react';
+import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint } from 'lucide-react';
 import CreatePetProfileModal from './CreatePetProfileModal';
 import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { mockPetProfiles } from '@/data/mockData';
+import { Avatar } from '@/components/ui/avatar';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -14,6 +15,13 @@ const Sidebar = () => {
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
   const { user, isLoading } = useAuth();
+  
+  const [searchParams] = useSearchParams();
+  const selectedPetId = searchParams.get('petId');
+  
+  const selectedPet = selectedPetId 
+    ? mockPetProfiles.find(pet => pet.id === selectedPetId) 
+    : mockPetProfiles[0];
   
   const navItems = [
     { 
@@ -24,13 +32,13 @@ const Sidebar = () => {
     },
     { 
       name: 'Profile', 
-      path: '/profile', 
+      path: selectedPetId ? `/profile?petId=${selectedPetId}` : '/profile', 
       icon: <User className="h-5 w-5" />,
       requiresAuth: true
     },
     { 
       name: 'Messages', 
-      path: '/messages', 
+      path: selectedPetId ? `/messages?petId=${selectedPetId}` : '/messages', 
       icon: <MessageSquare className="h-5 w-5" />,
       requiresAuth: true
     },
@@ -54,7 +62,6 @@ const Sidebar = () => {
     },
   ];
 
-  // Mobile sidebar is handled in Layout.tsx with bottom navigation
   if (isMobile) {
     return (
       <>
@@ -70,7 +77,6 @@ const Sidebar = () => {
     );
   }
 
-  // If still loading auth state, show a simplified sidebar
   if (isLoading) {
     return (
       <div className="fixed w-64 h-screen py-6 pr-4">
@@ -125,10 +131,28 @@ const Sidebar = () => {
           <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
         </div>
         
+        {user && selectedPet && (
+          <div className="mb-4 p-3 bg-accent rounded-lg flex items-center">
+            <Avatar className="h-10 w-10 mr-3">
+              <img src={selectedPet.profilePicture} alt={selectedPet.name} className="object-cover" />
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium">{selectedPet.name}</p>
+              <p className="text-xs text-muted-foreground">Active Profile</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ml-auto"
+              onClick={() => setIsOwnerProfileOpen(true)}
+            >
+              <PawPrint className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
         <nav className="space-y-2">
-          {/* Show all nav items on desktop */}
           {navItems.map((item) => {
-            // For non-authenticated users, only show Feed and redirect others to login
             if (!user && item.requiresAuth) {
               return (
                 <Link key={item.path} to="/login">
@@ -143,12 +167,14 @@ const Sidebar = () => {
               );
             }
             
+            const isActive = item.path.split('?')[0] === location.pathname;
+            
             return (
               <Link key={item.path} to={item.path}>
                 <Button
-                  variant={location.pathname === item.path ? "default" : "ghost"}
+                  variant={isActive ? "default" : "ghost"}
                   className={`w-full justify-start text-base ${
-                    location.pathname === item.path ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
+                    isActive ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
                   }`}
                 >
                   {item.icon}
@@ -158,7 +184,6 @@ const Sidebar = () => {
             );
           })}
           
-          {/* If user is not logged in, show login/register buttons */}
           {!user && (
             <div className="space-y-2 mt-4">
               <Link to="/login">
