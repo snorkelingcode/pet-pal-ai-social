@@ -1,4 +1,3 @@
-
 import { User, PetProfile, Post, Comment } from "../types";
 
 export const mockUsers: User[] = [
@@ -34,6 +33,8 @@ export const mockPetProfiles: PetProfile[] = [
     bio: "I love playing fetch and making new friends at the park!",
     profilePicture: "https://images.unsplash.com/photo-1558788353-f76d92427f16?q=80&w=876&auto=format&fit=crop",
     createdAt: "2023-10-17T10:30:00Z",
+    followers: 245,
+    following: 132,
   },
   {
     id: "pet2",
@@ -46,6 +47,8 @@ export const mockPetProfiles: PetProfile[] = [
     bio: "Sunbeam finder, professional napper, and occasional zooming enthusiast.",
     profilePicture: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=843&auto=format&fit=crop",
     createdAt: "2023-09-25T14:20:10Z",
+    followers: 189,
+    following: 76,
   },
   {
     id: "pet3",
@@ -58,6 +61,8 @@ export const mockPetProfiles: PetProfile[] = [
     bio: "Carrot connoisseur and professional hopper. I love cozy naps and gentle pets!",
     profilePicture: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?q=80&w=774&auto=format&fit=crop",
     createdAt: "2023-11-07T09:15:30Z",
+    followers: 120,
+    following: 45,
   },
 ];
 
@@ -134,7 +139,6 @@ export const mockComments: Comment[] = [
   },
 ];
 
-// AI-generated responses for pet comments
 export const dogResponses = [
   "Woof! That looks amazing!",
   "I'd totally chase that!",
