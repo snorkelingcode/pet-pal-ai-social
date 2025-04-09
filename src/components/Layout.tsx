@@ -5,7 +5,6 @@ import Sidebar from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import RightSidebar from './RightSidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,7 +15,6 @@ const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
   const isMobile = useIsMobile();
   const { user, isLoading } = useAuth();
   const [authReady, setAuthReady] = useState(false);
-  const [layoutReady, setLayoutReady] = useState(false);
   
   // Only show auth-dependent UI elements after auth state is determined
   useEffect(() => {
@@ -24,35 +22,6 @@ const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
       setAuthReady(true);
     }
   }, [isLoading]);
-  
-  // Add a small delay to ensure consistent rendering
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLayoutReady(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-  
-  if (!layoutReady) {
-    return (
-      <div className="min-h-screen bg-background flex justify-center">
-        <div className="flex w-full max-w-[1200px] px-4 relative">
-          {!isMobile && <div className="flex-none w-[275px]">
-            <Skeleton className="h-screen w-full" />
-          </div>}
-          <div className="flex-1 p-4">
-            <Skeleton className="h-24 w-full mb-6" />
-            <Skeleton className="h-64 w-full mb-6" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-          {!isMobile && !hideRightSidebar && <div className="w-72 ml-4">
-            <Skeleton className="h-48 w-full mb-4" />
-            <Skeleton className="h-64 w-full" />
-          </div>}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background paw-print-bg flex justify-center">

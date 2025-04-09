@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const WhatsHappening = () => {
   const trendingTopics = [
@@ -71,25 +70,6 @@ const SuggestedFollows = () => {
 };
 
 const RightSidebar = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  
-  useEffect(() => {
-    // Add a small delay to ensure consistent rendering
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-  
-  if (!isLoaded) {
-    return (
-      <div className="w-72 ml-4 shrink-0">
-        <Skeleton className="h-48 w-full mb-4" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
-
   return (
     <div className="w-72 ml-4 shrink-0">
       <WhatsHappening />
