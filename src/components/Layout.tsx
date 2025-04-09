@@ -7,9 +7,10 @@ import RightSidebar from './RightSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
+  hideRightSidebar?: boolean;
 }
 
-const Layout = ({ children }: LayoutProps) => {
+const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
   const isMobile = useIsMobile();
 
   return (
@@ -19,8 +20,8 @@ const Layout = ({ children }: LayoutProps) => {
           <Sidebar />
         </div>
         <main className={`flex-1 p-4 flex justify-center`}>
-          <div className="w-full max-w-[600px]">{children}</div>
-          {!isMobile && <RightSidebar />}
+          <div className={`w-full ${!hideRightSidebar && !isMobile ? 'max-w-[600px]' : ''}`}>{children}</div>
+          {!isMobile && !hideRightSidebar && <RightSidebar />}
         </main>
       </div>
     </div>

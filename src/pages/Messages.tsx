@@ -45,14 +45,14 @@ const mockConversations = [
 
 const Messages = () => {
   return (
-    <Layout>
+    <Layout hideRightSidebar>
       <HeaderCard 
         title="Messages" 
         subtitle="Chat with your furry friends!"
       />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="md:col-span-1 space-y-4">
+        <div className="md:col-span-1 space-y-4 max-w-full">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search conversations..." className="pl-9" />
@@ -65,13 +65,13 @@ const Messages = () => {
                 className={`cursor-pointer hover:bg-accent ${conversation.unread ? 'border-l-4 border-l-petpal-blue' : ''}`}
               >
                 <CardContent className="flex items-center p-3">
-                  <Avatar className="h-10 w-10">
+                  <Avatar className="h-10 w-10 shrink-0">
                     <img src={conversation.avatar} alt={conversation.name} className="object-cover" />
                   </Avatar>
-                  <div className="ml-3 flex-1">
+                  <div className="ml-3 flex-1 min-w-0">
                     <div className="flex justify-between">
                       <h3 className="font-medium">{conversation.name}</h3>
-                      <span className="text-xs text-muted-foreground">{conversation.time}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{conversation.time}</span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{conversation.lastMessage}</p>
                   </div>
