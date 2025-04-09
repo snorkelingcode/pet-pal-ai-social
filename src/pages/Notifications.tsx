@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
@@ -83,6 +82,54 @@ const Notifications = () => {
     });
   };
 
+  const renderNotificationContent = (notification) => (
+    <Card 
+      key={notification.id} 
+      className={`hover:bg-accent ${!notification.read ? 'border-l-4 border-l-petpal-blue' : ''}`}
+    >
+      <CardContent className="p-4 flex">
+        <Avatar className="h-10 w-10 flex-shrink-0">
+          <img src={notification.actor.avatar} alt={notification.actor.name} className="object-cover" />
+        </Avatar>
+        <div className="ml-3 flex-1 flex flex-col items-end">
+          <div className="text-right w-full">
+            <p className="text-sm text-right">
+              <span className="font-semibold">{notification.actor.name}</span>
+              {' '}{notification.content}
+              {notification.type === 'comment' && 
+                <span className="text-muted-foreground"> "{notification.comment}"</span>
+              }
+              {notification.target && 
+                <span className="text-muted-foreground"> on {notification.target}</span>
+              }
+            </p>
+            <span className="text-xs text-muted-foreground mt-1 block text-right">{notification.time}</span>
+          </div>
+          {notification.type === 'follow' && (
+            <Button 
+              size="sm" 
+              className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={() => handleFollowBack(notification.actor.name)}
+            >
+              <UserPlus className="mr-1 h-3 w-3" /> Follow Back
+            </Button>
+          )}
+        </div>
+        <div className="ml-2 flex items-center">
+          {notification.type === 'like' && 
+            <Heart className="h-4 w-4 text-petpal-pink" />
+          }
+          {notification.type === 'comment' && 
+            <MessageSquare className="h-4 w-4 text-petpal-blue" />
+          }
+          {notification.type === 'follow' && 
+            <UserPlus className="h-4 w-4 text-petpal-blue" />
+          }
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <Layout>
       <HeaderCard 
@@ -99,101 +146,13 @@ const Notifications = () => {
         
         <TabsContent value="all" className="mt-4">
           <div className="space-y-3">
-            {mockNotifications.map(notification => (
-              <Card 
-                key={notification.id} 
-                className={`hover:bg-accent ${!notification.read ? 'border-l-4 border-l-petpal-blue' : ''}`}
-              >
-                <CardContent className="p-4 flex">
-                  <Avatar className="h-10 w-10 flex-shrink-0">
-                    <img src={notification.actor.avatar} alt={notification.actor.name} className="object-cover" />
-                  </Avatar>
-                  <div className="ml-3 flex-1 text-right">
-                    <div className="flex flex-col items-end">
-                      <p className="text-sm text-right">
-                        <span className="font-semibold">{notification.actor.name}</span>
-                        {' '}{notification.content}
-                        {notification.type === 'comment' && 
-                          <span className="text-muted-foreground"> "{notification.comment}"</span>
-                        }
-                        {notification.target && 
-                          <span className="text-muted-foreground"> on {notification.target}</span>
-                        }
-                      </p>
-                      <span className="text-xs text-muted-foreground mt-1">{notification.time}</span>
-                    </div>
-                    {notification.type === 'follow' && (
-                      <Button 
-                        size="sm" 
-                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90 self-end"
-                        onClick={() => handleFollowBack(notification.actor.name)}
-                      >
-                        <UserPlus className="mr-1 h-3 w-3" /> Follow Back
-                      </Button>
-                    )}
-                  </div>
-                  {notification.type === 'like' && 
-                    <Heart className="h-4 w-4 text-petpal-pink flex-shrink-0" />
-                  }
-                  {notification.type === 'comment' && 
-                    <MessageSquare className="h-4 w-4 text-petpal-blue flex-shrink-0" />
-                  }
-                  {notification.type === 'follow' && 
-                    <UserPlus className="h-4 w-4 text-petpal-blue flex-shrink-0" />
-                  }
-                </CardContent>
-              </Card>
-            ))}
+            {mockNotifications.map(renderNotificationContent)}
           </div>
         </TabsContent>
         
         <TabsContent value="unread" className="mt-4">
           <div className="space-y-3">
-            {mockNotifications.filter(n => !n.read).map(notification => (
-              <Card 
-                key={notification.id} 
-                className="border-l-4 border-l-petpal-blue hover:bg-accent"
-              >
-                <CardContent className="p-4 flex">
-                  <Avatar className="h-10 w-10 flex-shrink-0">
-                    <img src={notification.actor.avatar} alt={notification.actor.name} className="object-cover" />
-                  </Avatar>
-                  <div className="ml-3 flex-1 text-right">
-                    <div className="flex flex-col items-end">
-                      <p className="text-sm text-right">
-                        <span className="font-semibold">{notification.actor.name}</span>
-                        {' '}{notification.content}
-                        {notification.type === 'comment' && 
-                          <span className="text-muted-foreground"> "{notification.comment}"</span>
-                        }
-                        {notification.target && 
-                          <span className="text-muted-foreground"> on {notification.target}</span>
-                        }
-                      </p>
-                      <span className="text-xs text-muted-foreground mt-1">{notification.time}</span>
-                    </div>
-                    {notification.type === 'follow' && (
-                      <Button 
-                        size="sm" 
-                        className="mt-2 bg-petpal-blue hover:bg-petpal-blue/90 self-end"
-                        onClick={() => handleFollowBack(notification.actor.name)}
-                      >
-                        <UserPlus className="mr-1 h-3 w-3" /> Follow Back
-                      </Button>
-                    )}
-                  </div>
-                  {notification.type === 'like' && 
-                    <Heart className="h-4 w-4 text-petpal-pink flex-shrink-0" />
-                  }
-                  {notification.type === 'comment' && 
-                    <MessageSquare className="h-4 w-4 text-petpal-blue flex-shrink-0" />
-                  }
-                  {notification.type === 'follow' && 
-                    <UserPlus className="h-4 w-4 text-petpal-blue flex-shrink-0" />
-                  }
-                </CardContent>
-              </Card>
-            ))}
+            {mockNotifications.filter(n => !n.read).map(renderNotificationContent)}
           </div>
         </TabsContent>
         
