@@ -61,7 +61,7 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="fixed w-64 h-screen bg-petpal-mint/10 border-r p-6">
+    <div className="fixed w-72 h-screen bg-petpal-mint/10 border-r p-6">
       <div className="flex items-center mb-8 animate-gentle-wave">
         <div className="w-10 h-10 bg-petpal-blue rounded-full flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">

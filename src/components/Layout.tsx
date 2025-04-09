@@ -14,7 +14,7 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background paw-print-bg flex">
       <Sidebar />
-      <main className={`flex-1 ${!isMobile ? 'ml-64' : ''} p-4`}>
+      <main className={`flex-1 ${!isMobile ? 'ml-72' : ''} p-4`}>
         {children}
       </main>
     </div>
