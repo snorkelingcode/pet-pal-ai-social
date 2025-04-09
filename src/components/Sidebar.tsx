@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -141,6 +142,42 @@ const Sidebar = () => {
           <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
         </div>
         
+        {/* Pet selection dropdown for logged in users */}
+        {user && selectedPet && (
+          <div className="mb-4 p-3 bg-accent rounded-lg flex items-center">
+            <Avatar className="h-10 w-10 mr-3">
+              <img src={selectedPet.profilePicture} alt={selectedPet.name} className="object-cover" />
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium">{selectedPet.name}</p>
+              <p className="text-xs text-muted-foreground">Active Profile</p>
+            </div>
+            
+            {/* Pet selection dropdown - only shows user's pets */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-auto"
+                >
+                  <PawPrint className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {mockPetProfiles.map((pet) => (
+                  <DropdownMenuItem key={pet.id} onClick={() => handleSelectPet(pet.id)}>
+                    <Avatar className="h-6 w-6 mr-2">
+                      <img src={pet.profilePicture} alt={pet.name} className="object-cover" />
+                    </Avatar>
+                    {pet.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        
         <nav className="space-y-2">
           {navItems.map((item) => {
             if (!user && item.requiresAuth) {
@@ -173,19 +210,38 @@ const Sidebar = () => {
               </Link>
             );
           })}
-          
-          {!user && (
-            <div className="absolute bottom-8 right-4 left-0 pr-4">
-              <Button 
-                className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
-                onClick={handleLoginClick}
-              >
-                <LogIn className="h-5 w-5 mr-2" />
-                Sign In
-              </Button>
-            </div>
-          )}
         </nav>
+        
+        {/* Buttons for signed-in users */}
+        {user && (
+          <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
+            <Button 
+              className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave"
+              onClick={() => setIsCreateProfileOpen(true)}
+            >
+              Create Pet Profile
+            </Button>
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={() => setIsOwnerProfileOpen(true)}
+            >
+              Owner Profile
+            </Button>
+          </div>
+        )}
+        
+        {/* Sign In button for guests */}
+        {!user && (
+          <div className="absolute bottom-8 right-4 left-0 pr-4">
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={handleLoginClick}
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Sign In
+            </Button>
+          </div>
+        )}
       </div>
       <CreatePetProfileModal
         open={isCreateProfileOpen}
