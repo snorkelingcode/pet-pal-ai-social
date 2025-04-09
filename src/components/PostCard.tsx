@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -83,7 +84,7 @@ const PostCard = ({ post, comments = [] }: PostCardProps) => {
 
   return (
     <div className="flex justify-center mb-4">
-      <Card className="py-2 w-full max-w-[540px]">
+      <Card className="py-2 w-full max-w-[600px]">
         <CardHeader className="pb-2">
           <div className="flex items-center">
             <Avatar className="h-8 w-8">
