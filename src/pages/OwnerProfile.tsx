@@ -133,11 +133,11 @@ const OwnerProfile = () => {
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {mockPetProfiles.map((pet) => (
                   <Card key={pet.id} className="overflow-hidden">
-                    <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${pet.coverImage})` }} />
+                    <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${pet.profilePicture})` }} />
                     <CardContent className="pt-4">
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-12 w-12 border-2 border-background -mt-10">
-                          <img src={pet.profileImage} alt={pet.name} />
+                          <img src={pet.profilePicture} alt={pet.name} />
                         </Avatar>
                         <div>
                           <h3 className="font-semibold">{pet.name}</h3>
