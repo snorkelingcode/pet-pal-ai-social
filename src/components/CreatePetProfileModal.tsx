@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
   Dialog, 
@@ -36,6 +36,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar } from '@/components/ui/avatar';
+import { PetProfile } from '@/types';
 
 // Define the form schema with zod
 const formSchema = z.object({
@@ -73,9 +74,16 @@ const personalityTraits = [
 interface CreatePetProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isEditMode?: boolean;
+  petProfile?: PetProfile;
 }
 
-const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProps) => {
+const CreatePetProfileModal = ({ 
+  open, 
+  onOpenChange,
+  isEditMode = false,
+  petProfile
+}: CreatePetProfileModalProps) => {
   const [images, setImages] = useState<File[]>([]);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
@@ -93,6 +101,28 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
       rivals: "",
     },
   });
+
+  // Populate the form with pet profile data when in edit mode
+  useEffect(() => {
+    if (isEditMode && petProfile) {
+      form.reset({
+        name: petProfile.name,
+        species: petProfile.species,
+        breed: petProfile.breed,
+        age: petProfile.age,
+        bio: petProfile.bio || "",
+        personality: petProfile.personality,
+        // Using default values for fields that might not be in the pet profile
+        heroOrVillain: "neutral",
+        rivals: "",
+      });
+      
+      // Set the profile image preview if available
+      if (petProfile.profilePicture) {
+        setProfileImagePreview(petProfile.profilePicture);
+      }
+    }
+  }, [isEditMode, petProfile, form]);
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -116,7 +146,8 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
   };
 
   const onSubmit = (data: FormValues) => {
-    if (!profileImage) {
+    // Skip profile image validation for edit mode if no new image is selected
+    if (!isEditMode && !profileImage) {
       toast({
         title: "Profile image required",
         description: "Please upload a profile image for your pet",
@@ -125,7 +156,7 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
       return;
     }
 
-    if (images.length === 0) {
+    if (!isEditMode && images.length === 0) {
       toast({
         title: "Additional images recommended",
         description: "For the best AI experience, please upload additional photos of your pet",
@@ -134,11 +165,15 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
     }
 
     // Here we would normally send data to an API or update state
-    console.log("Form submitted:", { ...data, profileImage, additionalImages: images });
+    console.log(isEditMode ? "Profile updated:" : "Form submitted:", { 
+      ...data, 
+      profileImage: profileImage || petProfile?.profilePicture, 
+      additionalImages: images 
+    });
     
     toast({
-      title: "Pet profile created!",
-      description: `${data.name}'s profile has been created successfully!`,
+      title: isEditMode ? "Pet profile updated!" : "Pet profile created!",
+      description: `${data.name}'s profile has been ${isEditMode ? 'updated' : 'created'} successfully!`,
     });
     
     onOpenChange(false);
@@ -148,10 +183,14 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Create Pet Profile</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            {isEditMode ? "Edit Pet Profile" : "Create Pet Profile"}
+          </DialogTitle>
           <DialogDescription>
-            Let's create a profile for your pet! Provide as much information as possible
-            to help our AI build a personality for your pet.
+            {isEditMode 
+              ? "Update your pet's profile information below."
+              : "Let's create a profile for your pet! Provide as much information as possible to help our AI build a personality for your pet."
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -194,7 +233,10 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                Upload a clear, face-forward image of your pet
+                {isEditMode 
+                  ? "Upload a new profile image or keep the existing one"
+                  : "Upload a clear, face-forward image of your pet"
+                }
               </p>
             </div>
             
@@ -237,6 +279,7 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -344,6 +387,7 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
                     <RadioGroup
                       onValueChange={field.onChange}
                       defaultValue={field.value}
+                      value={field.value}
                       className="flex space-x-4"
                     >
                       <div className="flex items-center space-x-2">
@@ -389,66 +433,68 @@ const CreatePetProfileModal = ({ open, onOpenChange }: CreatePetProfileModalProp
               )}
             />
             
-            {/* Additional Images Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="additionalImages">
-                Additional Images & Videos
-              </Label>
-              <div className="flex flex-col space-y-2">
-                <div 
-                  className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => document.getElementById('additionalImages')?.click()}
-                >
-                  <Input
-                    id="additionalImages"
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImagesChange}
-                  />
-                  <ImagePlus className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload additional photos and videos of your pet
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    The more images you provide, the better our AI can understand your pet's appearance
-                  </p>
-                </div>
-                
-                {images.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-4">
-                    {images.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <div className="aspect-square bg-muted rounded-md overflow-hidden">
-                          <img 
-                            src={URL.createObjectURL(image)} 
-                            alt={`Image ${index}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <Button 
-                          type="button" 
-                          variant="destructive" 
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+            {/* Only show additional images upload in create mode, not edit mode */}
+            {!isEditMode && (
+              <div className="space-y-2">
+                <Label htmlFor="additionalImages">
+                  Additional Images & Videos
+                </Label>
+                <div className="flex flex-col space-y-2">
+                  <div 
+                    className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => document.getElementById('additionalImages')?.click()}
+                  >
+                    <Input
+                      id="additionalImages"
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleImagesChange}
+                    />
+                    <ImagePlus className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload additional photos and videos of your pet
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The more images you provide, the better our AI can understand your pet's appearance
+                    </p>
                   </div>
-                )}
+                  
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-4">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square bg-muted rounded-md overflow-hidden">
+                            <img 
+                              src={URL.createObjectURL(image)} 
+                              alt={`Image ${index}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="destructive" 
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Upload multiple photos showing different angles and expressions of your pet.
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Upload multiple photos showing different angles and expressions of your pet.
-              </p>
-            </div>
+            )}
             
             <DialogFooter>
               <Button type="submit" className="bg-petpal-blue hover:bg-petpal-blue/90">
-                Create Pet Profile
+                {isEditMode ? "Update Pet Profile" : "Create Pet Profile"}
               </Button>
             </DialogFooter>
           </form>
