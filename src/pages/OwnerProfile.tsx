@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -118,20 +119,28 @@ const OwnerProfile = () => {
     if (!user) return;
     
     try {
+      // Fix for friends query - changing the OR syntax
       const { data: friendsData, error: friendsError } = await supabase
         .from('user_friends')
         .select('*, friend:friend_id(id, username, avatar_url), requester:user_id(id, username, avatar_url)')
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
         .eq('status', 'accepted');
       
-      if (friendsError) throw friendsError;
+      if (friendsError) {
+        console.error('Error fetching friends:', friendsError);
+        throw friendsError;
+      }
       
+      console.log("Fetched friends data:", friendsData);
+      
+      // Process friends data to get the correct friend info
       const processedFriends = friendsData.map(connection => {
         return connection.user_id === user.id ? connection.friend : connection.requester;
       });
       
       setFriends(processedFriends);
       
+      // Fix for friend requests query
       const { data: receivedRequests, error: receivedError } = await supabase
         .from('user_friends')
         .select('*, requester:user_id(id, username, avatar_url)')
@@ -139,8 +148,10 @@ const OwnerProfile = () => {
         .eq('status', 'pending');
       
       if (receivedError) throw receivedError;
+      console.log("Fetched friend requests:", receivedRequests);
       setFriendRequests(receivedRequests);
       
+      // Fix for sent requests query
       const { data: sentRequestsData, error: sentError } = await supabase
         .from('user_friends')
         .select('*, friend:friend_id(id, username, avatar_url)')
@@ -148,6 +159,7 @@ const OwnerProfile = () => {
         .eq('status', 'pending');
       
       if (sentError) throw sentError;
+      console.log("Fetched sent requests:", sentRequestsData);
       setSentRequests(sentRequestsData);
       
     } catch (error) {
