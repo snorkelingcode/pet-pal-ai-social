@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import PostCard from '@/components/PostCard';
-import { mockPosts, mockComments } from '@/data/mockData';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -21,139 +20,143 @@ const Index = () => {
   const [loadingData, setLoadingData] = useState(false);
   
   useEffect(() => {
-    if (user) {
-      // Only fetch data from Supabase if user is authenticated
-      const fetchData = async () => {
-        setLoadingData(true);
-        try {
-          // Fetch posts
-          const { data: postsData, error: postsError } = await supabase
-            .from('posts')
-            .select(`
+    const fetchData = async () => {
+      setLoadingData(true);
+      try {
+        // Fetch posts
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            id, 
+            pet_id, 
+            content, 
+            image, 
+            likes, 
+            comments, 
+            created_at,
+            pet_profiles:pet_id (
               id, 
-              pet_id, 
-              content, 
-              image, 
-              likes, 
-              comments, 
-              created_at,
-              pet_profiles:pet_id (
-                id, 
-                name, 
-                species, 
-                breed, 
-                age, 
-                personality,
-                bio,
-                profile_picture,
-                followers,
-                following
-              )
-            `)
-            .order('created_at', { ascending: false });
-            
-          if (postsError) throw postsError;
+              name, 
+              species, 
+              breed, 
+              age, 
+              personality,
+              bio,
+              profile_picture,
+              followers,
+              following
+            )
+          `)
+          .order('created_at', { ascending: false });
           
-          // Fetch comments
-          const { data: commentsData, error: commentsError } = await supabase
-            .from('comments')
-            .select(`
-              id,
-              post_id,
-              pet_id,
-              content,
-              likes,
-              created_at,
-              pet_profiles:pet_id (
-                id, 
-                name, 
-                species, 
-                breed,
-                profile_picture
-              )
-            `)
-            .order('created_at', { ascending: true });
-            
-          if (commentsError) throw commentsError;
-          
-          // Map the Supabase data to our frontend data structure
-          const formattedPosts: Post[] = postsData.map(post => ({
-            id: post.id,
-            petId: post.pet_id,
-            petProfile: {
-              id: post.pet_profiles.id,
-              name: post.pet_profiles.name,
-              species: post.pet_profiles.species,
-              breed: post.pet_profiles.breed,
-              age: post.pet_profiles.age,
-              personality: post.pet_profiles.personality,
-              bio: post.pet_profiles.bio,
-              profilePicture: post.pet_profiles.profile_picture,
-              followers: post.pet_profiles.followers,
-              following: post.pet_profiles.following,
-              ownerId: '', // This is not needed for display
-              createdAt: '', // This is not needed for display
-            },
-            content: post.content,
-            image: post.image,
-            likes: post.likes,
-            comments: post.comments,
-            createdAt: post.created_at,
-          }));
-          
-          const formattedComments: Comment[] = commentsData.map(comment => ({
-            id: comment.id,
-            postId: comment.post_id,
-            petId: comment.pet_id,
-            petProfile: {
-              id: comment.pet_profiles.id,
-              name: comment.pet_profiles.name,
-              species: comment.pet_profiles.species,
-              breed: comment.pet_profiles.breed,
-              profilePicture: comment.pet_profiles.profile_picture,
-              // These fields aren't needed for comments display
-              age: 0,
-              personality: [],
-              bio: '',
-              ownerId: '',
-              createdAt: '',
-              followers: 0,
-              following: 0,
-            },
-            content: comment.content,
-            likes: comment.likes,
-            createdAt: comment.created_at,
-          }));
-          
-          setPosts(formattedPosts);
-          setComments(formattedComments);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load posts. Please try again later.",
-            variant: "destructive",
-          });
-          // Fall back to mock data if there's an error
-          setPosts(mockPosts);
-          setComments(mockComments);
-        } finally {
+        if (postsError) throw postsError;
+        
+        if (postsData.length === 0) {
+          setPosts([]);
+          setComments([]);
           setLoadingData(false);
+          return;
         }
-      };
-      
-      fetchData();
-    } else {
-      // Use mock data for non-authenticated users
-      setPosts(mockPosts);
-      setComments(mockComments);
-    }
+        
+        // Fetch comments
+        const postIds = postsData.map(post => post.id);
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            post_id,
+            pet_id,
+            content,
+            likes,
+            created_at,
+            pet_profiles:pet_id (
+              id, 
+              name, 
+              species, 
+              breed,
+              profile_picture
+            )
+          `)
+          .in('post_id', postIds)
+          .order('created_at', { ascending: true });
+          
+        if (commentsError) throw commentsError;
+        
+        // Map the Supabase data to our frontend data structure
+        const formattedPosts: Post[] = postsData.map(post => ({
+          id: post.id,
+          petId: post.pet_id,
+          petProfile: {
+            id: post.pet_profiles.id,
+            name: post.pet_profiles.name,
+            species: post.pet_profiles.species,
+            breed: post.pet_profiles.breed,
+            age: post.pet_profiles.age,
+            personality: post.pet_profiles.personality,
+            bio: post.pet_profiles.bio,
+            profilePicture: post.pet_profiles.profile_picture,
+            followers: post.pet_profiles.followers,
+            following: post.pet_profiles.following,
+            ownerId: '', // This is not needed for display
+            createdAt: '', // This is not needed for display
+          },
+          content: post.content,
+          image: post.image,
+          likes: post.likes,
+          comments: post.comments,
+          createdAt: post.created_at,
+        }));
+        
+        const formattedComments: Comment[] = commentsData.map(comment => ({
+          id: comment.id,
+          postId: comment.post_id,
+          petId: comment.pet_id,
+          petProfile: {
+            id: comment.pet_profiles.id,
+            name: comment.pet_profiles.name,
+            species: comment.pet_profiles.species,
+            breed: comment.pet_profiles.breed,
+            profilePicture: comment.pet_profiles.profile_picture,
+            // These fields aren't needed for comments display
+            age: 0,
+            personality: [],
+            bio: '',
+            ownerId: '',
+            createdAt: '',
+            followers: 0,
+            following: 0,
+          },
+          content: comment.content,
+          likes: comment.likes,
+          createdAt: comment.created_at,
+        }));
+        
+        setPosts(formattedPosts);
+        setComments(formattedComments);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load posts. Please try again later.",
+          variant: "destructive",
+        });
+        setPosts([]);
+        setComments([]);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    
+    fetchData();
   }, [user]);
   
-  // For demo purposes, we'll show all posts in "For You" tab
-  // and a filtered subset in the "Following" tab
+  // For authenticated users, we'll show posts they're following in the "Following" tab
   const forYouPosts = posts;
-  const followingPosts = user ? posts.slice(0, 2) : mockPosts.slice(0, 2); // Just showing fewer posts in Following tab for demo
+  const followingPosts = user ? posts.filter(post => {
+    // In a real app, we'd filter based on followed profiles
+    // For now, just show a subset for demo
+    return post.petProfile.followers > 0;
+  }) : [];
   
   return (
     <Layout>
@@ -162,12 +165,15 @@ const Index = () => {
         subtitle={isLoading || loadingData ? "Loading..." : (user ? "See what your furry friends are up to!" : "Browse pet posts from around the world!")}
       />
 
-      {/* Show tabs only for authenticated users, otherwise only show "For You" content */}
-      {isLoading || loadingData ? (
+      {/* Show loading state */}
+      {(isLoading || loadingData) && (
         <div className="w-full flex justify-center p-8">
           <div className="animate-pulse bg-muted rounded-md h-64 w-full max-w-md"></div>
         </div>
-      ) : user ? (
+      )}
+
+      {/* Show tabs for authenticated users */}
+      {!isLoading && !loadingData && user && (
         <Tabs defaultValue="for-you" className="w-full mb-4" onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="for-you" className="font-medium">For You</TabsTrigger>
@@ -212,7 +218,10 @@ const Index = () => {
             </div>
           </TabsContent>
         </Tabs>
-      ) : (
+      )}
+
+      {/* Show content for non-authenticated users */}
+      {!isLoading && !loadingData && !user && (
         <div className="w-full mb-4">
           <div className="w-full flex flex-col items-center">
             <div className="mb-4 w-full">
@@ -221,14 +230,21 @@ const Index = () => {
                 Create an account to follow your favorite pets and see more personalized content
               </p>
             </div>
-            {forYouPosts.map((post) => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                comments={comments.filter(comment => comment.postId === post.id)}
-                isReadOnly={true} // Add read-only prop to prevent interactions
-              />
-            ))}
+            
+            {forYouPosts.length > 0 ? (
+              forYouPosts.map((post) => (
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  comments={comments.filter(comment => comment.postId === post.id)}
+                  isReadOnly={true} // Add read-only prop to prevent interactions
+                />
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-2">No posts yet.</p>
+              </div>
+            )}
           </div>
           
           {/* Add login/signup prompt if not on mobile (mobile has bottom bar already) */}

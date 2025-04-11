@@ -1,80 +1,62 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Heart, MessageSquare, UserPlus } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
+import { Bell, Heart, MessageSquare, UserPlus, AlertCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
-const mockNotifications = [
-  {
-    id: 1,
-    type: 'like',
-    actor: {
-      name: 'Buddy',
-      avatar: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80'
-    },
-    content: 'liked your post',
-    target: 'Going for a walk at the beach today!',
-    time: '5 minutes ago',
-    read: false
-  },
-  {
-    id: 2,
-    type: 'comment',
-    actor: {
-      name: 'Whiskers',
-      avatar: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80'
-    },
-    content: 'commented on your post',
-    comment: 'Meow! Looks fun!',
-    target: 'New toy day!',
-    time: '1 hour ago',
-    read: false
-  },
-  {
-    id: 3,
-    type: 'like',
-    actor: {
-      name: 'Rex',
-      avatar: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80'
-    },
-    content: 'liked your comment',
-    comment: 'Thanks for the treat recommendation!',
-    time: '3 hours ago',
-    read: true
-  },
-  {
-    id: 4,
-    type: 'follow',
-    actor: {
-      name: 'Paws',
-      avatar: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80'
-    },
-    content: 'started following you',
-    time: '1 day ago',
-    read: true
-  },
-  {
-    id: 5,
-    type: 'comment',
-    actor: {
-      name: 'Fluffy',
-      avatar: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80'
-    },
-    content: 'replied to your comment',
-    comment: 'Let\'s meet at the dog park!',
-    target: 'Looking for playmates in Central Park',
-    time: '2 days ago',
-    read: true
-  }
-];
+interface Notification {
+  id: number;
+  type: 'like' | 'comment' | 'follow';
+  actor: {
+    name: string;
+    avatar: string;
+  };
+  content: string;
+  comment?: string;
+  target?: string;
+  time: string;
+  read: boolean;
+}
 
 const Notifications = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // In a real application, we would fetch notifications from a notifications table
+        // For this demo, we're setting an empty array since we don't have actual notification data
+        setNotifications([]);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load notifications",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchNotifications();
+  }, [user, toast]);
   
   const handleFollowBack = (name: string) => {
     toast({
@@ -83,7 +65,7 @@ const Notifications = () => {
     });
   };
 
-  const renderNotificationContent = (notification) => (
+  const renderNotificationContent = (notification: Notification) => (
     <Card 
       key={notification.id} 
       className={`hover:bg-accent ${!notification.read ? 'border-l-4 border-l-petpal-blue' : ''}`}
@@ -129,6 +111,54 @@ const Notifications = () => {
     </Card>
   );
 
+  if (loading) {
+    return (
+      <Layout>
+        <HeaderCard 
+          title="Notifications" 
+          subtitle="Loading..."
+        />
+        <div className="space-y-3">
+          <div className="animate-pulse bg-muted rounded-md h-16 w-full"></div>
+          <div className="animate-pulse bg-muted rounded-md h-16 w-full"></div>
+          <div className="animate-pulse bg-muted rounded-md h-16 w-full"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Layout>
+        <HeaderCard 
+          title="Notifications" 
+          subtitle="Sign in to view your notifications"
+        />
+        <div className="flex flex-col items-center justify-center h-[50vh]">
+          <Bell className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold mb-2">Sign in to see notifications</h2>
+          <p className="text-muted-foreground text-center max-w-md mb-6">
+            Create an account or sign in to receive notifications about activity on your posts and profiles
+          </p>
+          <div className="flex gap-4">
+            <Button 
+              className="bg-petpal-blue hover:bg-petpal-blue/90"
+              asChild
+            >
+              <Link to="/login">Log in</Link>
+            </Button>
+            <Button 
+              className="bg-petpal-pink hover:bg-petpal-pink/90"
+              asChild
+            >
+              <Link to="/register">Sign up</Link>
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <HeaderCard 
@@ -145,13 +175,29 @@ const Notifications = () => {
         
         <TabsContent value="all" className="mt-4">
           <div className="space-y-3">
-            {mockNotifications.map(renderNotificationContent)}
+            {notifications.length > 0 ? (
+              notifications.map(renderNotificationContent)
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                <Bell className="h-10 w-10 mb-2 opacity-50" />
+                <p>No notifications yet</p>
+                <p className="text-sm">When someone interacts with your content, it will appear here</p>
+              </div>
+            )}
           </div>
         </TabsContent>
         
         <TabsContent value="unread" className="mt-4">
           <div className="space-y-3">
-            {mockNotifications.filter(n => !n.read).map(renderNotificationContent)}
+            {notifications.filter(n => !n.read).length > 0 ? (
+              notifications.filter(n => !n.read).map(renderNotificationContent)
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                <AlertCircle className="h-10 w-10 mb-2 opacity-50" />
+                <p>No unread notifications</p>
+                <p className="text-sm">You're all caught up!</p>
+              </div>
+            )}
           </div>
         </TabsContent>
         
@@ -166,5 +212,8 @@ const Notifications = () => {
     </Layout>
   );
 };
+
+// Adding missing AvatarImage import
+import { AvatarImage } from '@/components/ui/avatar';
 
 export default Notifications;

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -7,9 +7,11 @@ import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint, LogIn } fro
 import CreatePetProfileModal from './CreatePetProfileModal';
 import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockPetProfiles } from '@/data/mockData';
 import { Avatar } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { supabase } from '@/integrations/supabase/client';
+import { PetProfile } from '@/types';
+import { toast } from '@/components/ui/use-toast';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -17,14 +19,17 @@ const Sidebar = () => {
   const isMobile = useIsMobile();
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
-  const { user, isLoading, signOut } = useAuth();
+  const { user, isLoading } = useAuth();
   
   const [searchParams] = useSearchParams();
   const selectedPetId = searchParams.get('petId');
   
+  const [userPets, setUserPets] = useState<PetProfile[]>([]);
+  const [loadingPets, setLoadingPets] = useState(false);
+  
   const selectedPet = selectedPetId 
-    ? mockPetProfiles.find(pet => pet.id === selectedPetId) 
-    : mockPetProfiles[0];
+    ? userPets.find(pet => pet.id === selectedPetId) 
+    : userPets.length > 0 ? userPets[0] : null;
   
   const navItems = [
     { 
@@ -65,7 +70,58 @@ const Sidebar = () => {
     },
   ];
 
-  const handleSelectPet = (petId) => {
+  useEffect(() => {
+    const fetchUserPets = async () => {
+      if (!user) return;
+      
+      setLoadingPets(true);
+      try {
+        const { data, error } = await supabase
+          .from('pet_profiles')
+          .select('*')
+          .eq('owner_id', user.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        const petProfiles: PetProfile[] = data.map(pet => ({
+          id: pet.id,
+          ownerId: pet.owner_id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          personality: pet.personality,
+          bio: pet.bio,
+          profilePicture: pet.profile_picture,
+          createdAt: pet.created_at,
+          followers: pet.followers || 0,
+          following: pet.following || 0
+        }));
+        
+        setUserPets(petProfiles);
+        
+        // If no pet is selected yet but we have pets, update the route to include the first pet
+        if (!selectedPetId && petProfiles.length > 0 && location.pathname === '/profile') {
+          navigate(`/profile?petId=${petProfiles[0].id}`, { replace: true });
+        }
+      } catch (error) {
+        console.error('Error fetching user pets:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load your pet profiles',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoadingPets(false);
+      }
+    };
+    
+    fetchUserPets();
+  }, [user, selectedPetId, navigate, location.pathname]);
+
+  const handleSelectPet = (petId: string) => {
     navigate(`/profile?petId=${petId}`);
   };
   
@@ -143,7 +199,7 @@ const Sidebar = () => {
         </div>
         
         {/* Pet selection dropdown for logged in users */}
-        {user && selectedPet && (
+        {user && selectedPet && userPets.length > 0 && (
           <div className="mb-4 p-3 bg-accent rounded-lg flex items-center">
             <Avatar className="h-10 w-10 mr-3">
               <img src={selectedPet.profilePicture} alt={selectedPet.name} className="object-cover" />
@@ -165,7 +221,7 @@ const Sidebar = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {mockPetProfiles.map((pet) => (
+                {userPets.map((pet) => (
                   <DropdownMenuItem key={pet.id} onClick={() => handleSelectPet(pet.id)}>
                     <Avatar className="h-6 w-6 mr-2">
                       <img src={pet.profilePicture} alt={pet.name} className="object-cover" />

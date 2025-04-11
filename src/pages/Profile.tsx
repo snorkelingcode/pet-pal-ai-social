@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import PostCard from '@/components/PostCard';
 import PetProfileCard from '@/components/PetProfileCard';
-import { mockPosts, mockComments, mockPetProfiles } from '@/data/mockData';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PetProfile, Post, Comment } from '@/types';
@@ -12,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 
 const Profile = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const petIdParam = searchParams.get('petId');
   const { user } = useAuth();
   
@@ -19,18 +19,57 @@ const Profile = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [userPets, setUserPets] = useState<PetProfile[]>([]);
+  
+  // Fetch user's pets if logged in
+  useEffect(() => {
+    const fetchUserPets = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('pet_profiles')
+          .select('*')
+          .eq('owner_id', user.id);
+          
+        if (error) throw error;
+        
+        const petProfiles: PetProfile[] = data.map(pet => ({
+          id: pet.id,
+          ownerId: pet.owner_id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          personality: pet.personality,
+          bio: pet.bio,
+          profilePicture: pet.profile_picture,
+          createdAt: pet.created_at,
+          followers: pet.followers || 0,
+          following: pet.following || 0
+        }));
+        
+        setUserPets(petProfiles);
+        
+        // If no pet is selected but user has pets, redirect to the first pet's profile
+        if (!petIdParam && petProfiles.length > 0) {
+          navigate(`/profile?petId=${petProfiles[0].id}`, { replace: true });
+        }
+      } catch (error) {
+        console.error("Error fetching user pets:", error);
+      }
+    };
+    
+    fetchUserPets();
+  }, [user, petIdParam, navigate]);
   
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!user) {
-        // Use mock data if user is not authenticated
-        const mockPetProfile = petIdParam 
-          ? mockPetProfiles.find(pet => pet.id === petIdParam) || mockPetProfiles[0]
-          : mockPetProfiles[0];
-          
-        setPetProfile(mockPetProfile);
-        setPosts(mockPosts.filter(post => post.petId === mockPetProfile.id));
-        setComments(mockComments);
+      if (!petIdParam && userPets.length === 0) {
+        // No petId and no user pets, show empty state
+        setPetProfile(null);
+        setPosts([]);
+        setComments([]);
         return;
       }
       
@@ -44,22 +83,27 @@ const Profile = () => {
           
         if (petIdParam) {
           profileQuery = profileQuery.eq('id', petIdParam);
+        } else if (userPets.length > 0) {
+          // Use the first pet if no specific pet is selected
+          profileQuery = profileQuery.eq('id', userPets[0].id);
         } else {
-          profileQuery = profileQuery.eq('owner_id', user.id).limit(1);
+          // No pets available
+          setPetProfile(null);
+          setPosts([]);
+          setComments([]);
+          setLoading(false);
+          return;
         }
         
         const { data: profileData, error: profileError } = await profileQuery.single();
         
         if (profileError) {
           if (profileError.code === 'PGRST116') {
-            // No profile found, use mock data as fallback
-            const mockPetProfile = petIdParam 
-              ? mockPetProfiles.find(pet => pet.id === petIdParam) || mockPetProfiles[0]
-              : mockPetProfiles[0];
-              
-            setPetProfile(mockPetProfile);
-            setPosts(mockPosts.filter(post => post.petId === mockPetProfile.id));
-            setComments(mockComments);
+            // No profile found
+            setPetProfile(null);
+            setPosts([]);
+            setComments([]);
+            setLoading(false);
             return;
           }
           throw profileError;
@@ -112,34 +156,37 @@ const Profile = () => {
           
         if (postsError) throw postsError;
         
+        // If there are no posts, set empty arrays and exit early
+        if (postsData.length === 0) {
+          setPosts([]);
+          setComments([]);
+          setLoading(false);
+          return;
+        }
+        
         // Fetch all comments for these posts
         const postIds = postsData.map(post => post.id);
-        let commentsData: any[] = [];
-        
-        if (postIds.length > 0) {
-          const { data: fetchedComments, error: commentsError } = await supabase
-            .from('comments')
-            .select(`
-              id,
-              post_id,
-              pet_id,
-              content,
-              likes,
-              created_at,
-              pet_profiles:pet_id (
-                id, 
-                name, 
-                species, 
-                breed,
-                profile_picture
-              )
-            `)
-            .in('post_id', postIds)
-            .order('created_at', { ascending: true });
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            post_id,
+            pet_id,
+            content,
+            likes,
+            created_at,
+            pet_profiles:pet_id (
+              id, 
+              name, 
+              species, 
+              breed,
+              profile_picture
+            )
+          `)
+          .in('post_id', postIds)
+          .order('created_at', { ascending: true });
             
-          if (commentsError) throw commentsError;
-          commentsData = fetchedComments;
-        }
+        if (commentsError) throw commentsError;
         
         // Format posts and comments
         const formattedPosts: Post[] = postsData.map(post => ({
@@ -166,7 +213,7 @@ const Profile = () => {
           createdAt: post.created_at,
         }));
         
-        const formattedComments: Comment[] = commentsData.map(comment => ({
+        const formattedComments: Comment[] = commentsData ? commentsData.map(comment => ({
           id: comment.id,
           postId: comment.post_id,
           petId: comment.pet_id,
@@ -188,7 +235,7 @@ const Profile = () => {
           content: comment.content,
           likes: comment.likes,
           createdAt: comment.created_at,
-        }));
+        })) : [];
         
         setPosts(formattedPosts);
         setComments(formattedComments);
@@ -200,27 +247,61 @@ const Profile = () => {
           variant: "destructive",
         });
         
-        // Use mock data as fallback
-        const mockPetProfile = petIdParam 
-          ? mockPetProfiles.find(pet => pet.id === petIdParam) || mockPetProfiles[0]
-          : mockPetProfiles[0];
-          
-        setPetProfile(mockPetProfile);
-        setPosts(mockPosts.filter(post => post.petId === mockPetProfile.id));
-        setComments(mockComments);
+        setPetProfile(null);
+        setPosts([]);
+        setComments([]);
       } finally {
         setLoading(false);
       }
     };
     
     fetchProfileData();
-  }, [petIdParam, user]);
+  }, [petIdParam, userPets]);
   
-  if (loading || !petProfile) {
+  if (loading) {
     return (
       <Layout>
         <div className="w-full flex justify-center p-8">
           <div className="animate-pulse bg-muted rounded-md h-64 w-full max-w-md"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // No pet profile to display - show empty state with prompt to create one
+  if (!petProfile) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
+          <h2 className="text-2xl font-bold mb-2">No Pet Profile Found</h2>
+          {user ? (
+            <div>
+              <p className="text-muted-foreground mb-4">
+                You don't have any pet profiles yet. Create one to get started!
+              </p>
+              <p className="text-sm">
+                Click the "Create Pet Profile" button in the sidebar to add your first pet.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="text-muted-foreground mb-4">
+                Sign in to create a profile for your pet.
+              </p>
+              <div className="flex gap-4 mt-4">
+                <Link to="/login">
+                  <button className="bg-petpal-blue text-white px-6 py-2 rounded-full">
+                    Log in
+                  </button>
+                </Link>
+                <Link to="/register">
+                  <button className="bg-petpal-pink text-white px-6 py-2 rounded-full">
+                    Sign up
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </Layout>
     );
@@ -247,5 +328,8 @@ const Profile = () => {
     </Layout>
   );
 };
+
+// Adding missing Link import
+import { Link } from 'react-router-dom';
 
 export default Profile;
