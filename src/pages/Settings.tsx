@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,12 +11,217 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { PetProfile } from '@/types';
+import { toast } from '@/components/ui/use-toast';
+import { petProfileService } from '@/services/petProfileService';
 
 const Settings = () => {
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const selectedPetId = searchParams.get('petId');
+  
+  const [petProfile, setPetProfile] = useState<PetProfile | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<{ username: string, email: string, location?: string, bio?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Form state
+  const [petName, setPetName] = useState('');
+  const [petBio, setPetBio] = useState('');
+  const [petAge, setPetAge] = useState('');
+  const [petSpecies, setPetSpecies] = useState('');
+  const [petBreed, setPetBreed] = useState('');
+  
+  // Owner form state
+  const [ownerName, setOwnerName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerLocation, setOwnerLocation] = useState('');
+  const [ownerBio, setOwnerBio] = useState('');
+  
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+        
+        // Load owner profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('username, email, bio')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error loading owner profile:', profileError);
+          toast({
+            title: 'Error',
+            description: 'Failed to load owner profile data',
+            variant: 'destructive',
+          });
+        } else if (profileData) {
+          setOwnerProfile(profileData);
+          setOwnerName(profileData.username || '');
+          setOwnerEmail(profileData.email || '');
+          setOwnerBio(profileData.bio || '');
+        }
+        
+        // Load pet profile if petId is present
+        if (selectedPetId) {
+          const pet = await petProfileService.getPetProfile(selectedPetId);
+          if (pet) {
+            setPetProfile(pet);
+            setPetName(pet.name);
+            setPetBio(pet.bio);
+            setPetAge(pet.age.toString());
+            setPetSpecies(pet.species);
+            setPetBreed(pet.breed);
+          } else {
+            toast({
+              title: 'Pet not found',
+              description: 'The selected pet profile could not be found',
+              variant: 'destructive',
+            });
+            navigate('/settings');
+          }
+        } else if (user) {
+          // If no pet is selected but user is logged in, get their first pet
+          const pets = await petProfileService.getUserPetProfiles(user.id);
+          if (pets && pets.length > 0) {
+            navigate(`/settings?petId=${pets[0].id}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error in settings page:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load profile data',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadData();
+  }, [user, selectedPetId, navigate]);
+  
+  const handleSavePetChanges = async () => {
+    if (!petProfile || !selectedPetId) return;
+    
+    try {
+      setLoading(true);
+      
+      const updatedPet = await petProfileService.updatePetProfile(selectedPetId, {
+        name: petName,
+        bio: petBio,
+        age: parseInt(petAge) || petProfile.age,
+        species: petSpecies,
+        breed: petBreed
+      });
+      
+      setPetProfile(updatedPet);
+      
+      toast({
+        title: 'Changes saved',
+        description: 'Your pet profile has been updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating pet profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update pet profile',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSaveOwnerChanges = async () => {
+    if (!user || !ownerProfile) return;
+    
+    try {
+      setLoading(true);
+      
+      // Update profile in Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: ownerName,
+          bio: ownerBio
+        })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      // Update email in auth if changed
+      if (ownerEmail !== ownerProfile.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: ownerEmail,
+        });
+        
+        if (emailError) throw emailError;
+      }
+      
+      setOwnerProfile({
+        ...ownerProfile,
+        username: ownerName,
+        email: ownerEmail,
+        bio: ownerBio
+      });
+      
+      toast({
+        title: 'Changes saved',
+        description: 'Your owner profile has been updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating owner profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update owner profile',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSavePreferences = () => {
+    toast({
+      title: 'Preferences saved',
+      description: 'Your notification preferences have been updated',
+    });
+  };
+  
+  const handleSavePrivacySettings = () => {
+    toast({
+      title: 'Privacy settings saved',
+      description: 'Your privacy settings have been updated',
+    });
+  };
+  
+  if (loading && !petProfile && !ownerProfile) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 w-48 bg-gray-200 rounded"></div>
+            <div className="h-96 w-full max-w-3xl bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <HeaderCard 
-        title="Settings" 
+        title={petProfile ? `${petProfile.name}'s Settings` : "Settings"} 
         subtitle="Customize your PetPal experience"
       />
       
@@ -27,9 +233,95 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="account" className="space-y-4">
+          {petProfile && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pet Profile</CardTitle>
+                <CardDescription>
+                  Update {petProfile.name}'s information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-20 w-20">
+                    <img 
+                      src={petProfile.profilePicture || "/placeholder.svg"} 
+                      alt={petProfile.name}
+                      className="object-cover"
+                    />
+                  </Avatar>
+                  <div>
+                    <Button variant="outline" size="sm" className="mb-2">
+                      Change Photo
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, GIF or PNG. 1MB max size.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="petName">Name</Label>
+                    <Input 
+                      id="petName" 
+                      value={petName} 
+                      onChange={(e) => setPetName(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="petSpecies">Species</Label>
+                      <Input 
+                        id="petSpecies" 
+                        value={petSpecies} 
+                        onChange={(e) => setPetSpecies(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="petBreed">Breed</Label>
+                      <Input 
+                        id="petBreed" 
+                        value={petBreed} 
+                        onChange={(e) => setPetBreed(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="petAge">Age</Label>
+                      <Input 
+                        id="petAge" 
+                        value={petAge} 
+                        onChange={(e) => setPetAge(e.target.value)}
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="petBio">Bio</Label>
+                    <Input 
+                      id="petBio" 
+                      value={petBio} 
+                      onChange={(e) => setPetBio(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button 
+                    className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2" 
+                    onClick={handleSavePetChanges}
+                    disabled={loading}
+                  >
+                    {loading ? 'Saving...' : 'Save Pet Changes'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <Card>
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
+              <CardTitle>Owner Profile</CardTitle>
               <CardDescription>
                 Update your account profile information
               </CardDescription>
@@ -37,11 +329,17 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
-                  <img 
-                    src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80" 
-                    alt="Profile"
-                    className="object-cover"
-                  />
+                  {ownerProfile?.username ? (
+                    <div className="bg-petpal-blue text-white h-full w-full flex items-center justify-center text-xl font-bold">
+                      {ownerProfile.username.charAt(0).toUpperCase()}
+                    </div>
+                  ) : (
+                    <img 
+                      src="/placeholder.svg" 
+                      alt="Profile"
+                      className="object-cover"
+                    />
+                  )}
                 </Avatar>
                 <div>
                   <Button variant="outline" size="sm" className="mb-2">
@@ -56,26 +354,47 @@ const Settings = () => {
               <div className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="ownerName">Owner's Name</Label>
-                  <Input id="ownerName" defaultValue="John Doe" />
+                  <Input 
+                    id="ownerName" 
+                    value={ownerName} 
+                    onChange={(e) => setOwnerName(e.target.value)}
+                  />
                 </div>
                 
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" defaultValue="john.doe@example.com" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={ownerEmail} 
+                    onChange={(e) => setOwnerEmail(e.target.value)}
+                  />
                 </div>
                 
                 <div className="grid gap-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" defaultValue="New York, USA" />
+                  <Input 
+                    id="location" 
+                    value={ownerLocation} 
+                    onChange={(e) => setOwnerLocation(e.target.value)} 
+                  />
                 </div>
                 
                 <div className="grid gap-2">
                   <Label htmlFor="bio">Bio</Label>
-                  <Input id="bio" defaultValue="Proud pet parent of Buddy" />
+                  <Input 
+                    id="bio" 
+                    value={ownerBio} 
+                    onChange={(e) => setOwnerBio(e.target.value)}
+                  />
                 </div>
                 
-                <Button className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2">
-                  Save Changes
+                <Button 
+                  className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2" 
+                  onClick={handleSaveOwnerChanges}
+                  disabled={loading}
+                >
+                  {loading ? 'Saving...' : 'Save Owner Changes'}
                 </Button>
               </div>
             </CardContent>
@@ -180,7 +499,10 @@ const Settings = () => {
                   </div>
                 </div>
                 
-                <Button className="bg-petpal-blue hover:bg-petpal-blue/90 mt-4">
+                <Button 
+                  className="bg-petpal-blue hover:bg-petpal-blue/90 mt-4"
+                  onClick={handleSavePreferences}
+                >
                   Save Preferences
                 </Button>
               </div>
@@ -259,7 +581,10 @@ const Settings = () => {
                   </div>
                 </div>
                 
-                <Button className="bg-petpal-blue hover:bg-petpal-blue/90 mt-4">
+                <Button 
+                  className="bg-petpal-blue hover:bg-petpal-blue/90 mt-4"
+                  onClick={handleSavePrivacySettings}
+                >
                   Save Privacy Settings
                 </Button>
               </div>
