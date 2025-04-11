@@ -55,11 +55,13 @@ const OwnerProfile = () => {
             
           if (error) throw error;
           
+          console.log("Owner Profile - Fetched profile data:", profileData);
+          
           if (profileData) {
             // Update form with user profile data
             form.reset({
-              name: profileData.username,
-              email: user.email,
+              name: profileData.username || '',
+              email: user.email || '',
               bio: profileData.bio || '',
             });
             
@@ -75,6 +77,8 @@ const OwnerProfile = () => {
             
           if (petsError) throw petsError;
           
+          console.log("Owner Profile - Fetched pet profiles:", petsData);
+          
           if (petsData) {
             const formattedPets: PetProfile[] = petsData.map(pet => ({
               id: pet.id,
@@ -83,7 +87,7 @@ const OwnerProfile = () => {
               species: pet.species,
               breed: pet.breed,
               age: pet.age,
-              personality: pet.personality,
+              personality: pet.personality || [],
               bio: pet.bio || '',
               profilePicture: pet.profile_picture || '',
               createdAt: pet.created_at,
@@ -304,7 +308,7 @@ const OwnerProfile = () => {
                                 <Textarea 
                                   placeholder="Tell us about yourself..." 
                                   className="min-h-32"
-                                  {...field || ''} 
+                                  {...field} 
                                 />
                               </FormControl>
                             </FormItem>
@@ -356,12 +360,12 @@ const OwnerProfile = () => {
                     <Card key={pet.id} className="overflow-hidden">
                       <div 
                         className="h-32 bg-cover bg-center" 
-                        style={{ backgroundImage: `url(${pet.profilePicture})` }}
+                        style={{ backgroundImage: `url(${pet.profilePicture || '/placeholder.svg'})` }}
                       />
                       <CardContent className="pt-4">
                         <div className="flex items-center space-x-4">
                           <Avatar className="h-12 w-12 border-2 border-background -mt-10">
-                            <img src={pet.profilePicture} alt={pet.name} />
+                            <img src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} className="object-cover" />
                           </Avatar>
                           <div>
                             <h3 className="font-semibold">{pet.name}</h3>
@@ -389,23 +393,36 @@ const OwnerProfile = () => {
                   <div className="col-span-2 text-center py-8">
                     <User className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                     <p className="mt-4 text-muted-foreground">You don't have any pets yet. Create your first pet profile!</p>
+                    <Button 
+                      className="bg-petpal-pink hover:bg-petpal-pink/90 mt-4"
+                      onClick={() => {
+                        const createProfileEvent = new CustomEvent('open-create-profile');
+                        window.dispatchEvent(createProfileEvent);
+                      }}
+                    >
+                      Create Pet Profile
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
-            <div className="flex justify-center mt-4">
-              <Button 
-                className="bg-petpal-pink hover:bg-petpal-pink/90"
-                onClick={() => {
-                  toast({
-                    title: "Create a pet profile",
-                    description: "Add a new furry friend to your PetPal account."
-                  });
-                }}
-              >
-                Add New Pet
-              </Button>
-            </div>
+            {userPetProfiles.length > 0 && (
+              <div className="flex justify-center mt-4">
+                <Button 
+                  className="bg-petpal-pink hover:bg-petpal-pink/90"
+                  onClick={() => {
+                    const createProfileEvent = new CustomEvent('open-create-profile');
+                    window.dispatchEvent(createProfileEvent);
+                    toast({
+                      title: "Create a pet profile",
+                      description: "Add a new furry friend to your PetPal account."
+                    });
+                  }}
+                >
+                  Add New Pet
+                </Button>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="settings" className="space-y-4">

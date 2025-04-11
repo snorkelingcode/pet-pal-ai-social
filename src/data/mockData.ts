@@ -1,10 +1,12 @@
 import { User, PetProfile, Post, Comment } from "../types";
 
+// Empty arrays to be filled with real data from Supabase
 export const mockUsers: User[] = [];
 export const mockPetProfiles: PetProfile[] = [];
 export const mockPosts: Post[] = [];
 export const mockComments: Comment[] = [];
 
+// Keep the response templates for AI-generated interactions
 export const dogResponses = [
   "Woof! That looks amazing!",
   "I'd totally chase that!",

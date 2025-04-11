@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import PostCard from '@/components/PostCard';
 import PetProfileCard from '@/components/PetProfileCard';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PetProfile, Post, Comment } from '@/types';
@@ -34,6 +34,8 @@ const Profile = () => {
           
         if (error) throw error;
         
+        console.log("Fetched user pets:", data);
+        
         const petProfiles: PetProfile[] = data.map(pet => ({
           id: pet.id,
           ownerId: pet.owner_id,
@@ -53,6 +55,7 @@ const Profile = () => {
         
         // If no pet is selected but user has pets, redirect to the first pet's profile
         if (!petIdParam && petProfiles.length > 0) {
+          console.log("Redirecting to first pet:", petProfiles[0].id);
           navigate(`/profile?petId=${petProfiles[0].id}`, { replace: true });
         }
       } catch (error) {
@@ -109,6 +112,8 @@ const Profile = () => {
           throw profileError;
         }
         
+        console.log("Fetched pet profile:", profileData);
+        
         // Format pet profile
         const formattedProfile: PetProfile = {
           id: profileData.id,
@@ -155,6 +160,8 @@ const Profile = () => {
           .order('created_at', { ascending: false });
           
         if (postsError) throw postsError;
+        
+        console.log("Fetched pet posts:", postsData);
         
         // If there are no posts, set empty arrays and exit early
         if (postsData.length === 0) {
@@ -279,9 +286,15 @@ const Profile = () => {
               <p className="text-muted-foreground mb-4">
                 You don't have any pet profiles yet. Create one to get started!
               </p>
-              <p className="text-sm">
-                Click the "Create Pet Profile" button in the sidebar to add your first pet.
-              </p>
+              <Button
+                className="bg-petpal-pink hover:bg-petpal-pink/90"
+                onClick={() => {
+                  const createProfileEvent = new CustomEvent('open-create-profile');
+                  window.dispatchEvent(createProfileEvent);
+                }}
+              >
+                Create Pet Profile
+              </Button>
             </div>
           ) : (
             <div>
@@ -328,8 +341,5 @@ const Profile = () => {
     </Layout>
   );
 };
-
-// Adding missing Link import
-import { Link } from 'react-router-dom';
 
 export default Profile;

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -21,14 +20,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 
-// Form schema for owner profile
 const ownerProfileSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
 });
 
-// Password update schema
 const passwordUpdateSchema = z.object({
   currentPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
   newPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
@@ -52,7 +49,6 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const [userPetProfiles, setUserPetProfiles] = useState<PetProfile[]>([]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
-  // Profile form
   const profileForm = useForm<z.infer<typeof ownerProfileSchema>>({
     resolver: zodResolver(ownerProfileSchema),
     defaultValues: {
@@ -62,7 +58,6 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     },
   });
 
-  // Password update form
   const passwordForm = useForm<z.infer<typeof passwordUpdateSchema>>({
     resolver: zodResolver(passwordUpdateSchema),
     defaultValues: {
@@ -72,12 +67,10 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     },
   });
 
-  // Fetch user profile and pet data when modal opens
   useEffect(() => {
     if (open && user) {
       setLoading(true);
       
-      // Fetch user profile
       const fetchUserProfile = async () => {
         try {
           const { data: profileData, error } = await supabase
@@ -88,25 +81,26 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
             
           if (error) throw error;
           
+          console.log("Fetched user profile:", profileData);
+          
           if (profileData) {
-            // Update form with user profile data
             profileForm.reset({
-              name: profileData.username,
-              email: user.email,
+              name: profileData.username || '',
+              email: user.email || '',
               bio: profileData.bio || '',
             });
             
-            // Set avatar URL
             setAvatarUrl(profileData.avatar_url);
           }
           
-          // Fetch user's pet profiles
           const { data: petsData, error: petsError } = await supabase
             .from('pet_profiles')
             .select('*')
             .eq('owner_id', user.id);
             
           if (petsError) throw petsError;
+          
+          console.log("Fetched user pet profiles:", petsData);
           
           if (petsData) {
             const formattedPets: PetProfile[] = petsData.map(pet => ({
@@ -116,7 +110,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
               species: pet.species,
               breed: pet.breed,
               age: pet.age,
-              personality: pet.personality,
+              personality: pet.personality || [],
               bio: pet.bio || '',
               profilePicture: pet.profile_picture || '',
               createdAt: pet.created_at,
@@ -148,7 +142,6 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     try {
       setLoading(true);
       
-      // Update email in auth if it changed
       if (data.email !== user.email) {
         const { error: updateEmailError } = await supabase.auth.updateUser({
           email: data.email,
@@ -157,7 +150,6 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
         if (updateEmailError) throw updateEmailError;
       }
       
-      // Update profile in database
       const { error: updateProfileError } = await supabase
         .from('profiles')
         .update({
@@ -183,12 +175,11 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       setLoading(false);
     }
   };
-  
+
   const onPasswordSubmit = async (data: z.infer<typeof passwordUpdateSchema>) => {
     try {
       setLoading(true);
       
-      // Update password
       const { error } = await supabase.auth.updateUser({
         password: data.newPassword,
       });
@@ -219,10 +210,6 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     try {
       setLoading(true);
       
-      // In a real app, you would implement account deletion through an API route
-      // or Supabase Edge Function as this requires admin privileges
-      
-      // For now, we'll just sign out
       await signOut();
       onOpenChange(false);
       navigate('/');
@@ -243,10 +230,9 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       setShowDeleteConfirm(false);
     }
   };
-  
+
   const handleSelectPet = (petId: string) => {
     setSelectedPetId(petId);
-    // Navigate to the selected pet's profile and close the modal
     onOpenChange(false);
     navigate(`/profile?petId=${petId}`);
   };
@@ -276,21 +262,18 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       const fileExt = file.name.split('.').pop();
       const filePath = `avatars/${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       
-      // Upload the file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('profiles')
         .upload(filePath, file);
         
       if (uploadError) throw uploadError;
       
-      // Get the public URL
       const { data: publicUrlData } = supabase.storage
         .from('profiles')
         .getPublicUrl(filePath);
         
       const avatarUrl = publicUrlData.publicUrl;
       
-      // Update the user's profile with the new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: avatarUrl })
@@ -457,7 +440,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                         {userPetProfiles.map((pet) => (
                           <DropdownMenuItem key={pet.id} onClick={() => handleSelectPet(pet.id)}>
                             <Avatar className="h-6 w-6 mr-2">
-                              <img src={pet.profilePicture} alt={pet.name} className="object-cover" />
+                              <img src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} className="object-cover" />
                             </Avatar>
                             {pet.name}
                           </DropdownMenuItem>
@@ -494,12 +477,12 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                         <Card key={pet.id} className="overflow-hidden">
                           <div 
                             className="h-32 bg-cover bg-center" 
-                            style={{ backgroundImage: `url(${pet.profilePicture})` }}
+                            style={{ backgroundImage: `url(${pet.profilePicture || '/placeholder.svg'})` }}
                           />
                           <CardContent className="pt-4">
                             <div className="flex items-center space-x-4">
                               <Avatar className="h-12 w-12 border-2 border-background -mt-10">
-                                <img src={pet.profilePicture} alt={pet.name} className="object-cover" />
+                                <img src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} className="object-cover" />
                               </Avatar>
                               <div>
                                 <h3 className="font-semibold">{pet.name}</h3>
@@ -531,24 +514,34 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                     <div className="text-center py-8">
                       <PawPrint className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                       <p className="mt-4 text-muted-foreground">You don't have any pets yet. Create your first pet profile!</p>
+                      <Button 
+                        className="bg-petpal-pink hover:bg-petpal-pink/90 mt-4"
+                        onClick={() => {
+                          onOpenChange(false);
+                          const createProfileEvent = new CustomEvent('open-create-profile');
+                          window.dispatchEvent(createProfileEvent);
+                        }}
+                      >
+                        Create Pet Profile
+                      </Button>
                     </div>
                   )}
                 </CardContent>
               </Card>
-              <div className="flex justify-center mt-4">
-                <Button 
-                  className="bg-petpal-pink hover:bg-petpal-pink/90"
-                  onClick={() => {
-                    onOpenChange(false);
-                    toast({
-                      title: "Create a pet profile",
-                      description: "Add a new furry friend to your PetPal account."
-                    });
-                  }}
-                >
-                  Add New Pet
-                </Button>
-              </div>
+              {userPetProfiles.length > 0 && (
+                <div className="flex justify-center mt-4">
+                  <Button 
+                    className="bg-petpal-pink hover:bg-petpal-pink/90"
+                    onClick={() => {
+                      onOpenChange(false);
+                      const createProfileEvent = new CustomEvent('open-create-profile');
+                      window.dispatchEvent(createProfileEvent);
+                    }}
+                  >
+                    Add New Pet
+                  </Button>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="security" className="space-y-4">

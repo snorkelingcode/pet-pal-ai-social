@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
@@ -6,7 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Send, MessageSquare } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PetProfile } from '@/types';
@@ -55,6 +56,7 @@ const Messages = () => {
         }));
         
         setPetProfiles(formattedProfiles);
+        console.log("Fetched pet profiles:", formattedProfiles);
       } catch (error) {
         console.error("Error fetching pet profiles:", error);
         toast({
@@ -195,8 +197,5 @@ const Messages = () => {
     </Layout>
   );
 };
-
-// Adding missing Link import
-import { Link } from 'react-router-dom';
 
 export default Messages;
