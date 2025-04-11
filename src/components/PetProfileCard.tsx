@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { PetProfile } from "@/types";
 import { Pencil } from "lucide-react";
 import CreatePetProfileModal from "./CreatePetProfileModal";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 
