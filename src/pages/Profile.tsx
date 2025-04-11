@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import PostCard from '@/components/PostCard';
@@ -8,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PetProfile, Post, Comment } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { Button } from "@/components/ui/button";
 
 const Profile = () => {
   const [searchParams] = useSearchParams();
@@ -21,7 +21,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [userPets, setUserPets] = useState<PetProfile[]>([]);
   
-  // Fetch user's pets if logged in
   useEffect(() => {
     const fetchUserPets = async () => {
       if (!user) return;
@@ -53,7 +52,6 @@ const Profile = () => {
         
         setUserPets(petProfiles);
         
-        // If no pet is selected but user has pets, redirect to the first pet's profile
         if (!petIdParam && petProfiles.length > 0) {
           console.log("Redirecting to first pet:", petProfiles[0].id);
           navigate(`/profile?petId=${petProfiles[0].id}`, { replace: true });
@@ -69,7 +67,6 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!petIdParam && userPets.length === 0) {
-        // No petId and no user pets, show empty state
         setPetProfile(null);
         setPosts([]);
         setComments([]);
@@ -79,7 +76,6 @@ const Profile = () => {
       setLoading(true);
       
       try {
-        // Fetch pet profile
         let profileQuery = supabase
           .from('pet_profiles')
           .select('*');
@@ -87,10 +83,8 @@ const Profile = () => {
         if (petIdParam) {
           profileQuery = profileQuery.eq('id', petIdParam);
         } else if (userPets.length > 0) {
-          // Use the first pet if no specific pet is selected
           profileQuery = profileQuery.eq('id', userPets[0].id);
         } else {
-          // No pets available
           setPetProfile(null);
           setPosts([]);
           setComments([]);
@@ -102,7 +96,6 @@ const Profile = () => {
         
         if (profileError) {
           if (profileError.code === 'PGRST116') {
-            // No profile found
             setPetProfile(null);
             setPosts([]);
             setComments([]);
@@ -114,7 +107,6 @@ const Profile = () => {
         
         console.log("Fetched pet profile:", profileData);
         
-        // Format pet profile
         const formattedProfile: PetProfile = {
           id: profileData.id,
           ownerId: profileData.owner_id,
@@ -132,7 +124,6 @@ const Profile = () => {
         
         setPetProfile(formattedProfile);
         
-        // Fetch posts for this pet profile
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
@@ -163,7 +154,6 @@ const Profile = () => {
         
         console.log("Fetched pet posts:", postsData);
         
-        // If there are no posts, set empty arrays and exit early
         if (postsData.length === 0) {
           setPosts([]);
           setComments([]);
@@ -171,7 +161,6 @@ const Profile = () => {
           return;
         }
         
-        // Fetch all comments for these posts
         const postIds = postsData.map(post => post.id);
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
@@ -195,7 +184,6 @@ const Profile = () => {
             
         if (commentsError) throw commentsError;
         
-        // Format posts and comments
         const formattedPosts: Post[] = postsData.map(post => ({
           id: post.id,
           petId: post.pet_id,
@@ -210,8 +198,7 @@ const Profile = () => {
             profilePicture: post.pet_profiles.profile_picture,
             followers: post.pet_profiles.followers,
             following: post.pet_profiles.following,
-            ownerId: '', // This is not needed for display
-            createdAt: '', // This is not needed for display
+            ownerId: '',
           },
           content: post.content,
           image: post.image,
@@ -230,7 +217,6 @@ const Profile = () => {
             species: comment.pet_profiles.species,
             breed: comment.pet_profiles.breed,
             profilePicture: comment.pet_profiles.profile_picture,
-            // These fields aren't needed for comments display
             age: 0,
             personality: [],
             bio: '',
@@ -275,7 +261,6 @@ const Profile = () => {
     );
   }
 
-  // No pet profile to display - show empty state with prompt to create one
   if (!petProfile) {
     return (
       <Layout>
