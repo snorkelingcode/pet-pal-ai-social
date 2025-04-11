@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PetProfile, Post, Comment } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from "@/components/ui/button";
+import CreatePetProfileModal from '@/components/CreatePetProfileModal';
 
 const Profile = () => {
   const [searchParams] = useSearchParams();
@@ -21,12 +22,14 @@ const Profile = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [userPets, setUserPets] = useState<PetProfile[]>([]);
+  const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   
   useEffect(() => {
     const fetchUserPets = async () => {
       if (!user) return;
       
       try {
+        console.log("Fetching user pets for user:", user.id);
         const { data, error } = await supabase
           .from('pet_profiles')
           .select('*')
@@ -255,6 +258,54 @@ const Profile = () => {
     fetchProfileData();
   }, [petIdParam, userPets]);
   
+  useEffect(() => {
+    // Listen for the custom event to open the create pet profile modal
+    const handleOpenCreateProfile = () => setIsCreateProfileOpen(true);
+    window.addEventListener('open-create-profile', handleOpenCreateProfile);
+    
+    return () => {
+      window.removeEventListener('open-create-profile', handleOpenCreateProfile);
+    };
+  }, []);
+
+  const handleProfileSuccess = async () => {
+    // Refresh user pets after creating or updating a profile
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('pet_profiles')
+        .select('*')
+        .eq('owner_id', user.id);
+        
+      if (error) throw error;
+      
+      const petProfiles: PetProfile[] = data.map(pet => ({
+        id: pet.id,
+        ownerId: pet.owner_id,
+        name: pet.name,
+        species: pet.species,
+        breed: pet.breed,
+        age: pet.age,
+        personality: pet.personality,
+        bio: pet.bio,
+        profilePicture: pet.profile_picture,
+        createdAt: pet.created_at,
+        followers: pet.followers || 0,
+        following: pet.following || 0
+      }));
+      
+      setUserPets(petProfiles);
+      
+      // If we just created our first pet, navigate to it
+      if (petProfiles.length > 0 && !petIdParam) {
+        navigate(`/profile?petId=${petProfiles[0].id}`, { replace: true });
+      }
+    } catch (error) {
+      console.error("Error refreshing user pets:", error);
+    }
+  };
+  
   if (loading) {
     return (
       <Layout>
@@ -277,13 +328,15 @@ const Profile = () => {
               </p>
               <Button
                 className="bg-petpal-pink hover:bg-petpal-pink/90"
-                onClick={() => {
-                  const createProfileEvent = new CustomEvent('open-create-profile');
-                  window.dispatchEvent(createProfileEvent);
-                }}
+                onClick={() => setIsCreateProfileOpen(true)}
               >
                 Create Pet Profile
               </Button>
+              <CreatePetProfileModal 
+                open={isCreateProfileOpen} 
+                onOpenChange={setIsCreateProfileOpen} 
+                onSuccess={handleProfileSuccess}
+              />
             </div>
           ) : (
             <div>
@@ -313,6 +366,32 @@ const Profile = () => {
     <Layout>
       <div className="mb-6">
         <PetProfileCard petProfile={petProfile} />
+        
+        {/* Pet Selector if user has multiple pets */}
+        {userPets.length > 1 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="text-sm font-medium">My Pets:</span>
+            {userPets.map(pet => (
+              <Button
+                key={pet.id}
+                variant={pet.id === petProfile.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => navigate(`/profile?petId=${pet.id}`)}
+                className="text-xs"
+              >
+                {pet.name}
+              </Button>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCreateProfileOpen(true)}
+              className="text-xs"
+            >
+              + Add Pet
+            </Button>
+          </div>
+        )}
       </div>
       
       <h2 className="text-2xl font-bold mb-4">Posts</h2>
@@ -327,6 +406,12 @@ const Profile = () => {
       ) : (
         <p className="text-muted-foreground">No posts yet.</p>
       )}
+      
+      <CreatePetProfileModal 
+        open={isCreateProfileOpen} 
+        onOpenChange={setIsCreateProfileOpen}
+        onSuccess={handleProfileSuccess}
+      />
     </Layout>
   );
 };

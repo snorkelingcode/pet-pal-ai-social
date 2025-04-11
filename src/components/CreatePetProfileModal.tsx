@@ -37,6 +37,9 @@ import { z } from 'zod';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar } from '@/components/ui/avatar';
 import { PetProfile } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { petProfileService } from '@/services/petProfileService';
 
 // Define the form schema with zod
 const formSchema = z.object({
@@ -76,17 +79,21 @@ interface CreatePetProfileModalProps {
   onOpenChange: (open: boolean) => void;
   isEditMode?: boolean;
   petProfile?: PetProfile;
+  onSuccess?: () => void;
 }
 
 const CreatePetProfileModal = ({ 
   open, 
   onOpenChange,
   isEditMode = false,
-  petProfile
+  petProfile,
+  onSuccess
 }: CreatePetProfileModalProps) => {
   const [images, setImages] = useState<File[]>([]);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -145,7 +152,30 @@ const CreatePetProfileModal = ({
     setImages(images.filter((_, index) => index !== indexToRemove));
   };
 
-  const onSubmit = (data: FormValues) => {
+  const uploadProfileImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('pets')
+        .upload(filePath, file);
+        
+      if (uploadError) {
+        console.error('Error uploading profile image:', uploadError);
+        return null;
+      }
+      
+      const { data } = supabase.storage.from('pets').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error in uploadProfileImage:', error);
+      return null;
+    }
+  };
+
+  const onSubmit = async (data: FormValues) => {
     // Skip profile image validation for edit mode if no new image is selected
     if (!isEditMode && !profileImage) {
       toast({
@@ -156,27 +186,94 @@ const CreatePetProfileModal = ({
       return;
     }
 
-    if (!isEditMode && images.length === 0) {
+    if (!user) {
       toast({
-        title: "Additional images recommended",
-        description: "For the best AI experience, please upload additional photos of your pet",
-        variant: "default",
+        title: "Authentication required",
+        description: "You must be logged in to create a pet profile",
+        variant: "destructive",
       });
+      return;
     }
 
-    // Here we would normally send data to an API or update state
-    console.log(isEditMode ? "Profile updated:" : "Form submitted:", { 
-      ...data, 
-      profileImage: profileImage || petProfile?.profilePicture, 
-      additionalImages: images 
-    });
-    
-    toast({
-      title: isEditMode ? "Pet profile updated!" : "Pet profile created!",
-      description: `${data.name}'s profile has been ${isEditMode ? 'updated' : 'created'} successfully!`,
-    });
-    
-    onOpenChange(false);
+    setSubmitting(true);
+    try {
+      let profileImageUrl = petProfile?.profilePicture || '';
+
+      // Upload new profile image if provided
+      if (profileImage) {
+        const uploadedUrl = await uploadProfileImage(profileImage);
+        if (uploadedUrl) {
+          profileImageUrl = uploadedUrl;
+        } else {
+          toast({
+            title: "Image upload failed",
+            description: "Failed to upload profile image. Please try again.",
+            variant: "destructive",
+          });
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // Create or update the pet profile
+      if (isEditMode && petProfile) {
+        // Update existing pet profile
+        const updatedProfile = await petProfileService.updatePetProfile(petProfile.id, {
+          name: data.name,
+          species: data.species,
+          breed: data.breed,
+          age: data.age,
+          personality: data.personality,
+          bio: data.bio || '',
+          profilePicture: profileImageUrl,
+        });
+
+        toast({
+          title: "Pet profile updated!",
+          description: `${data.name}'s profile has been updated successfully!`,
+        });
+
+        if (onSuccess) onSuccess();
+      } else {
+        // Create new pet profile
+        const newProfile = await petProfileService.createPetProfile({
+          ownerId: user.id,
+          name: data.name,
+          species: data.species,
+          breed: data.breed,
+          age: data.age,
+          personality: data.personality,
+          bio: data.bio || '',
+          profilePicture: profileImageUrl,
+        });
+
+        // Generate AI persona for the new pet
+        try {
+          await petProfileService.generateAIPersona(newProfile);
+        } catch (error) {
+          console.error("Failed to generate AI persona:", error);
+          // Non-critical error, so just log it
+        }
+
+        toast({
+          title: "Pet profile created!",
+          description: `${data.name}'s profile has been created successfully!`,
+        });
+
+        if (onSuccess) onSuccess();
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving pet profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save pet profile. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -493,8 +590,12 @@ const CreatePetProfileModal = ({
             )}
             
             <DialogFooter>
-              <Button type="submit" className="bg-petpal-blue hover:bg-petpal-blue/90">
-                {isEditMode ? "Update Pet Profile" : "Create Pet Profile"}
+              <Button 
+                type="submit" 
+                className="bg-petpal-blue hover:bg-petpal-blue/90"
+                disabled={submitting}
+              >
+                {submitting ? "Saving..." : (isEditMode ? "Update Pet Profile" : "Create Pet Profile")}
               </Button>
             </DialogFooter>
           </form>
