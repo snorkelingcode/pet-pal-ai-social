@@ -1,7 +1,6 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
-import { mockPetProfiles } from '@/data/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -14,35 +13,192 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Link } from 'react-router-dom';
 import { User, Pencil } from 'lucide-react';
-
-// Mock owner data
-const ownerData = {
-  name: "Alex Johnson",
-  email: "alex@example.com",
-  bio: "Pet lover and proud parent of several fur babies. I love seeing my pets interacting with the PetPal AI community!",
-  avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&q=80&w=150&h=150"
-};
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { PetProfile } from '@/types';
+import { toast } from '@/components/ui/use-toast';
 
 // Form schema for owner profile
 const ownerProfileSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
-  bio: z.string().max(300, { message: "Bio must be less than 300 characters." }),
+  bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
 });
 
 const OwnerProfile = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [userPetProfiles, setUserPetProfiles] = useState<PetProfile[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  
   const form = useForm<z.infer<typeof ownerProfileSchema>>({
     resolver: zodResolver(ownerProfileSchema),
     defaultValues: {
-      name: ownerData.name,
-      email: ownerData.email,
-      bio: ownerData.bio,
+      name: "",
+      email: "",
+      bio: "",
     },
   });
 
-  const onSubmit = (data: z.infer<typeof ownerProfileSchema>) => {
-    console.log("Owner profile updated:", data);
-    // Here you would update the owner profile in your backend
+  useEffect(() => {
+    if (user) {
+      setLoading(true);
+      
+      // Fetch user profile
+      const fetchUserProfile = async () => {
+        try {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          if (error) throw error;
+          
+          if (profileData) {
+            // Update form with user profile data
+            form.reset({
+              name: profileData.username,
+              email: user.email,
+              bio: profileData.bio || '',
+            });
+            
+            // Set avatar URL
+            setAvatarUrl(profileData.avatar_url);
+          }
+          
+          // Fetch user's pet profiles
+          const { data: petsData, error: petsError } = await supabase
+            .from('pet_profiles')
+            .select('*')
+            .eq('owner_id', user.id);
+            
+          if (petsError) throw petsError;
+          
+          if (petsData) {
+            const formattedPets: PetProfile[] = petsData.map(pet => ({
+              id: pet.id,
+              ownerId: pet.owner_id,
+              name: pet.name,
+              species: pet.species,
+              breed: pet.breed,
+              age: pet.age,
+              personality: pet.personality,
+              bio: pet.bio || '',
+              profilePicture: pet.profile_picture || '',
+              createdAt: pet.created_at,
+              followers: pet.followers || 0,
+              following: pet.following || 0,
+            }));
+            
+            setUserPetProfiles(formattedPets);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load profile data. Please try again later.',
+            variant: 'destructive',
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchUserProfile();
+    }
+  }, [user, form]);
+
+  const onSubmit = async (data: z.infer<typeof ownerProfileSchema>) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Update email in auth if it changed
+      if (data.email !== user.email) {
+        const { error: updateEmailError } = await supabase.auth.updateUser({
+          email: data.email,
+        });
+        
+        if (updateEmailError) throw updateEmailError;
+      }
+      
+      // Update profile in database
+      const { error: updateProfileError } = await supabase
+        .from('profiles')
+        .update({
+          username: data.name,
+          bio: data.bio,
+        })
+        .eq('id', user.id);
+        
+      if (updateProfileError) throw updateProfileError;
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been updated successfully.',
+      });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !event.target.files || event.target.files.length === 0) return;
+    
+    try {
+      setLoading(true);
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `avatars/${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload the file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+        
+      const avatarUrl = publicUrlData.publicUrl;
+      
+      // Update the user's profile with the new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id);
+        
+      if (updateError) throw updateError;
+      
+      setAvatarUrl(avatarUrl);
+      
+      toast({
+        title: 'Avatar updated',
+        description: 'Your profile picture has been updated successfully.',
+      });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to upload avatar. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,68 +215,113 @@ const OwnerProfile = () => {
           
           <TabsContent value="profile" className="space-y-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-16 w-16">
-                    <img src={ownerData.avatar} alt={ownerData.name} />
-                  </Avatar>
-                  <div>
-                    <CardTitle>{ownerData.name}</CardTitle>
-                    <CardDescription>{ownerData.email}</CardDescription>
+              {loading ? (
+                <CardContent className="py-6">
+                  <div className="animate-pulse space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="rounded-full bg-gray-200 h-16 w-16"></div>
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-10 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-10 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-32 bg-gray-200 rounded"></div>
+                    </div>
                   </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Change Photo
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your name" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="your.email@example.com" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="bio"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Bio</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Tell us about yourself..." 
-                              className="min-h-32"
-                              {...field} 
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2">Save Changes</Button>
-                  </form>
-                </Form>
-              </CardContent>
+                </CardContent>
+              ) : (
+                <>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Avatar className="h-16 w-16">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt={form.getValues().name} />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <User className="h-8 w-8 text-gray-500" />
+                          </div>
+                        )}
+                      </Avatar>
+                      <div>
+                        <CardTitle>{form.getValues().name}</CardTitle>
+                        <CardDescription>{form.getValues().email}</CardDescription>
+                      </div>
+                    </div>
+                    <label htmlFor="avatar-upload-page">
+                      <input
+                        id="avatar-upload-page"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                      <Button variant="outline" size="sm" className="cursor-pointer">
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Change Photo
+                      </Button>
+                    </label>
+                  </CardHeader>
+                  <CardContent>
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Your name" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="your.email@example.com" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="bio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bio</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Tell us about yourself..." 
+                                  className="min-h-32"
+                                  {...field || ''} 
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <Button 
+                          type="submit" 
+                          className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2"
+                          disabled={loading}
+                        >
+                          {loading ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                      </form>
+                    </Form>
+                  </CardContent>
+                </>
+              )}
             </Card>
           </TabsContent>
           
@@ -131,45 +332,75 @@ const OwnerProfile = () => {
                 <CardDescription>Manage your pet profiles and settings</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mockPetProfiles.map((pet) => (
-                  <Card key={pet.id} className="overflow-hidden">
-                    <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${pet.profilePicture})` }} />
-                    <CardContent className="pt-4">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12 border-2 border-background -mt-10">
-                          <img src={pet.profilePicture} alt={pet.name} />
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{pet.name}</h3>
-                          <p className="text-sm text-muted-foreground">{pet.species}, {pet.age} years old</p>
+                {loading ? (
+                  [1, 2].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-32 bg-gray-200 rounded-t-md"></div>
+                      <div className="p-4 border rounded-b-md border-gray-200">
+                        <div className="flex items-center space-x-4">
+                          <div className="rounded-full bg-gray-200 h-12 w-12"></div>
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 bg-gray-200 rounded"></div>
+                            <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                          <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                          <div className="h-8 w-24 bg-gray-200 rounded"></div>
                         </div>
                       </div>
-                      <div className="flex justify-end space-x-2 mt-4">
-                        <Link to={`/pet-edit/${pet.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        </Link>
-                        <Link to={`/profile`}>
-                          <Button variant="outline" size="sm">
-                            <User className="h-4 w-4 mr-2" />
-                            View Profile
-                          </Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  ))
+                ) : userPetProfiles.length > 0 ? (
+                  userPetProfiles.map((pet) => (
+                    <Card key={pet.id} className="overflow-hidden">
+                      <div 
+                        className="h-32 bg-cover bg-center" 
+                        style={{ backgroundImage: `url(${pet.profilePicture})` }}
+                      />
+                      <CardContent className="pt-4">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-12 w-12 border-2 border-background -mt-10">
+                            <img src={pet.profilePicture} alt={pet.name} />
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold">{pet.name}</h3>
+                            <p className="text-sm text-muted-foreground">{pet.species}, {pet.age} years old</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end space-x-2 mt-4">
+                          <Link to={`/pet-edit/${pet.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                          </Link>
+                          <Link to={`/profile?petId=${pet.id}`}>
+                            <Button variant="outline" size="sm">
+                              <User className="h-4 w-4 mr-2" />
+                              View Profile
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="col-span-2 text-center py-8">
+                    <User className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+                    <p className="mt-4 text-muted-foreground">You don't have any pets yet. Create your first pet profile!</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
             <div className="flex justify-center mt-4">
               <Button 
                 className="bg-petpal-pink hover:bg-petpal-pink/90"
                 onClick={() => {
-                  // Open the create pet profile modal
-                  // Since this is just a prototype, we'll leave this as a placeholder
-                  alert("This would open the Create Pet Profile modal");
+                  toast({
+                    title: "Create a pet profile",
+                    description: "Add a new furry friend to your PetPal account."
+                  });
                 }}
               >
                 Add New Pet
@@ -229,7 +460,16 @@ const OwnerProfile = () => {
                   </div>
                 </div>
                 
-                <Button className="w-full mt-4 bg-petpal-blue hover:bg-petpal-blue/90">Save Settings</Button>
+                <Button 
+                  className="w-full mt-4 bg-petpal-blue hover:bg-petpal-blue/90"
+                  onClick={() => toast({
+                    title: 'Settings saved',
+                    description: 'Your preferences have been updated successfully.'
+                  })}
+                  disabled={loading}
+                >
+                  {loading ? 'Saving...' : 'Save Settings'}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
