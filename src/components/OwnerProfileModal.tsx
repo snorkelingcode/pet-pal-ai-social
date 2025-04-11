@@ -12,7 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Pencil, PawPrint, AlertCircle, Lock, Trash2, LogOut } from 'lucide-react';
+import { User, Pencil, PawPrint, AlertCircle, Lock, Trash2, LogOut, UserPlus, UserCheck, UserX, Search } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
@@ -44,6 +44,12 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const navigate = useNavigate();
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [friendRequests, setFriendRequests] = useState<any[]>([]);
+  const [sentRequests, setSentRequests] = useState<any[]>([]);
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userPetProfiles, setUserPetProfiles] = useState<PetProfile[]>([]);
@@ -133,8 +139,56 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       };
       
       fetchUserProfile();
+      
+      fetchFriends();
     }
   }, [open, user, profileForm]);
+
+  const fetchFriends = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: friendsData, error: friendsError } = await supabase
+        .from('user_friends')
+        .select('*, friend:friend_id(id, username, avatar_url), requester:user_id(id, username, avatar_url)')
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+      
+      if (friendsError) throw friendsError;
+      
+      const processedFriends = friendsData.map(connection => {
+        return connection.user_id === user.id ? connection.friend : connection.requester;
+      });
+      
+      setFriends(processedFriends);
+      
+      const { data: receivedRequests, error: receivedError } = await supabase
+        .from('user_friends')
+        .select('*, requester:user_id(id, username, avatar_url)')
+        .eq('friend_id', user.id)
+        .eq('status', 'pending');
+      
+      if (receivedError) throw receivedError;
+      setFriendRequests(receivedRequests);
+      
+      const { data: sentRequestsData, error: sentError } = await supabase
+        .from('user_friends')
+        .select('*, friend:friend_id(id, username, avatar_url)')
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+      
+      if (sentError) throw sentError;
+      setSentRequests(sentRequestsData);
+      
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load friends data. Please try again later.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const onProfileSubmit = async (data: z.infer<typeof ownerProfileSchema>) => {
     if (!user) return;
@@ -299,6 +353,212 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     }
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || searchQuery.length < 3) {
+      toast({
+        title: 'Search query too short',
+        description: 'Please enter at least 3 characters to search for users.',
+      });
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${searchQuery}%`)
+        .neq('id', user?.id)
+        .limit(10);
+      
+      if (error) throw error;
+      
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to search for users. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const sendFriendRequest = async (friendId: string) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { data: existingRequest, error: checkError } = await supabase
+        .from('user_friends')
+        .select('*')
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`)
+        .limit(1);
+      
+      if (checkError) throw checkError;
+      
+      if (existingRequest && existingRequest.length > 0) {
+        toast({
+          title: 'Friend request exists',
+          description: 'A friendship connection already exists with this user.',
+        });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('user_friends')
+        .insert([
+          { user_id: user.id, friend_id: friendId, status: 'pending' }
+        ]);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Friend request sent',
+        description: 'Your friend request has been sent successfully.',
+      });
+      
+      await fetchFriends();
+    } catch (error: any) {
+      console.error('Error sending friend request:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send friend request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const acceptFriendRequest = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('user_friends')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Friend request accepted',
+        description: 'You are now friends with this user.',
+      });
+      
+      await fetchFriends();
+    } catch (error: any) {
+      console.error('Error accepting friend request:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to accept friend request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rejectFriendRequest = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('user_friends')
+        .delete()
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Friend request rejected',
+        description: 'The friend request has been rejected.',
+      });
+      
+      await fetchFriends();
+    } catch (error: any) {
+      console.error('Error rejecting friend request:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reject friend request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelFriendRequest = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('user_friends')
+        .delete()
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Friend request cancelled',
+        description: 'Your friend request has been cancelled.',
+      });
+      
+      await fetchFriends();
+    } catch (error: any) {
+      console.error('Error cancelling friend request:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to cancel friend request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeFriend = async (friendId: string) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('user_friends')
+        .delete()
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Friend removed',
+        description: 'The friendship has been removed.',
+      });
+      
+      await fetchFriends();
+    } catch (error: any) {
+      console.error('Error removing friend:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to remove friend. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl p-0 h-[80vh] overflow-y-auto">
@@ -306,9 +566,10 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
           <h1 className="text-3xl font-bold mb-6">Owner Profile</h1>
           
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid grid-cols-4 mb-4">
+            <TabsList className="grid grid-cols-5 mb-4">
               <TabsTrigger value="profile">My Profile</TabsTrigger>
               <TabsTrigger value="pets">My Pets</TabsTrigger>
+              <TabsTrigger value="friends">Friends</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -541,6 +802,256 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
                     Add New Pet
                   </Button>
                 </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="friends" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Find Friends</CardTitle>
+                  <CardDescription>Search for users by username to add them as friends</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2 items-center mb-6">
+                    <div className="flex-1">
+                      <Input 
+                        placeholder="Search by username (@username)" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSearch} 
+                      disabled={isSearching || searchQuery.length < 3}
+                      className="bg-petpal-blue hover:bg-petpal-blue/90"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Search
+                    </Button>
+                  </div>
+                  
+                  {searchResults.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Search Results:</h3>
+                      <div className="space-y-3">
+                        {searchResults.map((user) => {
+                          const isAlreadyFriend = friends.some(friend => friend.id === user.id);
+                          const hasSentRequest = sentRequests.some(req => req.friend_id === user.id);
+                          const hasReceivedRequest = friendRequests.some(req => req.user_id.id === user.id);
+                          
+                          return (
+                            <div key={user.id} className="flex items-center justify-between p-2 border rounded-md">
+                              <div className="flex items-center">
+                                <Avatar className="h-10 w-10 mr-3">
+                                  {user.avatar_url ? (
+                                    <img src={user.avatar_url} alt={user.username} />
+                                  ) : (
+                                    <User className="h-6 w-6 text-muted-foreground" />
+                                  )}
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">@{user.username}</p>
+                                </div>
+                              </div>
+                              <div>
+                                {isAlreadyFriend ? (
+                                  <Button variant="outline" size="sm" disabled>
+                                    <UserCheck className="h-4 w-4 mr-1" />
+                                    Friends
+                                  </Button>
+                                ) : hasSentRequest ? (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => cancelFriendRequest(sentRequests.find(req => req.friend_id === user.id)?.id)}
+                                  >
+                                    <UserX className="h-4 w-4 mr-1" />
+                                    Cancel Request
+                                  </Button>
+                                ) : hasReceivedRequest ? (
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      onClick={() => acceptFriendRequest(friendRequests.find(req => req.user_id.id === user.id)?.id)}
+                                      className="bg-petpal-blue hover:bg-petpal-blue/90 text-white hover:text-white"
+                                    >
+                                      <UserCheck className="h-4 w-4 mr-1" />
+                                      Accept
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      onClick={() => rejectFriendRequest(friendRequests.find(req => req.user_id.id === user.id)?.id)}
+                                    >
+                                      <UserX className="h-4 w-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => sendFriendRequest(user.id)}
+                                    className="bg-petpal-blue hover:bg-petpal-blue/90"
+                                  >
+                                    <UserPlus className="h-4 w-4 mr-1" />
+                                    Add Friend
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {searchResults.length === 0 && searchQuery.length >= 3 && !isSearching && (
+                    <p className="text-center text-muted-foreground py-4">No users found matching "{searchQuery}"</p>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {friendRequests.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Friend Requests</CardTitle>
+                    <CardDescription>People who want to connect with you</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {friendRequests.map((request) => (
+                        <div key={request.id} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              {request.requester.avatar_url ? (
+                                <img src={request.requester.avatar_url} alt={request.requester.username} />
+                              ) : (
+                                <User className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">@{request.requester.username}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              onClick={() => acceptFriendRequest(request.id)}
+                              className="bg-petpal-blue hover:bg-petpal-blue/90"
+                            >
+                              <UserCheck className="h-4 w-4 mr-1" />
+                              Accept
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => rejectFriendRequest(request.id)}
+                            >
+                              <UserX className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {friends.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>My Friends</CardTitle>
+                    <CardDescription>Your connected friends on PetPal</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 gap-3">
+                      {friends.map((friend) => (
+                        <div key={friend.id} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              {friend.avatar_url ? (
+                                <img src={friend.avatar_url} alt={friend.username} />
+                              ) : (
+                                <User className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">@{friend.username}</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => removeFriend(friend.id)}
+                          >
+                            <UserX className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {sentRequests.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pending Requests</CardTitle>
+                    <CardDescription>Friend requests you've sent that are waiting for approval</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {sentRequests.map((request) => (
+                        <div key={request.id} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              {request.friend.avatar_url ? (
+                                <img src={request.friend.avatar_url} alt={request.friend.username} />
+                              ) : (
+                                <User className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">@{request.friend.username}</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => cancelFriendRequest(request.id)}
+                          >
+                            <UserX className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {friends.length === 0 && friendRequests.length === 0 && sentRequests.length === 0 && (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="text-center">
+                      <User className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No Friends Yet</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Connect with other PetPal owners to expand your pet's social circle.
+                      </p>
+                      <Button 
+                        onClick={() => setSearchQuery('')}
+                        className="bg-petpal-blue hover:bg-petpal-blue/90"
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Find Friends
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
             
