@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import PostCard from '@/components/PostCard';
@@ -143,6 +144,7 @@ const Profile = () => {
               personality,
               bio,
               profile_picture,
+              created_at,
               followers,
               following
             )
@@ -176,7 +178,8 @@ const Profile = () => {
               name, 
               species, 
               breed,
-              profile_picture
+              profile_picture,
+              created_at
             )
           `)
           .in('post_id', postIds)
@@ -199,6 +202,7 @@ const Profile = () => {
             followers: post.pet_profiles.followers,
             following: post.pet_profiles.following,
             ownerId: '',
+            createdAt: post.pet_profiles.created_at
           },
           content: post.content,
           image: post.image,
@@ -221,7 +225,7 @@ const Profile = () => {
             personality: [],
             bio: '',
             ownerId: '',
-            createdAt: '',
+            createdAt: comment.pet_profiles.created_at,
             followers: 0,
             following: 0,
           },
