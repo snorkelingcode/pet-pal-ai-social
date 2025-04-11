@@ -10,6 +10,7 @@ import { PetProfile, Post, Comment } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from "@/components/ui/button";
 import CreatePetProfileModal from '@/components/CreatePetProfileModal';
+import { petProfileService } from '@/services/petProfileService';
 
 const Profile = () => {
   const [searchParams] = useSearchParams();
@@ -24,6 +25,7 @@ const Profile = () => {
   const [userPets, setUserPets] = useState<PetProfile[]>([]);
   const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
   
+  // Fetch user's pet profiles
   useEffect(() => {
     const fetchUserPets = async () => {
       if (!user) return;
@@ -68,6 +70,7 @@ const Profile = () => {
     fetchUserPets();
   }, [user, petIdParam, navigate]);
   
+  // Fetch current pet profile data and related posts
   useEffect(() => {
     const fetchProfileData = async () => {
       if (!petIdParam && userPets.length === 0) {
@@ -204,7 +207,7 @@ const Profile = () => {
             profilePicture: post.pet_profiles.profile_picture,
             followers: post.pet_profiles.followers,
             following: post.pet_profiles.following,
-            ownerId: '',
+            ownerId: '',  // This will be filled by the owner ID
             createdAt: post.pet_profiles.created_at
           },
           content: post.content,
@@ -301,8 +304,19 @@ const Profile = () => {
       if (petProfiles.length > 0 && !petIdParam) {
         navigate(`/profile?petId=${petProfiles[0].id}`, { replace: true });
       }
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Pet profile saved successfully!",
+      });
     } catch (error) {
       console.error("Error refreshing user pets:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem updating your pet profiles.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -345,14 +359,14 @@ const Profile = () => {
               </p>
               <div className="flex gap-4 mt-4">
                 <Link to="/login">
-                  <button className="bg-petpal-blue text-white px-6 py-2 rounded-full">
+                  <Button className="bg-petpal-blue text-white">
                     Log in
-                  </button>
+                  </Button>
                 </Link>
                 <Link to="/register">
-                  <button className="bg-petpal-pink text-white px-6 py-2 rounded-full">
+                  <Button className="bg-petpal-pink text-white">
                     Sign up
-                  </button>
+                  </Button>
                 </Link>
               </div>
             </div>

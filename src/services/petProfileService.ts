@@ -49,6 +49,8 @@ export const petProfileService = {
     profileData: Omit<PetProfile, 'id' | 'createdAt' | 'followers' | 'following'>
   ): Promise<PetProfile> => {
     try {
+      console.log("Creating pet profile with data:", profileData);
+      
       // Convert from frontend structure to database structure
       const dbPetProfile: Omit<DbPetProfile, 'id' | 'created_at' | 'followers' | 'following'> = {
         owner_id: profileData.ownerId,
@@ -67,7 +69,12 @@ export const petProfileService = {
         .select()
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+      
+      console.log("Pet profile created successfully:", data);
       
       if (!data) throw new Error('No data returned from pet profile creation');
       
@@ -81,6 +88,8 @@ export const petProfileService = {
   // Update an existing pet profile
   updatePetProfile: async (petId: string, profileData: Partial<PetProfile>): Promise<PetProfile> => {
     try {
+      console.log("Updating pet profile:", petId, profileData);
+      
       // Convert from frontend structure to database structure
       const updates: Partial<DbPetProfile> = {};
       
@@ -100,6 +109,8 @@ export const petProfileService = {
         .single();
         
       if (error) throw error;
+      
+      console.log("Pet profile updated successfully:", data);
       
       if (!data) throw new Error('No data returned from pet profile update');
       
@@ -130,6 +141,8 @@ export const petProfileService = {
   // Generate AI persona for a pet
   generateAIPersona: async (petProfile: PetProfile): Promise<AIPersona> => {
     try {
+      console.log("Generating AI persona for pet:", petProfile.id);
+      
       // First, check if a persona already exists for this pet
       const { data: existingPersona, error: fetchError } = await supabase
         .from('ai_personas')
@@ -138,8 +151,11 @@ export const petProfileService = {
         .single();
         
       if (existingPersona) {
+        console.log("Existing AI persona found:", existingPersona);
         return mapDbAIPersonaToAIPersona(existingPersona as DbAIPersona);
       }
+      
+      console.log("No existing persona, creating new one");
       
       // Create a new AI persona based on pet profile characteristics
       const newPersona: Omit<DbAIPersona, 'id'> = {
@@ -176,12 +192,45 @@ export const petProfileService = {
         .select()
         .single();
         
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Error inserting AI persona:", insertError);
+        throw insertError;
+      }
+      
+      console.log("AI persona created successfully:", insertedPersona);
       
       return mapDbAIPersonaToAIPersona(insertedPersona as DbAIPersona);
     } catch (error) {
       console.error('Error generating AI persona:', error);
       throw error;
+    }
+  },
+  
+  // Upload a profile image to Supabase storage
+  uploadProfileImage: async (file: File): Promise<string | null> => {
+    try {
+      console.log("Uploading profile image:", file.name);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('pets')
+        .upload(filePath, file);
+        
+      if (uploadError) {
+        console.error('Error uploading profile image:', uploadError);
+        return null;
+      }
+      
+      const { data } = supabase.storage.from('pets').getPublicUrl(filePath);
+      console.log("Image uploaded successfully, URL:", data.publicUrl);
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error in uploadProfileImage:', error);
+      return null;
     }
   }
 };

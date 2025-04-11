@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -41,7 +40,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { petProfileService } from '@/services/petProfileService';
 
-// Define the form schema with zod
 const formSchema = z.object({
   name: z.string().min(2, { message: "Pet name must be at least 2 characters." }),
   species: z.string().min(1, { message: "Please select a species." }),
@@ -57,7 +55,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Personality trait options
 const personalityTraits = [
   { id: "grumpy", label: "Grumpy" },
   { id: "bossy", label: "Bossy" },
@@ -109,7 +106,6 @@ const CreatePetProfileModal = ({
     },
   });
 
-  // Populate the form with pet profile data when in edit mode
   useEffect(() => {
     if (isEditMode && petProfile) {
       form.reset({
@@ -119,12 +115,10 @@ const CreatePetProfileModal = ({
         age: petProfile.age,
         bio: petProfile.bio || "",
         personality: petProfile.personality,
-        // Using default values for fields that might not be in the pet profile
         heroOrVillain: "neutral",
         rivals: "",
       });
       
-      // Set the profile image preview if available
       if (petProfile.profilePicture) {
         setProfileImagePreview(petProfile.profilePicture);
       }
@@ -154,21 +148,7 @@ const CreatePetProfileModal = ({
 
   const uploadProfileImage = async (file: File): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('pets')
-        .upload(filePath, file);
-        
-      if (uploadError) {
-        console.error('Error uploading profile image:', uploadError);
-        return null;
-      }
-      
-      const { data } = supabase.storage.from('pets').getPublicUrl(filePath);
-      return data.publicUrl;
+      return await petProfileService.uploadProfileImage(file);
     } catch (error) {
       console.error('Error in uploadProfileImage:', error);
       return null;
@@ -176,7 +156,6 @@ const CreatePetProfileModal = ({
   };
 
   const onSubmit = async (data: FormValues) => {
-    // Skip profile image validation for edit mode if no new image is selected
     if (!isEditMode && !profileImage) {
       toast({
         title: "Profile image required",
@@ -197,13 +176,15 @@ const CreatePetProfileModal = ({
 
     setSubmitting(true);
     try {
+      console.log("Starting pet profile submission process");
       let profileImageUrl = petProfile?.profilePicture || '';
 
-      // Upload new profile image if provided
       if (profileImage) {
+        console.log("Uploading profile image");
         const uploadedUrl = await uploadProfileImage(profileImage);
         if (uploadedUrl) {
           profileImageUrl = uploadedUrl;
+          console.log("Profile image uploaded:", profileImageUrl);
         } else {
           toast({
             title: "Image upload failed",
@@ -215,9 +196,8 @@ const CreatePetProfileModal = ({
         }
       }
 
-      // Create or update the pet profile
       if (isEditMode && petProfile) {
-        // Update existing pet profile
+        console.log("Updating existing pet profile:", petProfile.id);
         const updatedProfile = await petProfileService.updatePetProfile(petProfile.id, {
           name: data.name,
           species: data.species,
@@ -228,6 +208,8 @@ const CreatePetProfileModal = ({
           profilePicture: profileImageUrl,
         });
 
+        console.log("Pet profile updated:", updatedProfile);
+
         toast({
           title: "Pet profile updated!",
           description: `${data.name}'s profile has been updated successfully!`,
@@ -235,7 +217,7 @@ const CreatePetProfileModal = ({
 
         if (onSuccess) onSuccess();
       } else {
-        // Create new pet profile
+        console.log("Creating new pet profile for user:", user.id);
         const newProfile = await petProfileService.createPetProfile({
           ownerId: user.id,
           name: data.name,
@@ -247,12 +229,14 @@ const CreatePetProfileModal = ({
           profilePicture: profileImageUrl,
         });
 
-        // Generate AI persona for the new pet
+        console.log("New pet profile created:", newProfile);
+
         try {
+          console.log("Generating AI persona for new pet");
           await petProfileService.generateAIPersona(newProfile);
+          console.log("AI persona generated successfully");
         } catch (error) {
           console.error("Failed to generate AI persona:", error);
-          // Non-critical error, so just log it
         }
 
         toast({
@@ -293,7 +277,6 @@ const CreatePetProfileModal = ({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Profile Image Upload */}
             <div className="flex flex-col items-center space-y-3">
               <Label htmlFor="profileImage" className="text-center w-full">
                 Profile Image
@@ -337,7 +320,6 @@ const CreatePetProfileModal = ({
               </p>
             </div>
             
-            {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -414,7 +396,6 @@ const CreatePetProfileModal = ({
               />
             </div>
             
-            {/* Bio */}
             <FormField
               control={form.control}
               name="bio"
@@ -436,7 +417,6 @@ const CreatePetProfileModal = ({
               )}
             />
             
-            {/* Personality Traits */}
             <FormField
               control={form.control}
               name="personality"
@@ -473,7 +453,6 @@ const CreatePetProfileModal = ({
               )}
             />
             
-            {/* Hero or Villain */}
             <FormField
               control={form.control}
               name="heroOrVillain"
@@ -509,7 +488,6 @@ const CreatePetProfileModal = ({
               )}
             />
             
-            {/* Rivals */}
             <FormField
               control={form.control}
               name="rivals"
@@ -530,7 +508,6 @@ const CreatePetProfileModal = ({
               )}
             />
             
-            {/* Only show additional images upload in create mode, not edit mode */}
             {!isEditMode && (
               <div className="space-y-2">
                 <Label htmlFor="additionalImages">
