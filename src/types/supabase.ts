@@ -75,6 +75,29 @@ export type Database = SupabaseDatabase & {
           following?: number;
         };
       };
+      user_friends: {
+        Row: {
+          id: string;
+          user_id: string;
+          friend_id: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          friend_id: string;
+          status: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          friend_id?: string;
+          status?: string;
+          created_at?: string;
+        };
+      };
       ai_personas: {
         Row: {
           pet_id: string;
@@ -107,3 +130,4 @@ export type Database = SupabaseDatabase & {
     };
   };
 };
+
