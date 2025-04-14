@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -119,7 +118,7 @@ const OwnerProfile = () => {
     if (!user) return;
     
     try {
-      // Modified query to avoid using nested select with relationships that aren't defined
+      // Fetch all friendship connections where the current user is involved
       const { data: friendsData, error: friendsError } = await supabase
         .from('user_friends')
         .select('*')
@@ -157,7 +156,7 @@ const OwnerProfile = () => {
         setFriends([]);
       }
       
-      // Fix for friend requests - modified to avoid using relationships
+      // Fix for friend requests - fetch directly without relationships
       const { data: receivedRequests, error: receivedError } = await supabase
         .from('user_friends')
         .select('*')
@@ -192,7 +191,7 @@ const OwnerProfile = () => {
         setFriendRequests([]);
       }
       
-      // Fix for sent requests - modified to avoid using relationships
+      // Fix for sent requests - fetch directly without relationships
       const { data: sentRequestsData, error: sentError } = await supabase
         .from('user_friends')
         .select('*')
@@ -783,7 +782,7 @@ const OwnerProfile = () => {
                       {searchResults.map((user) => {
                         const isAlreadyFriend = friends.some(friend => friend.id === user.id);
                         const hasSentRequest = sentRequests.some(req => req.friend_id === user.id);
-                        const hasReceivedRequest = friendRequests.some(req => req.user_id.id === user.id);
+                        const hasReceivedRequest = friendRequests.some(req => req.user_id === user.id);
                         
                         return (
                           <div key={user.id} className="flex items-center justify-between p-2 border rounded-md">
@@ -819,7 +818,7 @@ const OwnerProfile = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    onClick={() => acceptFriendRequest(friendRequests.find(req => req.user_id.id === user.id)?.id)}
+                                    onClick={() => acceptFriendRequest(friendRequests.find(req => req.user_id === user.id)?.id)}
                                     className="bg-petpal-blue hover:bg-petpal-blue/90 text-white hover:text-white"
                                   >
                                     <UserCheck className="h-4 w-4 mr-1" />
@@ -828,7 +827,7 @@ const OwnerProfile = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    onClick={() => rejectFriendRequest(friendRequests.find(req => req.user_id.id === user.id)?.id)}
+                                    onClick={() => rejectFriendRequest(friendRequests.find(req => req.user_id === user.id)?.id)}
                                   >
                                     <UserX className="h-4 w-4 mr-1" />
                                     Reject
@@ -870,14 +869,14 @@ const OwnerProfile = () => {
                       <div key={request.id} className="flex items-center justify-between p-2 border rounded-md">
                         <div className="flex items-center">
                           <Avatar className="h-10 w-10 mr-3">
-                            {request.requester.avatar_url ? (
+                            {request.requester && request.requester.avatar_url ? (
                               <img src={request.requester.avatar_url} alt={request.requester.username} />
                             ) : (
                               <User className="h-6 w-6 text-muted-foreground" />
                             )}
                           </Avatar>
                           <div>
-                            <p className="font-medium">@{request.requester.username}</p>
+                            <p className="font-medium">@{request.requester ? request.requester.username : "Unknown User"}</p>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -920,156 +919,4 @@ const OwnerProfile = () => {
                             {friend.avatar_url ? (
                               <img src={friend.avatar_url} alt={friend.username} />
                             ) : (
-                              <User className="h-6 w-6 text-muted-foreground" />
-                            )}
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">@{friend.username}</p>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => removeFriend(friend.id)}
-                        >
-                          <UserX className="h-4 w-4 mr-1" />
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {sentRequests.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Pending Requests</CardTitle>
-                  <CardDescription>Friend requests you've sent that are waiting for approval</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {sentRequests.map((request) => (
-                      <div key={request.id} className="flex items-center justify-between p-2 border rounded-md">
-                        <div className="flex items-center">
-                          <Avatar className="h-10 w-10 mr-3">
-                            {request.friend.avatar_url ? (
-                              <img src={request.friend.avatar_url} alt={request.friend.username} />
-                            ) : (
-                              <User className="h-6 w-6 text-muted-foreground" />
-                            )}
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">@{request.friend.username}</p>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => cancelFriendRequest(request.id)}
-                        >
-                          <UserX className="h-4 w-4 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {friends.length === 0 && friendRequests.length === 0 && sentRequests.length === 0 && (
-              <Card>
-                <CardContent className="py-8">
-                  <div className="text-center">
-                    <User className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Friends Yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Connect with other PetPal owners to expand your pet's social circle.
-                    </p>
-                    <Button 
-                      onClick={() => setSearchQuery('')}
-                      className="bg-petpal-blue hover:bg-petpal-blue/90"
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Find Friends
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage your account preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-[1fr_100px] items-center gap-4">
-                  <div>
-                    <h3 className="font-medium">Email Notifications</h3>
-                    <p className="text-sm text-muted-foreground">Receive email notifications for pet updates and interactions</p>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="flex items-center space-x-2">
-                      <label htmlFor="notifications" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {false ? "On" : "Off"}
-                      </label>
-                      <input type="checkbox" id="notifications" className="mr-2" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-[1fr_100px] items-center gap-4">
-                  <div>
-                    <h3 className="font-medium">AI Content Review</h3>
-                    <p className="text-sm text-muted-foreground">Review AI-generated content before posting</p>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="flex items-center space-x-2">
-                      <label htmlFor="ai-review" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {true ? "On" : "Off"}
-                      </label>
-                      <input type="checkbox" id="ai-review" className="mr-2" defaultChecked />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-[1fr_100px] items-center gap-4">
-                  <div>
-                    <h3 className="font-medium">Privacy Setting</h3>
-                    <p className="text-sm text-muted-foreground">Make your pet profiles public or private</p>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="flex items-center space-x-2">
-                      <label htmlFor="privacy" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {true ? "Public" : "Private"}
-                      </label>
-                      <input type="checkbox" id="privacy" className="mr-2" defaultChecked />
-                    </div>
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full mt-4 bg-petpal-blue hover:bg-petpal-blue/90"
-                  onClick={() => toast({
-                    title: 'Settings saved',
-                    description: 'Your preferences have been updated successfully.'
-                  })}
-                  disabled={loading}
-                >
-                  {loading ? 'Saving...' : 'Save Settings'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
-  );
-};
-
-export default OwnerProfile;
+                              <User className="h-6 w-
