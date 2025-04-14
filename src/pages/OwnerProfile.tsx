@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -919,4 +920,47 @@ const OwnerProfile = () => {
                             {friend.avatar_url ? (
                               <img src={friend.avatar_url} alt={friend.username} />
                             ) : (
-                              <User className="h-6 w-
+                              <User className="h-6 w-6 text-muted-foreground" />
+                            )}
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">@{friend.username}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => removeFriend(friend.id)}
+                          >
+                            <UserX className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Settings</CardTitle>
+                <CardDescription>Manage your account preferences</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">Account settings will be available in a future update.</p>
+                <Button variant="outline" disabled>Privacy Settings</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </Layout>
+  );
+};
+
+export default OwnerProfile;
