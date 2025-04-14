@@ -119,10 +119,10 @@ const OwnerProfile = () => {
     if (!user) return;
     
     try {
-      // Fix for friends query - changing the OR syntax
+      // Modified query to avoid using nested select with relationships that aren't defined
       const { data: friendsData, error: friendsError } = await supabase
         .from('user_friends')
-        .select('*, friend:friend_id(id, username, avatar_url), requester:user_id(id, username, avatar_url)')
+        .select('*')
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
         .eq('status', 'accepted');
       
@@ -133,34 +133,99 @@ const OwnerProfile = () => {
       
       console.log("Fetched friends data:", friendsData);
       
-      // Process friends data to get the correct friend info
-      const processedFriends = friendsData.map(connection => {
-        return connection.user_id === user.id ? connection.friend : connection.requester;
-      });
+      // After getting the connections, fetch the actual profile data separately
+      if (friendsData && friendsData.length > 0) {
+        // Extract all friend IDs that aren't the current user
+        const friendIds = friendsData.map(connection => 
+          connection.user_id === user.id ? connection.friend_id : connection.user_id
+        );
+        
+        // Fetch the actual profile data for these users
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', friendIds);
+          
+        if (profilesError) {
+          console.error('Error fetching friend profiles:', profilesError);
+          throw profilesError;
+        }
+        
+        console.log("Fetched friend profiles:", profilesData);
+        setFriends(profilesData || []);
+      } else {
+        setFriends([]);
+      }
       
-      setFriends(processedFriends);
-      
-      // Fix for friend requests query
+      // Fix for friend requests - modified to avoid using relationships
       const { data: receivedRequests, error: receivedError } = await supabase
         .from('user_friends')
-        .select('*, requester:user_id(id, username, avatar_url)')
+        .select('*')
         .eq('friend_id', user.id)
         .eq('status', 'pending');
       
       if (receivedError) throw receivedError;
       console.log("Fetched friend requests:", receivedRequests);
-      setFriendRequests(receivedRequests);
       
-      // Fix for sent requests query
+      // For each request, fetch the requester's profile information
+      if (receivedRequests && receivedRequests.length > 0) {
+        const requesterIds = receivedRequests.map(request => request.user_id);
+        
+        const { data: requestersData, error: requestersError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', requesterIds);
+          
+        if (requestersError) throw requestersError;
+        
+        // Combine request data with profile data
+        const requestsWithProfiles = receivedRequests.map(request => {
+          const requesterProfile = requestersData?.find(profile => profile.id === request.user_id);
+          return {
+            ...request,
+            requester: requesterProfile
+          };
+        });
+        
+        setFriendRequests(requestsWithProfiles);
+      } else {
+        setFriendRequests([]);
+      }
+      
+      // Fix for sent requests - modified to avoid using relationships
       const { data: sentRequestsData, error: sentError } = await supabase
         .from('user_friends')
-        .select('*, friend:friend_id(id, username, avatar_url)')
+        .select('*')
         .eq('user_id', user.id)
         .eq('status', 'pending');
       
       if (sentError) throw sentError;
       console.log("Fetched sent requests:", sentRequestsData);
-      setSentRequests(sentRequestsData);
+      
+      // For each sent request, fetch the friend's profile information
+      if (sentRequestsData && sentRequestsData.length > 0) {
+        const friendIds = sentRequestsData.map(request => request.friend_id);
+        
+        const { data: friendsProfileData, error: friendsProfileError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', friendIds);
+          
+        if (friendsProfileError) throw friendsProfileError;
+        
+        // Combine request data with profile data
+        const sentRequestsWithProfiles = sentRequestsData.map(request => {
+          const friendProfile = friendsProfileData?.find(profile => profile.id === request.friend_id);
+          return {
+            ...request,
+            friend: friendProfile
+          };
+        });
+        
+        setSentRequests(sentRequestsWithProfiles);
+      } else {
+        setSentRequests([]);
+      }
       
     } catch (error) {
       console.error('Error fetching friends:', error);
