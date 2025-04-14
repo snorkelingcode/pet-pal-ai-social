@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import RightSidebar from './RightSidebar';
@@ -15,6 +15,7 @@ const Layout = ({ children, hideRightSidebar = false }: LayoutProps) => {
   const isMobile = useIsMobile();
   const { user, isLoading } = useAuth();
   const [authReady, setAuthReady] = useState(false);
+  const location = useLocation();
   
   // Only show auth-dependent UI elements after auth state is determined
   useEffect(() => {
