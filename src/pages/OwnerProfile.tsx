@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -529,395 +530,455 @@ const OwnerProfile = () => {
   };
 
   return (
-    <>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Owner Profile</h1>
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Owner Profile</h1>
+      
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid grid-cols-4 mb-4">
+          <TabsTrigger value="profile">My Profile</TabsTrigger>
+          <TabsTrigger value="pets">My Pets</TabsTrigger>
+          <TabsTrigger value="friends">Friends</TabsTrigger>
+          <TabsTrigger value="settings">Account Settings</TabsTrigger>
+        </TabsList>
         
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-4">
-            <TabsTrigger value="profile">My Profile</TabsTrigger>
-            <TabsTrigger value="pets">My Pets</TabsTrigger>
-            <TabsTrigger value="friends">Friends</TabsTrigger>
-            <TabsTrigger value="settings">Account Settings</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile" className="space-y-4">
-            <Card>
-              {loading ? (
-                <CardContent className="py-6">
-                  <div className="animate-pulse space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="rounded-full bg-gray-200 h-16 w-16"></div>
-                      <div className="space-y-2 flex-1">
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
+        <TabsContent value="profile" className="space-y-4">
+          <Card>
+            {loading ? (
+              <CardContent className="py-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="rounded-full bg-gray-200 h-16 w-16"></div>
+                    <div className="space-y-2 flex-1">
                       <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-10 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-10 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-32 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
                     </div>
                   </div>
-                </CardContent>
-              ) : (
-                <>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <Avatar className="h-16 w-16">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt={form.getValues().name} />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-8 w-8 text-gray-500" />
-                          </div>
-                        )}
-                      </Avatar>
-                      <div>
-                        <CardTitle>{form.getValues().name}</CardTitle>
-                        <CardDescription>{form.getValues().email}</CardDescription>
-                      </div>
-                    </div>
-                    <label htmlFor="avatar-upload-page">
-                      <input
-                        id="avatar-upload-page"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                      <Button variant="outline" size="sm" className="cursor-pointer">
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Change Photo
-                      </Button>
-                    </label>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Your name" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email</FormLabel>
-                              <FormControl>
-                                <Input placeholder="your.email@example.com" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="bio"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bio</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Tell us about yourself..." 
-                                  className="min-h-32"
-                                  {...field} 
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <Button 
-                          type="submit" 
-                          className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2"
-                          disabled={loading}
-                        >
-                          {loading ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </>
-              )}
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="pets" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Pets</CardTitle>
-                <CardDescription>Manage your pet profiles and settings</CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {loading ? (
-                  [1, 2].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-32 bg-gray-200 rounded-t-md"></div>
-                      <div className="p-4 border rounded-b-md border-gray-200">
-                        <div className="flex items-center space-x-4">
-                          <div className="rounded-full bg-gray-200 h-12 w-12"></div>
-                          <div className="space-y-2 flex-1">
-                            <div className="h-4 bg-gray-200 rounded"></div>
-                            <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
-                          </div>
-                        </div>
-                        <div className="flex justify-end mt-4 space-x-2">
-                          <div className="h-8 w-16 bg-gray-200 rounded"></div>
-                          <div className="h-8 w-24 bg-gray-200 rounded"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : userPetProfiles.length > 0 ? (
-                  userPetProfiles.map((pet) => (
-                    <Card key={pet.id} className="overflow-hidden">
-                      <div 
-                        className="h-32 bg-cover bg-center" 
-                        style={{ backgroundImage: `url(${pet.profilePicture || '/placeholder.svg'})` }}
-                      />
-                      <CardContent className="pt-4">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-12 w-12 border-2 border-background -mt-10">
-                            <img src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} className="object-cover" />
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold">{pet.name}</h3>
-                            <p className="text-sm text-muted-foreground">{pet.species}, {pet.age} years old</p>
-                          </div>
-                        </div>
-                        <div className="flex justify-end space-x-2 mt-4">
-                          <Link to={`/pet-edit/${pet.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </Button>
-                          </Link>
-                          <Link to={`/profile?petId=${pet.id}`}>
-                            <Button variant="outline" size="sm">
-                              <User className="h-4 w-4 mr-2" />
-                              View Profile
-                            </Button>
-                          </Link>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="col-span-2 text-center py-8">
-                    <User className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-                    <p className="mt-4 text-muted-foreground">You don't have any pets yet. Create your first pet profile!</p>
-                    <Button 
-                      className="bg-petpal-pink hover:bg-petpal-pink/90 mt-4"
-                      onClick={() => {
-                        const createProfileEvent = new CustomEvent('open-create-profile');
-                        window.dispatchEvent(createProfileEvent);
-                      }}
-                    >
-                      Create Pet Profile
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-10 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-10 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
                   </div>
-                )}
+                </div>
               </CardContent>
-            </Card>
-            {userPetProfiles.length > 0 && (
-              <div className="flex justify-center mt-4">
-                <Button 
-                  className="bg-petpal-pink hover:bg-petpal-pink/90"
-                  onClick={() => {
-                    const createProfileEvent = new CustomEvent('open-create-profile');
-                    window.dispatchEvent(createProfileEvent);
-                    toast({
-                      title: "Create a pet profile",
-                      description: "Add a new furry friend to your PetPal account."
-                    });
-                  }}
-                >
-                  Add New Pet
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="friends" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Find Friends</CardTitle>
-                <CardDescription>Search for users by username to add them as friends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2 items-center mb-6">
-                  <div className="flex-1">
-                    <Input 
-                      placeholder="Search by username (@username)" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+            ) : (
+              <>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt={form.getValues().name} />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <User className="h-8 w-8 text-gray-500" />
+                        </div>
+                      )}
+                    </Avatar>
+                    <div>
+                      <CardTitle>{form.getValues().name}</CardTitle>
+                      <CardDescription>{form.getValues().email}</CardDescription>
+                    </div>
                   </div>
+                  <label htmlFor="avatar-upload-page">
+                    <input
+                      id="avatar-upload-page"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Button variant="outline" size="sm" className="cursor-pointer">
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Change Photo
+                    </Button>
+                  </label>
+                </CardHeader>
+                <CardContent>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your name" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="your.email@example.com" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="bio"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bio</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Tell us about yourself..." 
+                                className="min-h-32"
+                                {...field} 
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <Button 
+                        type="submit" 
+                        className="bg-petpal-blue hover:bg-petpal-blue/90 mt-2"
+                        disabled={loading}
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </>
+            )}
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="pets" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Pets</CardTitle>
+              <CardDescription>Manage your pet profiles and settings</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {loading ? (
+                [1, 2].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-32 bg-gray-200 rounded-t-md"></div>
+                    <div className="p-4 border rounded-b-md border-gray-200">
+                      <div className="flex items-center space-x-4">
+                        <div className="rounded-full bg-gray-200 h-12 w-12"></div>
+                        <div className="space-y-2 flex-1">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="flex justify-end mt-4 space-x-2">
+                        <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                        <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : userPetProfiles.length > 0 ? (
+                userPetProfiles.map((pet) => (
+                  <Card key={pet.id} className="overflow-hidden">
+                    <div 
+                      className="h-32 bg-cover bg-center" 
+                      style={{ backgroundImage: `url(${pet.profilePicture || '/placeholder.svg'})` }}
+                    />
+                    <CardContent className="pt-4">
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="h-12 w-12 border-2 border-background -mt-10">
+                          <img src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} className="object-cover" />
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold">{pet.name}</h3>
+                          <p className="text-sm text-muted-foreground">{pet.species}, {pet.age} years old</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-end space-x-2 mt-4">
+                        <Link to={`/pet-edit/${pet.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link to={`/profile?petId=${pet.id}`}>
+                          <Button variant="outline" size="sm">
+                            <User className="h-4 w-4 mr-2" />
+                            View Profile
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-8">
+                  <User className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+                  <p className="mt-4 text-muted-foreground">You don't have any pets yet. Create your first pet profile!</p>
                   <Button 
-                    onClick={handleSearch} 
-                    disabled={isSearching || searchQuery.length < 3}
-                    className="bg-petpal-blue hover:bg-petpal-blue/90"
+                    className="bg-petpal-pink hover:bg-petpal-pink/90 mt-4"
+                    onClick={() => {
+                      const createProfileEvent = new CustomEvent('open-create-profile');
+                      window.dispatchEvent(createProfileEvent);
+                    }}
                   >
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
+                    Create Pet Profile
                   </Button>
                 </div>
-                
-                {searchResults.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2">Search Results:</h3>
-                    <div className="space-y-3">
-                      {searchResults.map((user) => {
-                        const isAlreadyFriend = friends.some(friend => friend.id === user.id);
-                        const hasSentRequest = sentRequests.some(req => req.friend_id === user.id);
-                        const hasReceivedRequest = friendRequests.some(req => req.user_id === user.id);
-                        
-                        return (
-                          <div key={user.id} className="flex items-center justify-between p-2 border rounded-md">
-                            <div className="flex items-center">
-                              <Avatar className="h-10 w-10 mr-3">
-                                {user.avatar_url ? (
-                                  <img src={user.avatar_url} alt={user.username} />
-                                ) : (
-                                  <User className="h-6 w-6 text-muted-foreground" />
-                                )}
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">@{user.username}</p>
-                              </div>
-                            </div>
+              )}
+            </CardContent>
+          </Card>
+          {userPetProfiles.length > 0 && (
+            <div className="flex justify-center mt-4">
+              <Button 
+                className="bg-petpal-pink hover:bg-petpal-pink/90"
+                onClick={() => {
+                  const createProfileEvent = new CustomEvent('open-create-profile');
+                  window.dispatchEvent(createProfileEvent);
+                  toast({
+                    title: "Create a pet profile",
+                    description: "Add a new furry friend to your PetPal account."
+                  });
+                }}
+              >
+                Add New Pet
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="friends" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Find Friends</CardTitle>
+              <CardDescription>Search for users by username to add them as friends</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 items-center mb-6">
+                <div className="flex-1">
+                  <Input 
+                    placeholder="Search by username (@username)" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  onClick={handleSearch} 
+                  disabled={isSearching || searchQuery.length < 3}
+                  className="bg-petpal-blue hover:bg-petpal-blue/90"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </Button>
+              </div>
+              
+              {searchResults.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Search Results:</h3>
+                  <div className="space-y-3">
+                    {searchResults.map((user) => {
+                      const isAlreadyFriend = friends.some(friend => friend.id === user.id);
+                      const hasSentRequest = sentRequests.some(req => req.friend_id === user.id);
+                      const hasReceivedRequest = friendRequests.some(req => req.user_id === user.id);
+                      
+                      return (
+                        <div key={user.id} className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              {user.avatar_url ? (
+                                <img src={user.avatar_url} alt={user.username} />
+                              ) : (
+                                <User className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </Avatar>
                             <div>
-                              {isAlreadyFriend ? (
-                                <Button variant="outline" size="sm" disabled>
-                                  <UserCheck className="h-4 w-4 mr-1" />
-                                  Friends
-                                </Button>
-                              ) : hasSentRequest ? (
+                              <p className="font-medium">@{user.username}</p>
+                            </div>
+                          </div>
+                          <div>
+                            {isAlreadyFriend ? (
+                              <Button variant="outline" size="sm" disabled>
+                                <UserCheck className="h-4 w-4 mr-1" />
+                                Friends
+                              </Button>
+                            ) : hasSentRequest ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => cancelFriendRequest(sentRequests.find(req => req.friend_id === user.id)?.id)}
+                              >
+                                <UserX className="h-4 w-4 mr-1" />
+                                Cancel Request
+                              </Button>
+                            ) : hasReceivedRequest ? (
+                              <div className="flex gap-2">
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
-                                  onClick={() => cancelFriendRequest(sentRequests.find(req => req.friend_id === user.id)?.id)}
+                                  onClick={() => acceptFriendRequest(friendRequests.find(req => req.user_id === user.id)?.id)}
+                                  className="bg-petpal-blue hover:bg-petpal-blue/90 text-white hover:text-white"
+                                >
+                                  <UserCheck className="h-4 w-4 mr-1" />
+                                  Accept
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => rejectFriendRequest(friendRequests.find(req => req.user_id === user.id)?.id)}
                                 >
                                   <UserX className="h-4 w-4 mr-1" />
-                                  Cancel Request
+                                  Reject
                                 </Button>
-                              ) : hasReceivedRequest ? (
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => acceptFriendRequest(friendRequests.find(req => req.user_id === user.id)?.id)}
-                                    className="bg-petpal-blue hover:bg-petpal-blue/90 text-white hover:text-white"
-                                  >
-                                    <UserCheck className="h-4 w-4 mr-1" />
-                                    Accept
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => rejectFriendRequest(friendRequests.find(req => req.user_id === user.id)?.id)}
-                                  >
-                                    <UserX className="h-4 w-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => sendFriendRequest(user.id)}
-                                  className="bg-petpal-blue hover:bg-petpal-blue/90"
-                                >
-                                  <UserPlus className="h-4 w-4 mr-1" />
-                                  Add Friend
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                
-                {searchResults.length === 0 && searchQuery.length >= 3 && !isSearching && (
-                  <p className="text-center text-muted-foreground py-4">No users found matching "{searchQuery}"</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            {friendRequests.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Friend Requests</CardTitle>
-                  <CardDescription>People who want to connect with you</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {friendRequests.map((request) => (
-                      <div key={request.id} className="flex items-center justify-between p-2 border rounded-md">
-                        <div className="flex items-center">
-                          <Avatar className="h-10 w-10 mr-3">
-                            {request.requester && request.requester.avatar_url ? (
-                              <img src={request.requester.avatar_url} alt={request.requester.username} />
+                              </div>
                             ) : (
-                              <User className="h-6 w-6 text-muted-foreground" />
+                              <Button 
+                                size="sm" 
+                                onClick={() => sendFriendRequest(user.id)}
+                                className="bg-petpal-blue hover:bg-petpal-blue/90"
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Add Friend
+                              </Button>
                             )}
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">@{request.requester ? request.requester.username : "Unknown User"}</p>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => acceptFriendRequest(request.id)}
-                            className="bg-petpal-blue hover:bg-petpal-blue/90"
-                          >
-                            <UserCheck className="h-4 w-4 mr-1" />
-                            Accept
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => rejectFriendRequest(request.id)}
-                          >
-                            <UserX className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {searchResults.length === 0 && searchQuery.length >= 3 && !isSearching && (
+                <p className="text-center text-muted-foreground py-4">No users found matching "{searchQuery}"</p>
+              )}
+            </CardContent>
+          </Card>
+          
+          {friendRequests.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Friend Requests</CardTitle>
+                <CardDescription>People who want to connect with you</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {friendRequests.map((request) => (
+                    <div key={request.id} className="flex items-center justify-between p-2 border rounded-md">
+                      <div className="flex items-center">
+                        <Avatar className="h-10 w-10 mr-3">
+                          {request.requester && request.requester.avatar_url ? (
+                            <img src={request.requester.avatar_url} alt={request.requester.username} />
+                          ) : (
+                            <User className="h-6 w-6 text-muted-foreground" />
+                          )}
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">@{request.requester ? request.requester.username : "Unknown User"}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {friends.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Friends</CardTitle>
-                  <CardDescription>Your connected friends on PetPal</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {friends.map((friend) => (
-                      <div key={friend.id} className="flex items-center justify-between p-2 border rounded-md">
-                        <div className="flex items-center">
-                          <Avatar className="h-10 w-10 mr-3">
-                            {friend.avatar_url ? (
-                              <img src={friend.avatar_url} alt={friend.username} />
-                            ) : (
-                              <User className="h-6 w-6 text-muted-foreground" />
-                            )}
-                          </
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => acceptFriendRequest(request.id)}
+                          className="bg-petpal-blue hover:bg-petpal-blue/90"
+                        >
+                          <UserCheck className="h-4 w-4 mr-1" />
+                          Accept
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => rejectFriendRequest(request.id)}
+                        >
+                          <UserX className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {friends.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>My Friends</CardTitle>
+                <CardDescription>Your connected friends on PetPal</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {friends.map((friend) => (
+                    <div key={friend.id} className="flex items-center justify-between p-2 border rounded-md">
+                      <div className="flex items-center">
+                        <Avatar className="h-10 w-10 mr-3">
+                          {friend.avatar_url ? (
+                            <img src={friend.avatar_url} alt={friend.username} />
+                          ) : (
+                            <User className="h-6 w-6 text-muted-foreground" />
+                          )}
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">@{friend.username}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => removeFriend(friend.id)}
+                      >
+                        <UserX className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Settings</CardTitle>
+              <CardDescription>Manage your account settings and preferences</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    toast({
+                      title: "Coming soon",
+                      description: "Account settings will be available in a future update."
+                    });
+                  }}
+                >
+                  Change Password
+                </Button>
+                
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    toast({
+                      title: "Coming soon",
+                      description: "Account deletion will be available in a future update."
+                    });
+                  }}
+                >
+                  Delete Account
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default OwnerProfile;
