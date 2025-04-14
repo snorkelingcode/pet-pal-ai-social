@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import PostCard from '@/components/PostCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -23,7 +21,6 @@ const Index = () => {
     const fetchData = async () => {
       setLoadingData(true);
       try {
-        // Fetch posts
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
@@ -58,7 +55,6 @@ const Index = () => {
           return;
         }
         
-        // Fetch comments
         const postIds = postsData.map(post => post.id);
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
@@ -82,7 +78,6 @@ const Index = () => {
           
         if (commentsError) throw commentsError;
         
-        // Map the Supabase data to our frontend data structure
         const formattedPosts: Post[] = postsData.map(post => ({
           id: post.id,
           petId: post.pet_id,
@@ -97,8 +92,8 @@ const Index = () => {
             profilePicture: post.pet_profiles.profile_picture,
             followers: post.pet_profiles.followers,
             following: post.pet_profiles.following,
-            ownerId: '', // This is not needed for display
-            createdAt: '', // This is not needed for display
+            ownerId: '',
+            createdAt: '',
           },
           content: post.content,
           image: post.image,
@@ -117,7 +112,6 @@ const Index = () => {
             species: comment.pet_profiles.species,
             breed: comment.pet_profiles.breed,
             profilePicture: comment.pet_profiles.profile_picture,
-            // These fields aren't needed for comments display
             age: 0,
             personality: [],
             bio: '',
@@ -150,29 +144,24 @@ const Index = () => {
     fetchData();
   }, [user]);
   
-  // For authenticated users, we'll show posts they're following in the "Following" tab
   const forYouPosts = posts;
   const followingPosts = user ? posts.filter(post => {
-    // In a real app, we'd filter based on followed profiles
-    // For now, just show a subset for demo
     return post.petProfile.followers > 0;
   }) : [];
   
   return (
-    <Layout>
+    <>
       <HeaderCard 
         title="Feed" 
         subtitle={isLoading || loadingData ? "Loading..." : (user ? "See what your furry friends are up to!" : "Browse pet posts from around the world!")}
       />
 
-      {/* Show loading state */}
       {(isLoading || loadingData) && (
         <div className="w-full flex justify-center p-8">
           <div className="animate-pulse bg-muted rounded-md h-64 w-full max-w-md"></div>
         </div>
       )}
 
-      {/* Show tabs for authenticated users */}
       {!isLoading && !loadingData && user && (
         <Tabs defaultValue="for-you" className="w-full mb-4" onValueChange={setActiveTab}>
           <TabsList className="w-full grid grid-cols-2">
@@ -220,7 +209,6 @@ const Index = () => {
         </Tabs>
       )}
 
-      {/* Show content for non-authenticated users */}
       {!isLoading && !loadingData && !user && (
         <div className="w-full mb-4">
           <div className="w-full flex flex-col items-center">
@@ -237,7 +225,7 @@ const Index = () => {
                   key={post.id} 
                   post={post} 
                   comments={comments.filter(comment => comment.postId === post.id)}
-                  isReadOnly={true} // Add read-only prop to prevent interactions
+                  isReadOnly={true}
                 />
               ))
             ) : (
@@ -247,7 +235,6 @@ const Index = () => {
             )}
           </div>
           
-          {/* Add login/signup prompt if not on mobile (mobile has bottom bar already) */}
           {!isMobile && (
             <div className="my-8 p-6 bg-card rounded-lg shadow-sm border flex flex-col items-center">
               <h3 className="text-lg font-semibold mb-2">Join PetPal Today!</h3>
@@ -271,9 +258,8 @@ const Index = () => {
         </div>
       )}
       
-      {/* Add extra padding at the bottom on mobile to account for navigation bar */}
       {isMobile && <div className="h-24"></div>}
-    </Layout>
+    </>
   );
 };
 

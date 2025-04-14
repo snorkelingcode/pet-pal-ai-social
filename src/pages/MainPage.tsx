@@ -12,6 +12,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
+// Define a context to share section information with child components
+export const MainPageContext = React.createContext<{
+  activeSection: SectionType;
+}>({
+  activeSection: 'feed'
+});
+
 const MainPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,17 +39,40 @@ const MainPage = () => {
     navigate(`/#${section}`, { replace: true });
   };
   
+  // Render the appropriate component based on activeSection
+  const renderContent = () => {
+    switch(activeSection) {
+      case 'feed':
+        return <Index />;
+      case 'profile':
+        return <Profile />;
+      case 'messages':
+        return <Messages />;
+      case 'notifications':
+        return <Notifications />;
+      case 'favorites':
+        return <Favorites />;
+      case 'settings':
+        return <Settings />;
+      case 'owner-profile':
+        return <OwnerProfile />;
+      default:
+        return <Index />;
+    }
+  };
+  
+  // Provide context value to child components
+  const contextValue = {
+    activeSection
+  };
+  
   // Pass the section change handler to Layout
   return (
-    <Layout onSectionChange={changeSection} activeSection={activeSection}>
-      {activeSection === 'feed' && <Index />}
-      {activeSection === 'profile' && <Profile />}
-      {activeSection === 'messages' && <Messages />}
-      {activeSection === 'notifications' && <Notifications />}
-      {activeSection === 'favorites' && <Favorites />}
-      {activeSection === 'settings' && <Settings />}
-      {activeSection === 'owner-profile' && <OwnerProfile />}
-    </Layout>
+    <MainPageContext.Provider value={contextValue}>
+      <Layout onSectionChange={changeSection} activeSection={activeSection}>
+        {renderContent()}
+      </Layout>
+    </MainPageContext.Provider>
   );
 };
 

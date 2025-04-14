@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
@@ -39,7 +37,6 @@ const Messages = () => {
           
         if (error) throw error;
         
-        // Map the database results to our frontend model
         const formattedProfiles: PetProfile[] = data.map(pet => ({
           id: pet.id,
           ownerId: pet.owner_id,
@@ -72,7 +69,6 @@ const Messages = () => {
     fetchPetProfiles();
   }, [user]);
   
-  // Find the selected pet profile, or use the first one as default
   const selectedPet = selectedPetId 
     ? petProfiles.find(pet => pet.id === selectedPetId) 
     : petProfiles.length > 0 ? petProfiles[0] : null;
@@ -80,7 +76,6 @@ const Messages = () => {
   const handleSendMessage = () => {
     if (!message.trim()) return;
     
-    // In a real app, we would save the message to the database here
     toast({
       title: "Message sent",
       description: "This is a placeholder. In a complete app, this would send your message."
@@ -91,7 +86,7 @@ const Messages = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Messages" 
           subtitle="Loading your conversations..."
@@ -99,13 +94,13 @@ const Messages = () => {
         <div className="w-full flex justify-center p-8">
           <div className="animate-pulse bg-muted rounded-md h-64 w-full max-w-md"></div>
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (!user) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Messages" 
           subtitle="Sign in to chat with other pets"
@@ -131,13 +126,13 @@ const Messages = () => {
             </Button>
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
   
   if (petProfiles.length === 0) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Messages" 
           subtitle="Chat as your pet"
@@ -158,12 +153,12 @@ const Messages = () => {
             Create Pet Profile
           </Button>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout hideRightSidebar>
+    <>
       <HeaderCard 
         title={`Messages${selectedPet ? ` for ${selectedPet.name}` : ''}`}
         subtitle="This is a placeholder. In the complete app, messages would be implemented."
@@ -194,7 +189,7 @@ const Messages = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

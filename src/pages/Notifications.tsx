@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
-import { Bell, Heart, MessageSquare, UserPlus, AlertCircle } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, UserCheck, AlertCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
@@ -40,8 +38,6 @@ const Notifications = () => {
       }
       
       try {
-        // In a real application, we would fetch notifications from a notifications table
-        // For this demo, we're setting an empty array since we don't have actual notification data
         setNotifications([]);
       } catch (error) {
         console.error("Error fetching notifications:", error);
@@ -113,7 +109,7 @@ const Notifications = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Notifications" 
           subtitle="Loading..."
@@ -123,13 +119,13 @@ const Notifications = () => {
           <div className="animate-pulse bg-muted rounded-md h-16 w-full"></div>
           <div className="animate-pulse bg-muted rounded-md h-16 w-full"></div>
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (!user) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Notifications" 
           subtitle="Sign in to view your notifications"
@@ -155,12 +151,12 @@ const Notifications = () => {
             </Button>
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <HeaderCard 
         title="Notifications" 
         subtitle="Stay updated with your furry friends' activities"
@@ -209,11 +205,10 @@ const Notifications = () => {
           </div>
         </TabsContent>
       </Tabs>
-    </Layout>
+    </>
   );
 };
 
-// Adding missing AvatarImage import
 import { AvatarImage } from '@/components/ui/avatar';
 
 export default Notifications;

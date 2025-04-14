@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
@@ -12,7 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Link } from 'react-router-dom';
 
-// Interface types for favorites
 interface FavoritePost {
   id: string;
   content: string;
@@ -51,10 +48,6 @@ const Favorites = () => {
       }
 
       try {
-        // In a real application, we would fetch user's favorites from a favorites table
-        // For now, we'll fetch a few random posts and profiles to simulate favorites
-        
-        // Fetch a few random posts as "favorites"
         const { data: postData, error: postError } = await supabase
           .from('posts')
           .select(`
@@ -76,7 +69,6 @@ const Favorites = () => {
 
         if (postError) throw postError;
 
-        // Fetch a few pet profiles as "favorites"
         const { data: profileData, error: profileError } = await supabase
           .from('pet_profiles')
           .select('id, name, species, breed, bio, profile_picture')
@@ -128,7 +120,7 @@ const Favorites = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Favorites" 
           subtitle="Loading your collection of favorite pets and posts..."
@@ -137,13 +129,13 @@ const Favorites = () => {
           <div className="animate-pulse bg-muted rounded-md h-32 w-full"></div>
           <div className="animate-pulse bg-muted rounded-md h-32 w-full"></div>
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (!user) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Favorites" 
           subtitle="Sign in to view and manage your favorites"
@@ -167,7 +159,7 @@ const Favorites = () => {
             </Link>
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -175,7 +167,7 @@ const Favorites = () => {
 
   if (hasNoData) {
     return (
-      <Layout>
+      <>
         <HeaderCard 
           title="Favorites" 
           subtitle="Your collection of favorite pets and posts"
@@ -187,12 +179,12 @@ const Favorites = () => {
             Heart posts and profiles while browsing to add them to your favorites
           </p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <HeaderCard 
         title="Favorites" 
         subtitle="Your collection of favorite pets and posts"
@@ -312,7 +304,7 @@ const Favorites = () => {
           </Collapsible>
         )}
       </div>
-    </Layout>
+    </>
   );
 };
 
