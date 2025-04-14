@@ -1,3 +1,4 @@
+
 import React from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,8 +88,8 @@ const Settings = () => {
                 <Label htmlFor="theme" className="text-right">
                   Theme
                 </Label>
-                <Select defaultValue="system" className="col-span-2">
-                  <SelectTrigger id="theme">
+                <Select defaultValue="system">
+                  <SelectTrigger id="theme" className="col-span-2">
                     <SelectValue placeholder="Select theme" />
                   </SelectTrigger>
                   <SelectContent>
@@ -102,8 +103,8 @@ const Settings = () => {
                 <Label htmlFor="language" className="text-right">
                   Language
                 </Label>
-                <Select defaultValue="en" className="col-span-2">
-                  <SelectTrigger id="language">
+                <Select defaultValue="en">
+                  <SelectTrigger id="language" className="col-span-2">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
                   <SelectContent>

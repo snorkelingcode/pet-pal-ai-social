@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -131,7 +132,7 @@ const Profile = () => {
         // Check if the current user is following this profile
         if (user) {
           const { data: followingData, error: followingError } = await supabase
-            .from('followers')
+            .from('pet_follows')
             .select('*')
             .eq('follower_id', user.id)
             .eq('following_id', paramPetId);
@@ -167,7 +168,7 @@ const Profile = () => {
       if (isFollowing) {
         // Unfollow
         const { error } = await supabase
-          .from('followers')
+          .from('pet_follows')
           .delete()
           .eq('follower_id', user.id)
           .eq('following_id', petProfile.id);
@@ -182,7 +183,7 @@ const Profile = () => {
       } else {
         // Follow
         const { error } = await supabase
-          .from('followers')
+          .from('pet_follows')
           .insert([{ follower_id: user.id, following_id: petProfile.id }]);
           
         if (error) throw error;
