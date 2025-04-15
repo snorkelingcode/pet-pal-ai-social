@@ -87,100 +87,88 @@ serve(async (req) => {
 
 // Generate a post based on pet personality
 async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent, voiceExample) {
-  // Generate a unique seed for each post request to ensure uniqueness
   const randomSeed = Math.floor(Math.random() * 1000000).toString();
   const timestamp = new Date().toISOString();
   
-  let prompt = `You are ${petProfile.name}, a ${petProfile.age} year old ${petProfile.species} (${petProfile.breed}).
+  let prompt = `You are ${petProfile.name}, a ${petProfile.species} (${petProfile.breed}) with these traits:
   
-Personality traits: ${aiPersona.quirks.join(", ")}
-Tone of voice: ${aiPersona.tone}
-Writing style: ${aiPersona.writing_style}
-Common phrases: ${aiPersona.catchphrases.join(", ")}
+Personality: ${aiPersona.quirks.join(", ")}
+Tone: ${aiPersona.tone}
+Writing Style: ${aiPersona.writing_style}
+Common Phrases: ${aiPersona.catchphrases.join(", ")}
 Interests: ${aiPersona.interests.join(", ")}
 Dislikes: ${aiPersona.dislikes.join(", ")}
-Random seed for uniqueness: ${randomSeed}
-Current timestamp: ${timestamp}
 
-Create a witty one-liner social media post as if you were this pet. The post must be EXACTLY 140 characters or less, ideally between 70-130 characters. Never go over 140 characters.`;
+Create a witty, memorable social media post that is EXACTLY ONE-LINER, no more than 140 characters.`;
 
   if (voiceExample && voiceExample.trim()) {
-    prompt += `\n\nHere is an example of my voice that you should match: "${voiceExample.trim()}"`;
+    prompt += `\n\nHere's an example of my voice and humor style that you should match:
+"${voiceExample.trim()}"
+
+Analyze this example for:
+1. Tone and attitude
+2. Type of humor (sarcastic, observational, etc.)
+3. Writing style and personality
+4. Key themes or topics
+
+Now create a NEW post that captures this same style but is completely different - DO NOT reuse the same topic or structure.`;
   }
 
   if (providedContent) {
-    prompt += `\n\nIncorporate the following idea into your post: "${providedContent}"`;
+    prompt += `\n\nIncorporate this idea in your own voice: "${providedContent}"`;
   }
 
-  // Add specific instructions to avoid repetitive beginnings and ensure uniqueness
-  prompt += `\n\nIMPORTANT RULES:
-1. Make this post ENTIRELY UNIQUE. DO NOT start with common phrases like "Bork Bork" or repetitive greetings.
-2. Create a fresh, original post that truly captures this pet's unique personality.
-3. STRICT LENGTH LIMIT: Your post MUST be 140 characters or less. This is a hard requirement.
-4. Do not repeat previous posts. Be completely original with each generation.
-5. Do not include quotes or hashtags unless specifically requested.
-6. Be concise, witty, and memorable.`;
+  prompt += `\n\nCRITICAL RULES:
+1. MAXIMUM 140 CHARACTERS - This is a strict requirement!
+2. Make it COMPLETELY UNIQUE using seed: ${randomSeed} and timestamp: ${timestamp}
+3. Must be witty and capture my personality
+4. NO repetitive formats or common pet phrases
+5. NO hashtags unless specifically requested
+6. Make it sound natural and conversational
+7. Focus on humor that matches my personality`;
 
-  let messages = [
+  const messages = [
     {
       role: "system",
-      content: `You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality. 
-STRICT REQUIREMENT: Keep the post to 140 characters MAXIMUM. Most posts should be between 70-130 characters.
-Each post must be completely unique - avoid repetitive phrases or formats.
-DO NOT use the same opening phrases as previous posts, vary your approach each time.
-DO NOT use hashtags or quotation marks unless specifically requested.`,
+      content: `You are a witty pet creating short, engaging social media posts. You MUST keep responses under 140 characters and make each post unique.
+DO NOT use common pet phrases like "bork bork" or "meow friends".
+DO NOT start posts the same way.
+Focus on clever observations and personality.`,
     },
     {
       role: "user",
-      content: [
-        {
-          type: "text",
-          text: prompt,
-        }
-      ],
+      content: prompt,
     }
   ];
 
-  // If an image is provided, analyze it and use it to inform the post
   if (imageBase64) {
-    messages = [
+    messages[1].content = [
       {
-        role: "system",
-        content: `You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality and the image provided.
-STRICT REQUIREMENT: Keep the post to 140 characters MAXIMUM. Most posts should be between 70-130 characters.
-Each post must be completely unique - avoid repetitive phrases or formats.
-DO NOT use the same opening phrases as previous posts, vary your approach each time.
-DO NOT use hashtags or quotation marks unless specifically requested.`,
+        type: "text",
+        text: prompt + "\n\nDescribe what you see in this image with my unique voice:"
       },
       {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: prompt + "\n\nDescribe what you see in this image as if you were this pet, incorporating the pet's personality:"
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/jpeg;base64,${imageBase64}`,
-            },
-          },
-        ],
-      }
+        type: "image_url",
+        image_url: {
+          url: `data:image/jpeg;base64,${imageBase64}`,
+        },
+      },
     ];
   }
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       "Authorization": `Bearer ${openaiApiKey}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages,
-      max_tokens: 150,
-      temperature: 0.8,
+      max_tokens: 100,
+      temperature: 0.85,
+      presence_penalty: 1,
+      frequency_penalty: 1.5,
     }),
   });
 
@@ -199,12 +187,8 @@ DO NOT use hashtags or quotation marks unless specifically requested.`,
   }
   
   return new Response(
-    JSON.stringify({
-      content: postContent,
-    }),
-    { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
+    JSON.stringify({ content: postContent }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 }
 
@@ -221,7 +205,7 @@ async function handleGenerateMessage(openaiApiKey, petProfile, aiPersona, target
     throw new Error(`Error fetching target pet profile: ${targetError?.message || "Target pet not found"}`);
   }
 
-  const prompt = `You are ${petProfile.name}, a ${petProfile.age} year old ${petProfile.species} (${petProfile.breed}).
+  const prompt = `You are ${petProfile.name}, a ${petProfile.species} (${petProfile.breed}).
   
 Personality traits: ${aiPersona.quirks.join(", ")}
 Tone of voice: ${aiPersona.tone}
@@ -283,7 +267,7 @@ async function handleGenerateCaption(openaiApiKey, petProfile, aiPersona, imageB
     throw new Error("No image provided");
   }
 
-  const prompt = `You are ${petProfile.name}, a ${petProfile.age} year old ${petProfile.species} (${petProfile.breed}).
+  const prompt = `You are ${petProfile.name}, a ${petProfile.species} (${petProfile.breed}).
   
 Personality traits: ${aiPersona.quirks.join(", ")}
 Tone of voice: ${aiPersona.tone}
