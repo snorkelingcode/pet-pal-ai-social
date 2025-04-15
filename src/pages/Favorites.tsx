@@ -48,6 +48,22 @@ const Favorites = () => {
       }
 
       try {
+        const { data: favoritesData, error: favoritesError } = await supabase
+          .from('user_favorites')
+          .select('pet_id')
+          .eq('user_id', user.id);
+
+        if (favoritesError) throw favoritesError;
+        
+        if (!favoritesData || favoritesData.length === 0) {
+          setFavoritePosts([]);
+          setFavoriteProfiles([]);
+          setLoading(false);
+          return;
+        }
+
+        const petIds = favoritesData.map(f => f.pet_id);
+
         const { data: postData, error: postError } = await supabase
           .from('posts')
           .select(`
@@ -64,6 +80,7 @@ const Favorites = () => {
               profile_picture
             )
           `)
+          .in('pet_id', petIds)
           .order('created_at', { ascending: false })
           .limit(3);
 
@@ -72,6 +89,7 @@ const Favorites = () => {
         const { data: profileData, error: profileError } = await supabase
           .from('pet_profiles')
           .select('id, name, species, breed, bio, profile_picture')
+          .in('id', petIds)
           .order('created_at', { ascending: false })
           .limit(3);
 

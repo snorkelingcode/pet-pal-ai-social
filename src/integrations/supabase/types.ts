@@ -462,6 +462,35 @@ export type Database = {
           },
         ]
       }
+      user_favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          pet_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pet_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pet_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_friends: {
         Row: {
           created_at: string

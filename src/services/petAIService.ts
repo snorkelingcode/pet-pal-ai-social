@@ -213,20 +213,28 @@ export const petAIService = {
         memories = [],
       } = options || {};
       
+      // Create initial post immediately
+      const initialPost = await petAIService.createAIPost(
+        petId,
+        undefined,
+        undefined,
+        voiceExample,
+        memories
+      );
+      
+      if (!initialPost) {
+        throw new Error('Failed to create initial post');
+      }
+
       const now = new Date();
       const scheduledPosts = [];
       
-      for (let i = 0; i < numberOfPosts; i++) {
+      // Adjust the first day's post count
+      const firstDayPosts = Math.max(0, numberOfPosts - 1); // Subtract 1 for the initial post
+      
+      // Schedule remaining posts for the first day
+      for (let i = 0; i < firstDayPosts; i++) {
         let scheduledDate = new Date(now);
-        
-        if (frequency === 'daily') {
-          scheduledDate.setDate(scheduledDate.getDate() + i);
-        } else if (frequency === 'weekly') {
-          scheduledDate.setDate(scheduledDate.getDate() + (i * 7));
-        } else {
-          const randomDays = Math.floor(Math.random() * 30) + 1;
-          scheduledDate.setDate(scheduledDate.getDate() + randomDays);
-        }
         
         if (postingTime === 'morning') {
           scheduledDate.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0);
@@ -248,6 +256,42 @@ export const petAIService = {
         });
       }
       
+      // Schedule posts for subsequent days
+      for (let i = 1; i < 7; i++) {
+        for (let j = 0; j < numberOfPosts; j++) {
+          let scheduledDate = new Date(now);
+          scheduledDate.setDate(scheduledDate.getDate() + i);
+          
+          if (frequency === 'daily') {
+            // Keep the date as is
+          } else if (frequency === 'weekly') {
+            scheduledDate.setDate(scheduledDate.getDate() + (i * 7));
+          } else {
+            const randomDays = Math.floor(Math.random() * 30) + 1;
+            scheduledDate.setDate(scheduledDate.getDate() + randomDays);
+          }
+          
+          if (postingTime === 'morning') {
+            scheduledDate.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0);
+          } else if (postingTime === 'afternoon') {
+            scheduledDate.setHours(12 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60), 0);
+          } else if (postingTime === 'evening') {
+            scheduledDate.setHours(17 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60), 0);
+          } else {
+            scheduledDate.setHours(6 + Math.floor(Math.random() * 16), Math.floor(Math.random() * 60), 0);
+          }
+          
+          scheduledPosts.push({
+            pet_id: petId,
+            scheduled_for: scheduledDate.toISOString(),
+            content_theme: contentTheme,
+            include_images: includeImages,
+            voice_example: voiceExample,
+            status: 'pending'
+          });
+        }
+      }
+      
       const { data, error } = await supabase
         .from('scheduled_posts')
         .insert(scheduledPosts);
@@ -256,7 +300,7 @@ export const petAIService = {
       
       toast({
         title: 'Posts Scheduled',
-        description: `${numberOfPosts} posts have been scheduled for ${frequency === 'daily' ? 'daily' : frequency === 'weekly' ? 'weekly' : 'random'} posting`,
+        description: `Initial post created and ${scheduledPosts.length} posts have been scheduled for ${frequency === 'daily' ? 'daily' : frequency === 'weekly' ? 'weekly' : 'random'} posting`,
       });
       
       return true;

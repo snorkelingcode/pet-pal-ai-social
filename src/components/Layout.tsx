@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import RightSidebar from './RightSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Define the section types
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
 interface LayoutProps {
@@ -25,14 +23,12 @@ const Layout = ({
   const { user, isLoading } = useAuth();
   const [authReady, setAuthReady] = useState(false);
   
-  // Only show auth-dependent UI elements after auth state is determined
   useEffect(() => {
     if (!isLoading) {
       setAuthReady(true);
     }
   }, [isLoading]);
 
-  // The mobile navbar click handlers
   const handleNavigation = (section: SectionType) => {
     onSectionChange(section);
   };
@@ -51,7 +47,6 @@ const Layout = ({
           {!isMobile && !hideRightSidebar && <RightSidebar />}
         </main>
         
-        {/* Mobile bottom navigation - only show when auth state is ready */}
         {authReady && isMobile && user && (
           <div className="fixed bottom-0 left-0 right-0 bg-petpal-mint/20 border-t z-10">
             <div className="flex justify-around items-center py-3">
@@ -99,6 +94,18 @@ const Layout = ({
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                </svg>
+              </button>
+              <button 
+                onClick={() => handleNavigation('owner-profile')}
+                className={`flex flex-col items-center p-1 ${
+                  activeSection === 'owner-profile' ? 'text-petpal-blue' : 'text-muted-foreground'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+                  <path d="M12 8v8"></path>
+                  <path d="M8 12h8"></path>
                 </svg>
               </button>
             </div>
