@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -90,6 +89,7 @@ serve(async (req) => {
 async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent, voiceExample) {
   // Generate a unique seed for each post request to ensure uniqueness
   const randomSeed = Math.floor(Math.random() * 1000000).toString();
+  const timestamp = new Date().toISOString();
   
   let prompt = `You are ${petProfile.name}, a ${petProfile.age} year old ${petProfile.species} (${petProfile.breed}).
   
@@ -100,8 +100,9 @@ Common phrases: ${aiPersona.catchphrases.join(", ")}
 Interests: ${aiPersona.interests.join(", ")}
 Dislikes: ${aiPersona.dislikes.join(", ")}
 Random seed for uniqueness: ${randomSeed}
+Current timestamp: ${timestamp}
 
-Create a social media post as if you were this pet. The post should reflect your personality and interests.`;
+Create a witty one-liner social media post as if you were this pet. The post must be EXACTLY 140 characters or less, ideally between 70-130 characters. Never go over 140 characters.`;
 
   if (voiceExample && voiceExample.trim()) {
     prompt += `\n\nHere is an example of my voice that you should match: "${voiceExample.trim()}"`;
@@ -111,13 +112,23 @@ Create a social media post as if you were this pet. The post should reflect your
     prompt += `\n\nIncorporate the following idea into your post: "${providedContent}"`;
   }
 
-  // Add specific instructions to avoid repetitive beginnings
-  prompt += `\n\nIMPORTANT: Make this post ENTIRELY UNIQUE. DO NOT start with common phrases like "Bork Bork" or repetitive greetings. Create a fresh, original post that truly captures this pet's unique personality.`;
+  // Add specific instructions to avoid repetitive beginnings and ensure uniqueness
+  prompt += `\n\nIMPORTANT RULES:
+1. Make this post ENTIRELY UNIQUE. DO NOT start with common phrases like "Bork Bork" or repetitive greetings.
+2. Create a fresh, original post that truly captures this pet's unique personality.
+3. STRICT LENGTH LIMIT: Your post MUST be 140 characters or less. This is a hard requirement.
+4. Do not repeat previous posts. Be completely original with each generation.
+5. Do not include quotes or hashtags unless specifically requested.
+6. Be concise, witty, and memorable.`;
 
   let messages = [
     {
       role: "system",
-      content: "You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality. Keep it under 280 characters. Each post must be completely unique - avoid repetitive phrases or formats.",
+      content: `You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality. 
+STRICT REQUIREMENT: Keep the post to 140 characters MAXIMUM. Most posts should be between 70-130 characters.
+Each post must be completely unique - avoid repetitive phrases or formats.
+DO NOT use the same opening phrases as previous posts, vary your approach each time.
+DO NOT use hashtags or quotation marks unless specifically requested.`,
     },
     {
       role: "user",
@@ -135,7 +146,11 @@ Create a social media post as if you were this pet. The post should reflect your
     messages = [
       {
         role: "system",
-        content: "You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality and the image provided. Keep it under 280 characters. Each post must be completely unique - avoid repetitive phrases or formats.",
+        content: `You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality and the image provided.
+STRICT REQUIREMENT: Keep the post to 140 characters MAXIMUM. Most posts should be between 70-130 characters.
+Each post must be completely unique - avoid repetitive phrases or formats.
+DO NOT use the same opening phrases as previous posts, vary your approach each time.
+DO NOT use hashtags or quotation marks unless specifically requested.`,
       },
       {
         role: "user",
@@ -164,8 +179,8 @@ Create a social media post as if you were this pet. The post should reflect your
     body: JSON.stringify({
       model: "gpt-4o",
       messages,
-      max_tokens: 500,
-      temperature: 0.7,
+      max_tokens: 150,
+      temperature: 0.8,
     }),
   });
 
@@ -176,7 +191,12 @@ Create a social media post as if you were this pet. The post should reflect your
   }
 
   const result = await response.json();
-  const postContent = result.choices[0].message.content;
+  let postContent = result.choices[0].message.content.trim();
+  
+  // Double-check and enforce the 140 character limit
+  if (postContent.length > 140) {
+    postContent = postContent.substring(0, 140);
+  }
   
   return new Response(
     JSON.stringify({

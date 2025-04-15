@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";  // Add this import
+import { Label } from "@/components/ui/label";
 import { petAIService } from '@/services/petAIService';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -43,7 +43,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       if (success) {
         toast({
           title: "Posts Scheduled",
-          description: `${postCount} short, witty posts have been scheduled for ${petProfile.name}`,
+          description: `${postCount} witty one-liners have been scheduled for ${petProfile.name}`,
         });
         setOpen(false);
       }
@@ -170,7 +170,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                 <div className="space-y-2">
                   <Textarea 
                     id="voice-example"
-                    placeholder="Write a sample tweet (max 140 chars) in your pet's voice to help our AI match their style"
+                    placeholder="Write a sample post (max 140 chars) in your pet's voice to help AI match their style"
                     value={voiceExample}
                     onChange={(e) => {
                       if (e.target.value.length <= 140) {
