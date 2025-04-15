@@ -1,14 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import AIPostScheduler from '@/components/AIPostScheduler';
+import CreatePetProfileModal from '@/components/CreatePetProfileModal';
 
 const Profile = () => {
   const { petId: paramPetId } = useParams<{ petId: string }>();
@@ -21,6 +23,8 @@ const Profile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followCount, setFollowCount] = useState({ followers: 0, following: 0 });
   const [activeTab, setActiveTab] = useState<string>("posts");
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Use either the route param or query param for petId
   const effectivePetId = paramPetId || queryPetId;
@@ -175,6 +179,10 @@ const Profile = () => {
       });
     }
   };
+  
+  const handleEditProfile = () => {
+    setIsEditProfileOpen(true);
+  };
 
   if (loading) {
     return (
@@ -208,7 +216,7 @@ const Profile = () => {
               const createProfileEvent = new CustomEvent('open-create-profile');
               window.dispatchEvent(createProfileEvent);
             } else {
-              window.location.href = '/login';
+              navigate('/login');
             }
           }}
         >
@@ -248,7 +256,7 @@ const Profile = () => {
                 {isOwner ? (
                   <div className="flex gap-2">
                     <AIPostScheduler petProfile={petProfile} />
-                    <Button variant="outline">Edit Profile</Button>
+                    <Button variant="outline" onClick={handleEditProfile}>Edit Profile</Button>
                   </div>
                 ) : (
                   <Button 
@@ -324,6 +332,15 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {isOwner && (
+        <CreatePetProfileModal
+          open={isEditProfileOpen}
+          onOpenChange={setIsEditProfileOpen}
+          isEditMode={true}
+          petProfile={petProfile}
+        />
+      )}
     </>
   );
 };

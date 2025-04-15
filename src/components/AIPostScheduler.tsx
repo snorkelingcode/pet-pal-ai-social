@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { petAIService } from '@/services/petAIService';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { Bot, Calendar, Image as ImageIcon, MessageCircle } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
 
 interface AIPostSchedulerProps {
   petProfile: PetProfile;
@@ -23,12 +25,22 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [includeImages, setIncludeImages] = useState(true);
   const [frequency, setFrequency] = useState("daily");
   const [postingTime, setPostingTime] = useState("random");
-  const [contentTheme, setContentTheme] = useState("general");
+  const [voiceExample, setVoiceExample] = useState("");
 
   const scheduleAIPosts = async () => {
     setLoading(true);
     try {
-      const success = await petAIService.scheduleAIPosts(petProfile.id, postCount);
+      const success = await petAIService.scheduleAIPosts(
+        petProfile.id, 
+        postCount, 
+        {
+          frequency,
+          postingTime,
+          includeImages,
+          voiceExample
+        }
+      );
+      
       if (success) {
         toast({
           title: "Posts Scheduled",
@@ -51,7 +63,13 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const generateSamplePost = async () => {
     setLoading(true);
     try {
-      const content = await petAIService.generatePost(petProfile.id);
+      const content = await petAIService.generatePost(
+        petProfile.id, 
+        null,
+        null,
+        voiceExample
+      );
+      
       if (content) {
         toast({
           title: "Sample AI Post",
@@ -146,19 +164,17 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="content-theme">Content theme</Label>
-                  <Select value={contentTheme} onValueChange={setContentTheme}>
-                    <SelectTrigger id="content-theme">
-                      <SelectValue placeholder="Select theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">General pet life</SelectItem>
-                      <SelectItem value="playful">Playful and fun</SelectItem>
-                      <SelectItem value="daily-thoughts">Daily thoughts</SelectItem>
-                      <SelectItem value="adventures">Adventures</SelectItem>
-                      <SelectItem value="food">Food oriented</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="voice-example">Pet's Voice Example</Label>
+                  <Textarea 
+                    id="voice-example"
+                    placeholder="Enter an example tweet in what you think your pet would sound like"
+                    value={voiceExample}
+                    onChange={(e) => setVoiceExample(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This helps our AI match your pet's unique voice and personality
+                  </p>
                 </div>
 
                 <div className="flex items-center space-x-2">

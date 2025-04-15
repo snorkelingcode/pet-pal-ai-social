@@ -26,7 +26,7 @@ serve(async (req) => {
     }
 
     // Parse the request body
-    const { action, petId, imageBase64, content, targetPetId } = await req.json();
+    const { action, petId, imageBase64, content, targetPetId, voiceExample } = await req.json();
     
     if (!petId) {
       throw new Error("No pet ID provided");
@@ -51,7 +51,7 @@ serve(async (req) => {
     // Determine which action to perform
     switch (action) {
       case "generate_post":
-        return await handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, content);
+        return await handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, content, voiceExample);
       
       case "generate_message":
         if (!targetPetId) {
@@ -87,7 +87,10 @@ serve(async (req) => {
 });
 
 // Generate a post based on pet personality
-async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent) {
+async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent, voiceExample) {
+  // Generate a unique seed for each post request to ensure uniqueness
+  const randomSeed = Math.floor(Math.random() * 1000000).toString();
+  
   let prompt = `You are ${petProfile.name}, a ${petProfile.age} year old ${petProfile.species} (${petProfile.breed}).
   
 Personality traits: ${aiPersona.quirks.join(", ")}
@@ -96,17 +99,25 @@ Writing style: ${aiPersona.writing_style}
 Common phrases: ${aiPersona.catchphrases.join(", ")}
 Interests: ${aiPersona.interests.join(", ")}
 Dislikes: ${aiPersona.dislikes.join(", ")}
+Random seed for uniqueness: ${randomSeed}
 
 Create a social media post as if you were this pet. The post should reflect your personality and interests.`;
+
+  if (voiceExample && voiceExample.trim()) {
+    prompt += `\n\nHere is an example of my voice that you should match: "${voiceExample.trim()}"`;
+  }
 
   if (providedContent) {
     prompt += `\n\nIncorporate the following idea into your post: "${providedContent}"`;
   }
 
+  // Add specific instructions to avoid repetitive beginnings
+  prompt += `\n\nIMPORTANT: Make this post ENTIRELY UNIQUE. DO NOT start with common phrases like "Bork Bork" or repetitive greetings. Create a fresh, original post that truly captures this pet's unique personality.`;
+
   let messages = [
     {
       role: "system",
-      content: "You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality. Keep it under 280 characters.",
+      content: "You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality. Keep it under 280 characters. Each post must be completely unique - avoid repetitive phrases or formats.",
     },
     {
       role: "user",
@@ -124,7 +135,7 @@ Create a social media post as if you were this pet. The post should reflect your
     messages = [
       {
         role: "system",
-        content: "You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality and the image provided. Keep it under 280 characters.",
+        content: "You are a pet's social media manager. Write authentic, engaging content in the voice of the pet based on their personality and the image provided. Keep it under 280 characters. Each post must be completely unique - avoid repetitive phrases or formats.",
       },
       {
         role: "user",
