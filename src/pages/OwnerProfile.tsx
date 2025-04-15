@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { User, Pencil, Search, UserPlus, UserCheck, UserX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +24,7 @@ const ownerProfileSchema = z.object({
 
 const OwnerProfile = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userPetProfiles, setUserPetProfiles] = useState<PetProfile[]>([]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -128,11 +129,10 @@ const OwnerProfile = () => {
     if (!user) return;
     
     try {
-      // Fetch all friendship connections where the current user is involved
       const { data: friendsData, error: friendsError } = await supabase
         .from('user_friends')
         .select('*')
-        .or(`and(user_id.eq.${user.id},friend_id.eq.${user.id}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`)
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${user.id})`)
         .eq('status', 'accepted');
       
       if (friendsError) {
@@ -142,14 +142,11 @@ const OwnerProfile = () => {
       
       console.log("Fetched friends data:", friendsData);
       
-      // After getting the connections, fetch the actual profile data separately
       if (friendsData && friendsData.length > 0) {
-        // Extract all friend IDs that aren't the current user
         const friendIds = friendsData.map(connection => 
           connection.user_id === user.id ? connection.friend_id : connection.user_id
         );
         
-        // Fetch the actual profile data for these users
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -166,7 +163,6 @@ const OwnerProfile = () => {
         setFriends([]);
       }
       
-      // Fix for friend requests - fetch directly without relationships
       const { data: receivedRequests, error: receivedError } = await supabase
         .from('user_friends')
         .select('*')
@@ -176,7 +172,6 @@ const OwnerProfile = () => {
       if (receivedError) throw receivedError;
       console.log("Fetched friend requests:", receivedRequests);
       
-      // For each request, fetch the requester's profile information
       if (receivedRequests && receivedRequests.length > 0) {
         const requesterIds = receivedRequests.map(request => request.user_id);
         
@@ -187,7 +182,6 @@ const OwnerProfile = () => {
           
         if (requestersError) throw requestersError;
         
-        // Combine request data with profile data
         const requestsWithProfiles = receivedRequests.map(request => {
           const requesterProfile = requestersData?.find(profile => profile.id === request.user_id);
           return {
@@ -201,7 +195,6 @@ const OwnerProfile = () => {
         setFriendRequests([]);
       }
       
-      // Fix for sent requests - fetch directly without relationships
       const { data: sentRequestsData, error: sentError } = await supabase
         .from('user_friends')
         .select('*')
@@ -211,7 +204,6 @@ const OwnerProfile = () => {
       if (sentError) throw sentError;
       console.log("Fetched sent requests:", sentRequestsData);
       
-      // For each sent request, fetch the friend's profile information
       if (sentRequestsData && sentRequestsData.length > 0) {
         const friendIds = sentRequestsData.map(request => request.friend_id);
         
@@ -222,7 +214,6 @@ const OwnerProfile = () => {
           
         if (friendsProfileError) throw friendsProfileError;
         
-        // Combine request data with profile data
         const sentRequestsWithProfiles = sentRequestsData.map(request => {
           const friendProfile = friendsProfileData?.find(profile => profile.id === request.friend_id);
           return {
