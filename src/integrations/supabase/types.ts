@@ -11,27 +11,36 @@ export type Database = {
     Tables: {
       ai_personas: {
         Row: {
+          adaptive_preferences: Json | null
           catchphrases: string[]
           dislikes: string[]
           interests: string[]
+          learning_rate: number | null
+          personality_evolution: Json | null
           pet_id: string
           quirks: string[]
           tone: string
           writing_style: string
         }
         Insert: {
+          adaptive_preferences?: Json | null
           catchphrases?: string[]
           dislikes?: string[]
           interests?: string[]
+          learning_rate?: number | null
+          personality_evolution?: Json | null
           pet_id: string
           quirks?: string[]
           tone: string
           writing_style: string
         }
         Update: {
+          adaptive_preferences?: Json | null
           catchphrases?: string[]
           dislikes?: string[]
           interests?: string[]
+          learning_rate?: number | null
+          personality_evolution?: Json | null
           pet_id?: string
           quirks?: string[]
           tone?: string
@@ -125,6 +134,117 @@ export type Database = {
           },
         ]
       }
+      pet_knowledge: {
+        Row: {
+          content: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          knowledge_type: string
+          pet_id: string
+          relevance: number | null
+          source_id: string | null
+          source_type: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          knowledge_type: string
+          pet_id: string
+          relevance?: number | null
+          source_id?: string | null
+          source_type?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          knowledge_type?: string
+          pet_id?: string
+          relevance?: number | null
+          source_id?: string | null
+          source_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_knowledge_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_memories: {
+        Row: {
+          access_count: number | null
+          content: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          importance: number
+          last_accessed_at: string | null
+          memory_type: string
+          pet_id: string
+          related_pet_id: string | null
+          related_post_id: string | null
+          sentiment: number | null
+        }
+        Insert: {
+          access_count?: number | null
+          content: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          importance?: number
+          last_accessed_at?: string | null
+          memory_type: string
+          pet_id: string
+          related_pet_id?: string | null
+          related_post_id?: string | null
+          sentiment?: number | null
+        }
+        Update: {
+          access_count?: number | null
+          content?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          importance?: number
+          last_accessed_at?: string | null
+          memory_type?: string
+          pet_id?: string
+          related_pet_id?: string | null
+          related_post_id?: string | null
+          sentiment?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_memories_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_memories_related_pet_id_fkey"
+            columns: ["related_pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_memories_related_post_id_fkey"
+            columns: ["related_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_profiles: {
         Row: {
           age: number
@@ -174,6 +294,54 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pet_relationships: {
+        Row: {
+          created_at: string | null
+          familiarity: number
+          id: string
+          last_interaction_at: string | null
+          pet_id: string
+          related_pet_id: string
+          relationship_type: string
+          sentiment: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          familiarity?: number
+          id?: string
+          last_interaction_at?: string | null
+          pet_id: string
+          related_pet_id: string
+          relationship_type: string
+          sentiment?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          familiarity?: number
+          id?: string
+          last_interaction_at?: string | null
+          pet_id?: string
+          related_pet_id?: string
+          relationship_type?: string
+          sentiment?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pet_relationships_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pet_relationships_related_pet_id_fkey"
+            columns: ["related_pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -338,7 +506,98 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

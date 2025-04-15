@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +12,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from '@/integrations/supabase/client';
 
 interface AIPostSchedulerProps {
   petProfile: PetProfile;
@@ -27,10 +27,79 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [postingTime, setPostingTime] = useState("random");
   const [voiceExample, setVoiceExample] = useState("");
   const [samplePost, setSamplePost] = useState("");
-  
+
+  const storeMemory = useCallback(async (content: string, type: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
+        body: {
+          action: 'store_memory',
+          petId: petProfile.id,
+          content,
+          type,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error storing memory:', error);
+      return null;
+    }
+  }, [petProfile.id]);
+
+  const getRelevantMemories = useCallback(async (context: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
+        body: {
+          action: 'retrieve_relevant_memories',
+          petId: petProfile.id,
+          content: context,
+        },
+      });
+
+      if (error) throw error;
+      return data.memories;
+    } catch (error) {
+      console.error('Error retrieving memories:', error);
+      return [];
+    }
+  }, [petProfile.id]);
+
+  const generateSamplePost = async () => {
+    setLoading(true);
+    setSamplePost("");
+    try {
+      const relevantMemories = await getRelevantMemories(voiceExample);
+      
+      const content = await petAIService.generatePost(
+        petProfile.id, 
+        null,
+        null,
+        voiceExample,
+        relevantMemories
+      );
+      
+      if (content) {
+        setSamplePost(content);
+        await storeMemory(content, 'generated_post');
+      }
+    } catch (error) {
+      console.error("Error generating sample post:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate sample post",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const scheduleAIPosts = async () => {
     setLoading(true);
     try {
+      const relevantMemories = await getRelevantMemories(voiceExample);
+      
       const success = await petAIService.scheduleAIPosts(
         petProfile.id, 
         postCount, 
@@ -39,14 +108,15 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           postingTime,
           includeImages,
           voiceExample,
-          contentTheme: 'specific-context'
+          contentTheme: 'specific-context',
+          memories: relevantMemories,
         }
       );
       
       if (success) {
         toast({
           title: "Posts Scheduled",
-          description: `${postCount} posts have been scheduled for ${petProfile.name} using your voice example`,
+          description: `${postCount} posts have been scheduled for ${petProfile.name} using your voice example and pet's memories`,
         });
         setOpen(false);
       }
@@ -55,32 +125,6 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       toast({
         title: "Error",
         description: "Failed to schedule posts",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateSamplePost = async () => {
-    setLoading(true);
-    setSamplePost("");
-    try {
-      const content = await petAIService.generatePost(
-        petProfile.id, 
-        null,
-        null,
-        voiceExample
-      );
-      
-      if (content) {
-        setSamplePost(content);
-      }
-    } catch (error) {
-      console.error("Error generating sample post:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate sample post",
         variant: "destructive"
       });
     } finally {
