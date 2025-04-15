@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +42,17 @@ const OwnerProfile = () => {
       bio: "",
     },
   });
+
+  const handleEditProfile = (petId: string) => {
+    const petProfile = userPetProfiles.find(pet => pet.id === petId);
+    if (petProfile) {
+      navigate(`/pet/${petId}`);
+      toast({
+        title: "Edit Profile",
+        description: "Navigating to pet profile page where you can edit."
+      });
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -122,7 +132,7 @@ const OwnerProfile = () => {
       const { data: friendsData, error: friendsError } = await supabase
         .from('user_friends')
         .select('*')
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${user.id}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`)
         .eq('status', 'accepted');
       
       if (friendsError) {
@@ -230,7 +240,7 @@ const OwnerProfile = () => {
       console.error('Error fetching friends:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load friends data. Please try again later.',
+        description: 'Failed to load friends data. Please try again.',
         variant: 'destructive',
       });
     }
@@ -697,18 +707,22 @@ const OwnerProfile = () => {
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2 mt-4">
-                        <Link to={`/pet-edit/${pet.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        </Link>
-                        <Link to={`/profile?petId=${pet.id}`}>
-                          <Button variant="outline" size="sm">
-                            <User className="h-4 w-4 mr-2" />
-                            View Profile
-                          </Button>
-                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleEditProfile(pet.id)}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/pet/${pet.id}`)}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          View Profile
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

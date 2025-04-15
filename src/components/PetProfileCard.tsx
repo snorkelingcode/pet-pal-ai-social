@@ -29,6 +29,11 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
     setIsEditProfileOpen(true);
   };
 
+  // Handle view profile navigation
+  const handleViewProfile = () => {
+    navigate(`/pet/${petProfile.id}`);
+  };
+
   if (compact) {
     return (
       <Card className="mb-4">
@@ -53,7 +58,8 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
             {showViewButton && (
               <Button 
                 size="sm" 
-                onClick={() => navigate(`/pet/${petProfile.id}`)}
+                onClick={handleViewProfile}
+                className="bg-petpal-blue hover:bg-petpal-blue/90"
               >
                 View Profile
               </Button>
