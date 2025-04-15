@@ -1,5 +1,4 @@
-
-import React, { Suspense, lazy, useState } from "react";
+import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,6 +37,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!user) {
+    // Store the attempted URL to redirect back after login
+    const currentPath = window.location.pathname + window.location.search + window.location.hash;
+    sessionStorage.setItem('redirectAfterLogin', currentPath);
     return <Navigate to="/login" replace />;
   }
   
@@ -51,6 +53,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+        <Route path="/pet/:petId" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

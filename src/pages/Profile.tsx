@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
@@ -13,6 +12,8 @@ import AIPostScheduler from '@/components/AIPostScheduler';
 
 const Profile = () => {
   const { petId: paramPetId } = useParams<{ petId: string }>();
+  const [searchParams] = useSearchParams();
+  const queryPetId = searchParams.get('petId');
   const { user } = useAuth();
   const [petProfile, setPetProfile] = useState<PetProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,28 +22,45 @@ const Profile = () => {
   const [followCount, setFollowCount] = useState({ followers: 0, following: 0 });
   const [activeTab, setActiveTab] = useState<string>("posts");
   
+  // Use either the route param or query param for petId
+  const effectivePetId = paramPetId || queryPetId;
+  
   useEffect(() => {
     const fetchPetProfile = async () => {
-      if (!paramPetId) return;
+      if (!effectivePetId && !user) return;
       
       setLoading(true);
       
       try {
-        // Fetch pet profile
-        const { data: petData, error: petError } = await supabase
+        // If no specific pet ID, fetch the user's first pet
+        let petQuery = supabase
           .from('pet_profiles')
           .select('*, ai_personas(*)')
-          .eq('id', paramPetId)
-          .single();
           
-        if (petError) throw petError;
+        if (effectivePetId) {
+          petQuery = petQuery.eq('id', effectivePetId);
+        } else if (user) {
+          petQuery = petQuery.eq('owner_id', user.id).limit(1);
+        }
+        
+        const { data: petData, error: petError } = await petQuery.single();
+        
+        if (petError) {
+          if (petError.code === 'PGRST116') {
+            // No profile found
+            toast({
+              title: "No Pet Profile Found",
+              description: "Create your first pet profile to get started!",
+              variant: "default"
+            });
+            setLoading(false);
+            return;
+          }
+          throw petError;
+        }
         
         if (!petData) {
-          toast({
-            title: "Not Found",
-            description: "Pet profile not found",
-            variant: "destructive"
-          });
+          setLoading(false);
           return;
         }
         
@@ -54,8 +72,8 @@ const Profile = () => {
           species: petData.species,
           breed: petData.breed,
           age: petData.age,
-          personality: petData.personality,
-          bio: petData.bio,
+          personality: petData.personality || [],
+          bio: petData.bio || '',
           profilePicture: petData.profile_picture || '',
           createdAt: petData.created_at,
           followers: petData.followers || 0,
@@ -80,12 +98,13 @@ const Profile = () => {
             .from('pet_follows')
             .select('*')
             .eq('follower_id', user.id)
-            .eq('following_id', paramPetId);
+            .eq('following_id', petData.id);
             
           if (!followingError && followingData && followingData.length > 0) {
             setIsFollowing(true);
           }
         }
+        
       } catch (error) {
         console.error("Error fetching pet profile:", error);
         toast({
@@ -99,7 +118,7 @@ const Profile = () => {
     };
     
     fetchPetProfile();
-  }, [paramPetId, user]);
+  }, [effectivePetId, user]);
   
   const handleFollowToggle = async () => {
     if (!user) {
@@ -176,23 +195,26 @@ const Profile = () => {
     );
   }
 
-  if (!petProfile) {
+  if (!petProfile && !loading) {
     return (
-      <>
-        <HeaderCard 
-          title="Not Found" 
-          subtitle="The requested pet profile could not be found"
-        />
-        <div className="flex flex-col items-center justify-center h-[50vh]">
-          <h2 className="text-xl font-bold mb-2">Pet Not Found</h2>
-          <p className="text-muted-foreground text-center max-w-md mb-6">
-            The pet profile you're looking for doesn't exist or has been removed
-          </p>
-          <Link to="/">
-            <Button>Go Home</Button>
-          </Link>
-        </div>
-      </>
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <h2 className="text-2xl font-bold mb-4">No Pet Profile Found</h2>
+        <p className="text-muted-foreground text-center max-w-md mb-6">
+          {user ? "Create your first pet profile to get started!" : "Please log in to view your pet profiles"}
+        </p>
+        <Button 
+          onClick={() => {
+            if (user) {
+              const createProfileEvent = new CustomEvent('open-create-profile');
+              window.dispatchEvent(createProfileEvent);
+            } else {
+              window.location.href = '/login';
+            }
+          }}
+        >
+          {user ? "Create Pet Profile" : "Log In"}
+        </Button>
+      </div>
     );
   }
 

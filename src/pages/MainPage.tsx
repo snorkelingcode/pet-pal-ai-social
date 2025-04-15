@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Index from './Index';
 import Profile from './Profile';
@@ -8,11 +7,10 @@ import Notifications from './Notifications';
 import Favorites from './Favorites';
 import Settings from './Settings';
 import OwnerProfile from './OwnerProfile';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
-// Define a context to share section information with child components
 export const MainPageContext = React.createContext<{
   activeSection: SectionType;
 }>({
@@ -22,8 +20,8 @@ export const MainPageContext = React.createContext<{
 const MainPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
-  // Extract section from URL hash if present, default to feed
   const getInitialSection = (): SectionType => {
     const hash = location.hash.replace('#', '') as SectionType;
     return ['feed', 'profile', 'messages', 'notifications', 'favorites', 'settings', 'owner-profile'].includes(hash) 
@@ -33,13 +31,17 @@ const MainPage = () => {
   
   const [activeSection, setActiveSection] = useState<SectionType>(getInitialSection());
   
-  // Update URL hash when section changes
   const changeSection = (section: SectionType) => {
     setActiveSection(section);
-    navigate(`/#${section}`, { replace: true });
+    const petId = searchParams.get('petId');
+    const newHash = `#${section}`;
+    if (petId) {
+      navigate(`${location.pathname}?petId=${petId}${newHash}`);
+    } else {
+      navigate(`${location.pathname}${newHash}`);
+    }
   };
   
-  // Render the appropriate component based on activeSection
   const renderContent = () => {
     switch(activeSection) {
       case 'feed':
@@ -61,12 +63,10 @@ const MainPage = () => {
     }
   };
   
-  // Provide context value to child components
   const contextValue = {
     activeSection
   };
   
-  // Pass the section change handler to Layout
   return (
     <MainPageContext.Provider value={contextValue}>
       <Layout onSectionChange={changeSection} activeSection={activeSection}>
