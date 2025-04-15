@@ -1,10 +1,7 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,7 +41,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       if (success) {
         toast({
           title: "Posts Scheduled",
-          description: `${postCount} AI posts have been scheduled for ${petProfile.name}`,
+          description: `${postCount} short, witty posts have been scheduled for ${petProfile.name}`,
         });
         setOpen(false);
       }
@@ -79,6 +76,11 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       }
     } catch (error) {
       console.error("Error generating sample post:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate sample post",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -100,7 +102,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           <DialogHeader>
             <DialogTitle>Schedule AI Posts for {petProfile.name}</DialogTitle>
             <DialogDescription>
-              Let your pet's AI persona automatically create and post content
+              Let your pet create witty one-liners limited to 140 characters
             </DialogDescription>
           </DialogHeader>
 
@@ -164,16 +166,20 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="voice-example">Pet's Voice Example</Label>
                   <Textarea 
                     id="voice-example"
-                    placeholder="Enter an example tweet in what you think your pet would sound like"
+                    placeholder="Write a sample tweet (max 140 chars) in your pet's voice to help our AI match their style"
                     value={voiceExample}
-                    onChange={(e) => setVoiceExample(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 140) {
+                        setVoiceExample(e.target.value);
+                      }
+                    }}
                     className="min-h-[100px]"
+                    maxLength={140}
                   />
                   <p className="text-xs text-muted-foreground">
-                    This helps our AI match your pet's unique voice and personality
+                    {140 - voiceExample.length} characters remaining. Write a witty one-liner that captures your pet's personality.
                   </p>
                 </div>
 
@@ -183,10 +189,10 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                     checked={includeImages}
                     onCheckedChange={setIncludeImages}
                   />
-                  <Label htmlFor="include-images" className="flex items-center gap-2">
+                  <label htmlFor="include-images" className="flex items-center gap-2">
                     <ImageIcon size={16} />
                     Include images in posts
-                  </Label>
+                  </label>
                 </div>
               </CardContent>
             </Card>

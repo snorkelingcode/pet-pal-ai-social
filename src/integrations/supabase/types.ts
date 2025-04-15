@@ -253,6 +253,7 @@ export type Database = {
           post_id: string | null
           scheduled_for: string
           status: string
+          voice_example: string | null
         }
         Insert: {
           content_theme?: string
@@ -263,6 +264,7 @@ export type Database = {
           post_id?: string | null
           scheduled_for: string
           status?: string
+          voice_example?: string | null
         }
         Update: {
           content_theme?: string
@@ -273,6 +275,7 @@ export type Database = {
           post_id?: string | null
           scheduled_for?: string
           status?: string
+          voice_example?: string | null
         }
         Relationships: [
           {

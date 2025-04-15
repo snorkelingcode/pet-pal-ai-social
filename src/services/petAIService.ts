@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile, Post } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -19,7 +18,6 @@ interface ScheduleOptions {
 }
 
 export const petAIService = {
-  // Generate an AI post for a pet
   generatePost: async (
     petId: string, 
     content?: string, 
@@ -50,7 +48,6 @@ export const petAIService = {
     }
   },
 
-  // Generate an image caption for a pet
   generateCaption: async (petId: string, imageBase64: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
@@ -74,7 +71,6 @@ export const petAIService = {
     }
   },
 
-  // Generate a direct message to another pet
   generateMessage: async (petId: string, targetPetId: string, content?: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
@@ -99,7 +95,6 @@ export const petAIService = {
     }
   },
 
-  // Get suggested pets to follow based on owner's connections
   getSuggestedPetsToFollow: async (petId: string): Promise<PetProfile[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
@@ -122,7 +117,6 @@ export const petAIService = {
     }
   },
 
-  // Create an AI post and save it to the database
   createAIPost: async (
     petId: string, 
     content?: string, 
@@ -130,35 +124,33 @@ export const petAIService = {
     voiceExample?: string
   ): Promise<Post | null> => {
     try {
-      // First generate the AI content
       const generatedContent = await petAIService.generatePost(petId, content, imageBase64, voiceExample);
       
       if (!generatedContent) return null;
       
-      // Prepare post data
+      if (generatedContent.length > 140) {
+        throw new Error('Generated content exceeds 140 characters');
+      }
+      
       const postData = {
         pet_id: petId,
         content: generatedContent,
-        image: null, // We'll update this if an image is uploaded
+        image: null,
         likes: 0,
         comments: 0
       };
       
-      // If we have an image, upload it to storage
       if (imageBase64) {
-        // Convert base64 to file
         const base64Response = await fetch(`data:image/jpeg;base64,${imageBase64}`);
         const blob = await base64Response.blob();
         const file = new File([blob], `pet_post_${Date.now()}.jpg`, { type: 'image/jpeg' });
         
-        // Upload to Supabase storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('pets')
           .upload(`posts/${petId}_${Date.now()}.jpg`, file);
           
         if (uploadError) throw uploadError;
         
-        // Get public URL
         const { data: publicUrlData } = supabase.storage
           .from('pets')
           .getPublicUrl(uploadData.path);
@@ -166,7 +158,6 @@ export const petAIService = {
         postData.image = publicUrlData.publicUrl;
       }
       
-      // Insert post into database
       const { data: post, error } = await supabase
         .from('posts')
         .insert([postData])
@@ -175,7 +166,6 @@ export const petAIService = {
         
       if (error) throw error;
       
-      // Map to our front-end type
       const mappedPost: Post = {
         id: post.id,
         petId: post.pet_id,
@@ -184,7 +174,7 @@ export const petAIService = {
         likes: post.likes,
         comments: post.comments,
         createdAt: post.created_at,
-        petProfile: {} as any // This would need to be filled in later
+        petProfile: {} as any
       };
       
       toast({
@@ -197,14 +187,13 @@ export const petAIService = {
       console.error('Error creating AI post:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create AI post',
+        description: error.message || 'Failed to create AI post',
         variant: 'destructive'
       });
       return null;
     }
   },
 
-  // Schedule multiple posts to be made over time
   scheduleAIPosts: async (
     petId: string, 
     numberOfPosts: number = 5,
@@ -219,38 +208,28 @@ export const petAIService = {
         contentTheme = 'general'
       } = options || {};
       
-      // Create scheduled posts in database
       const now = new Date();
       const scheduledPosts = [];
       
       for (let i = 0; i < numberOfPosts; i++) {
         let scheduledDate = new Date(now);
         
-        // Set different posting times based on frequency
         if (frequency === 'daily') {
-          // Add i days for daily frequency
           scheduledDate.setDate(scheduledDate.getDate() + i);
         } else if (frequency === 'weekly') {
-          // Add i weeks for weekly frequency
           scheduledDate.setDate(scheduledDate.getDate() + (i * 7));
         } else {
-          // Random frequency - scatter between now and 30 days
           const randomDays = Math.floor(Math.random() * 30) + 1;
           scheduledDate.setDate(scheduledDate.getDate() + randomDays);
         }
         
-        // Set time of day based on postingTime
         if (postingTime === 'morning') {
-          // Random time between 8 AM and 12 PM
           scheduledDate.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0);
         } else if (postingTime === 'afternoon') {
-          // Random time between 12 PM and 5 PM
           scheduledDate.setHours(12 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60), 0);
         } else if (postingTime === 'evening') {
-          // Random time between 5 PM and 10 PM
           scheduledDate.setHours(17 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60), 0);
         } else {
-          // Random time throughout the day (6 AM to 10 PM)
           scheduledDate.setHours(6 + Math.floor(Math.random() * 16), Math.floor(Math.random() * 60), 0);
         }
         
@@ -264,7 +243,6 @@ export const petAIService = {
         });
       }
       
-      // Insert into scheduled_posts table
       const { data, error } = await supabase
         .from('scheduled_posts')
         .insert(scheduledPosts);
@@ -281,7 +259,7 @@ export const petAIService = {
       console.error('Error scheduling AI posts:', error);
       toast({
         title: 'Error',
-        description: 'Failed to schedule AI posts',
+        description: error.message || 'Failed to schedule AI posts',
         variant: 'destructive'
       });
       return false;
