@@ -15,6 +15,7 @@ interface ScheduleOptions {
   includeImages?: boolean;
   voiceExample?: string;
   contentTheme?: string;
+  memories?: any[]; // Added this property for the memories
 }
 
 export const petAIService = {
@@ -22,7 +23,8 @@ export const petAIService = {
     petId: string, 
     content?: string, 
     imageBase64?: string,
-    voiceExample?: string
+    voiceExample?: string,
+    relevantMemories?: any[]
   ): Promise<string | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
@@ -31,7 +33,8 @@ export const petAIService = {
           petId,
           content,
           imageBase64,
-          voiceExample
+          voiceExample,
+          relevantMemories
         },
       });
 
@@ -121,10 +124,11 @@ export const petAIService = {
     petId: string, 
     content?: string, 
     imageBase64?: string,
-    voiceExample?: string
+    voiceExample?: string,
+    relevantMemories?: any[]
   ): Promise<Post | null> => {
     try {
-      const generatedContent = await petAIService.generatePost(petId, content, imageBase64, voiceExample);
+      const generatedContent = await petAIService.generatePost(petId, content, imageBase64, voiceExample, relevantMemories);
       
       if (!generatedContent) return null;
       
@@ -205,7 +209,8 @@ export const petAIService = {
         postingTime = 'random',
         includeImages = true,
         voiceExample = '',
-        contentTheme = 'general'
+        contentTheme = 'general',
+        memories = [],
       } = options || {};
       
       const now = new Date();

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,12 +72,12 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
     try {
       const relevantMemories = await getRelevantMemories(voiceExample);
       
+      // Fix: Pass the correct number of arguments to the generatePost function
       const content = await petAIService.generatePost(
         petProfile.id, 
-        null,
-        null,
-        voiceExample,
-        relevantMemories
+        null, // content
+        null, // imageBase64
+        voiceExample // voiceExample
       );
       
       if (content) {
@@ -109,7 +110,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           includeImages,
           voiceExample,
           contentTheme: 'specific-context',
-          memories: relevantMemories,
+          memories: relevantMemories, // Now this property is defined in the type
         }
       );
       
