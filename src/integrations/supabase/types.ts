@@ -243,6 +243,54 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_posts: {
+        Row: {
+          content_theme: string
+          created_at: string
+          id: string
+          include_images: boolean
+          pet_id: string
+          post_id: string | null
+          scheduled_for: string
+          status: string
+        }
+        Insert: {
+          content_theme?: string
+          created_at?: string
+          id?: string
+          include_images?: boolean
+          pet_id: string
+          post_id?: string | null
+          scheduled_for: string
+          status?: string
+        }
+        Update: {
+          content_theme?: string
+          created_at?: string
+          id?: string
+          include_images?: boolean
+          pet_id?: string
+          post_id?: string | null
+          scheduled_for?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_friends: {
         Row: {
           created_at: string

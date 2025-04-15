@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { petAIService } from '@/services/petAIService';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { Robot, Calendar, Image as ImageIcon, MessageCircle } from 'lucide-react';
+import { Bot, Calendar, Image as ImageIcon, MessageCircle } from 'lucide-react';
 
 interface AIPostSchedulerProps {
   petProfile: PetProfile;
@@ -74,7 +73,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         className="flex items-center gap-2" 
         onClick={() => setOpen(true)}
       >
-        <Robot size={16} />
+        <Bot size={16} />
         Schedule AI Posts
       </Button>
 
