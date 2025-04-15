@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { petAIService } from '@/services/petAIService';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { Bot, Calendar, Image as ImageIcon, MessageCircle } from 'lucide-react';
+import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AIPostSchedulerProps {
   petProfile: PetProfile;
@@ -25,7 +26,8 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [frequency, setFrequency] = useState("daily");
   const [postingTime, setPostingTime] = useState("random");
   const [voiceExample, setVoiceExample] = useState("");
-
+  const [samplePost, setSamplePost] = useState("");
+  
   const scheduleAIPosts = async () => {
     setLoading(true);
     try {
@@ -36,14 +38,15 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           frequency,
           postingTime,
           includeImages,
-          voiceExample
+          voiceExample,
+          contentTheme: 'specific-context'
         }
       );
       
       if (success) {
         toast({
           title: "Posts Scheduled",
-          description: `${postCount} witty one-liners have been scheduled for ${petProfile.name}`,
+          description: `${postCount} posts have been scheduled for ${petProfile.name} using your voice example`,
         });
         setOpen(false);
       }
@@ -61,6 +64,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
 
   const generateSamplePost = async () => {
     setLoading(true);
+    setSamplePost("");
     try {
       const content = await petAIService.generatePost(
         petProfile.id, 
@@ -70,11 +74,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       );
       
       if (content) {
-        toast({
-          title: "Sample AI Post",
-          description: content,
-          duration: 6000,
-        });
+        setSamplePost(content);
       }
     } catch (error) {
       console.error("Error generating sample post:", error);
@@ -87,6 +87,8 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       setLoading(false);
     }
   };
+
+  const isVoiceExampleProvided = voiceExample.trim().length > 0;
 
   return (
     <>
@@ -109,6 +111,66 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageCircle size={16} />
+                  Voice & Context Example
+                </CardTitle>
+                <CardDescription>
+                  This is the most important part - provide a sample that will set the context and voice
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Textarea 
+                    id="voice-example"
+                    placeholder="Example: 'Rito has been getting in lots of trouble lately and so has MoMo. Their legal fees are more expensive than our house!'"
+                    value={voiceExample}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 140) {
+                        setVoiceExample(e.target.value);
+                        setSamplePost("");
+                      }
+                    }}
+                    className="min-h-[100px]"
+                    maxLength={140}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {140 - voiceExample.length} characters remaining. Write a post that captures your pet's voice and establishes specific context.
+                  </p>
+                </div>
+
+                {!isVoiceExampleProvided && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      A voice example is strongly recommended. Without it, generated posts will be generic.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {samplePost && (
+                  <Alert className="bg-muted">
+                    <AlertDescription>
+                      <strong>Sample post:</strong> {samplePost}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex justify-end">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={generateSamplePost} 
+                    disabled={loading || !isVoiceExampleProvided}
+                  >
+                    Generate Sample Post
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -156,34 +218,6 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                     </SelectContent>
                   </Select>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageCircle size={16} />
-                  Content Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Textarea 
-                    id="voice-example"
-                    placeholder="Write a sample post (max 140 chars) in your pet's voice to help AI match their style"
-                    value={voiceExample}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 140) {
-                        setVoiceExample(e.target.value);
-                      }
-                    }}
-                    className="min-h-[100px]"
-                    maxLength={140}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {140 - voiceExample.length} characters remaining. Write a witty one-liner that captures your pet's personality.
-                  </p>
-                </div>
 
                 <div className="flex items-center space-x-2">
                   <Switch 
@@ -201,10 +235,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={generateSamplePost} disabled={loading}>
-              Generate Sample
-            </Button>
-            <Button onClick={scheduleAIPosts} disabled={loading}>
+            <Button onClick={scheduleAIPosts} disabled={loading || !isVoiceExampleProvided}>
               {loading ? "Processing..." : "Schedule Posts"}
             </Button>
           </DialogFooter>

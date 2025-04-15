@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -99,41 +100,53 @@ Common Phrases: ${aiPersona.catchphrases.join(", ")}
 Interests: ${aiPersona.interests.join(", ")}
 Dislikes: ${aiPersona.dislikes.join(", ")}
 
-Create a witty, memorable social media post that is EXACTLY ONE-LINER, no more than 140 characters.`;
+Create a WITTY, MEMORABLE social media post as a ONE-LINER with MAXIMUM 140 characters.`;
 
   if (voiceExample && voiceExample.trim()) {
-    prompt += `\n\nHere's an example of my voice and humor style that you should match:
+    prompt += `\n\nVOICE EXAMPLE (THIS IS CRITICAL CONTEXT YOU MUST USE):
 "${voiceExample.trim()}"
 
-Analyze this example for:
-1. Tone and attitude
-2. Type of humor (sarcastic, observational, etc.)
-3. Writing style and personality
-4. Key themes or topics
+IMPORTANT ANALYSIS:
+1. Extract the specific names mentioned (e.g., "Rito", "MoMo")
+2. Note key themes (e.g., legal troubles, expenses, mischief)
+3. Understand the tone and personality shown
+4. Identify the specific scenario described
 
-Now create a NEW post that captures this same style but is completely different - DO NOT reuse the same topic or structure.`;
+Your post MUST:
+- Reference the same characters mentioned in the example
+- Continue the SAME STORYLINE/SCENARIO from the example
+- Maintain the exact same tone and humor style
+- Be written from the SAME perspective
+- Use the specific details and context provided`;
   }
 
   if (providedContent) {
-    prompt += `\n\nIncorporate this idea in your own voice: "${providedContent}"`;
+    prompt += `\n\nIncorporate this idea in your own voice (while still continuing the storyline from the voice example): "${providedContent}"`;
   }
 
   prompt += `\n\nCRITICAL RULES:
-1. MAXIMUM 140 CHARACTERS - This is a strict requirement!
-2. Make it COMPLETELY UNIQUE using seed: ${randomSeed} and timestamp: ${timestamp}
-3. Must be witty and capture my personality
-4. NO repetitive formats or common pet phrases
+1. ABSOLUTE MAXIMUM 140 CHARACTERS - This is a requirement!
+2. Make it UNIQUE with seed: ${randomSeed} and timestamp: ${timestamp}
+3. CONTINUE THE EXACT SAME SCENARIO from the voice example - DO NOT create a new scenario
+4. Keep ALL character names, legal themes, and the specific context CONSISTENT
 5. NO hashtags unless specifically requested
-6. Make it sound natural and conversational
-7. Focus on humor that matches my personality`;
+6. Every post must directly continue or add to the specific storyline
+7. Write as if you're giving an update on the SAME ONGOING SITUATION
+8. DO NOT IGNORE THE VOICE EXAMPLE - it contains the critical context and scenario`;
 
   const messages = [
     {
       role: "system",
-      content: `You are a witty pet creating short, engaging social media posts. You MUST keep responses under 140 characters and make each post unique.
-DO NOT use common pet phrases like "bork bork" or "meow friends".
-DO NOT start posts the same way.
-Focus on clever observations and personality.`,
+      content: `You are a witty pet creating social media posts about your very specific life situation. Your posts:
+- MUST follow the exact story/scenario in the voice example (including names, context, and situation)
+- MUST continue the SAME STORYLINE from the voice example
+- Must be EXACTLY in the same voice and style as the example
+- Must stay under 140 characters
+- Must make direct references to characters and situations in the example
+- Must feel like a natural continuation of the scenario
+
+DO NOT create generic pet content. DO NOT ignore the specific scenario details.
+If given a voice example about legal troubles with pets named Rito and MoMo, your post MUST continue THAT EXACT storyline.`,
     },
     {
       role: "user",
@@ -145,7 +158,7 @@ Focus on clever observations and personality.`,
     messages[1].content = [
       {
         type: "text",
-        text: prompt + "\n\nDescribe what you see in this image with my unique voice:"
+        text: prompt + "\n\nDescribe what you see in this image while continuing the specific scenario from the voice example:"
       },
       {
         type: "image_url",
@@ -166,9 +179,9 @@ Focus on clever observations and personality.`,
       model: "gpt-4o-mini",
       messages,
       max_tokens: 100,
-      temperature: 0.85,
-      presence_penalty: 1,
-      frequency_penalty: 1.5,
+      temperature: 0.9,
+      presence_penalty: 1.2,
+      frequency_penalty: 1.8,
     }),
   });
 
