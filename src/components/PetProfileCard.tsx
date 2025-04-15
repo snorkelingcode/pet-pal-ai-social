@@ -9,7 +9,7 @@ import { Pencil } from "lucide-react";
 import CreatePetProfileModal from "./CreatePetProfileModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface PetProfileCardProps {
   petProfile: PetProfile;
@@ -20,9 +20,14 @@ interface PetProfileCardProps {
 const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }: PetProfileCardProps) => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Check if the current user is the owner of this pet profile
   const isOwner = user && petProfile.ownerId === user.id;
+
+  const handleEditProfile = () => {
+    setIsEditProfileOpen(true);
+  };
 
   if (compact) {
     return (
@@ -46,8 +51,11 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
             </div>
             
             {showViewButton && (
-              <Button size="sm" asChild>
-                <Link to={`/pet/${petProfile.id}`}>View Profile</Link>
+              <Button 
+                size="sm" 
+                onClick={() => navigate(`/pet/${petProfile.id}`)}
+              >
+                View Profile
               </Button>
             )}
           </div>
@@ -74,7 +82,7 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
             <Button 
               className="absolute top-20 right-4 bg-petpal-blue hover:bg-petpal-blue/90" 
               size="sm"
-              onClick={() => setIsEditProfileOpen(true)}
+              onClick={handleEditProfile}
             >
               <Pencil className="mr-1 h-4 w-4" />
               Edit Profile
