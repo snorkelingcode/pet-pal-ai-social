@@ -9,13 +9,15 @@ import { Pencil } from "lucide-react";
 import CreatePetProfileModal from "./CreatePetProfileModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
 
 interface PetProfileCardProps {
   petProfile: PetProfile;
   compact?: boolean;
+  showViewButton?: boolean;
 }
 
-const PetProfileCard = ({ petProfile, compact = false }: PetProfileCardProps) => {
+const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }: PetProfileCardProps) => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const { user } = useAuth();
 
@@ -26,20 +28,28 @@ const PetProfileCard = ({ petProfile, compact = false }: PetProfileCardProps) =>
     return (
       <Card className="mb-4">
         <CardContent className="p-4">
-          <div className="flex items-center">
-            <Avatar className="h-12 w-12">
-              <img 
-                src={petProfile.profilePicture} 
-                alt={petProfile.name}
-                className="object-cover"
-              />
-            </Avatar>
-            <div className="ml-3">
-              <h3 className="font-semibold">{petProfile.name}</h3>
-              <p className="text-xs text-muted-foreground">
-                {petProfile.breed} {petProfile.species} • {petProfile.age} years old
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Avatar className="h-12 w-12">
+                <img 
+                  src={petProfile.profilePicture} 
+                  alt={petProfile.name}
+                  className="object-cover"
+                />
+              </Avatar>
+              <div className="ml-3">
+                <h3 className="font-semibold">{petProfile.name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {petProfile.breed} {petProfile.species} • {petProfile.age} years old
+                </p>
+              </div>
             </div>
+            
+            {showViewButton && (
+              <Button size="sm" asChild>
+                <Link to={`/pet/${petProfile.id}`}>View Profile</Link>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
