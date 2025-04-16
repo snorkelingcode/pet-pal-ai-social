@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 
-// Define the section types
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
 interface SidebarProps {
@@ -103,7 +102,8 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           profilePicture: pet.profile_picture,
           createdAt: pet.created_at,
           followers: pet.followers || 0,
-          following: pet.following || 0
+          following: pet.following || 0,
+          handle: pet.handle
         }));
         
         setUserPets(petProfiles);
@@ -123,7 +123,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
   }, [user]);
 
   const handleSelectPet = (petId: string) => {
-    // We still need search params for pet selection
     const url = window.location.pathname + window.location.hash;
     const newUrl = url.includes('?') 
       ? url.replace(/petId=[^&]+/, `petId=${petId}`)
@@ -201,7 +200,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
         </div>
         
-        {/* Pet selection dropdown for logged in users */}
         {user && selectedPet && userPets.length > 0 && (
           <div className="mb-4 p-3 bg-accent rounded-lg flex items-center">
             <Avatar className="h-10 w-10 mr-3">
@@ -212,7 +210,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
               <p className="text-xs text-muted-foreground">Active Profile</p>
             </div>
             
-            {/* Pet selection dropdown - only shows user's pets */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -271,7 +268,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           })}
         </nav>
         
-        {/* Buttons for signed-in users */}
         {user && (
           <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
             <Button 
@@ -292,7 +288,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           </div>
         )}
         
-        {/* Sign In button for guests */}
         {!user && (
           <div className="absolute bottom-8 right-4 left-0 pr-4">
             <Button 

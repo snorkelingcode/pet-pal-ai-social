@@ -21,7 +21,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
       const fetchUserPet = async () => {
         const { data: petProfile } = await supabase
           .from('pet_profiles')
-          .select('id')
+          .select('id, handle')
           .eq('owner_id', user.id)
           .limit(1)
           .single();

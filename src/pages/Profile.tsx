@@ -80,7 +80,8 @@ const Profile = () => {
           profilePicture: petData.profile_picture || '',
           createdAt: petData.created_at,
           followers: petData.followers || 0,
-          following: petData.following || 0
+          following: petData.following || 0,
+          handle: petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '')
         };
         
         setFollowCount({
@@ -155,7 +156,7 @@ const Profile = () => {
           createdAt: post.pet_profiles.created_at,
           followers: post.pet_profiles.followers,
           following: post.pet_profiles.following,
-          handle: post.pet_profiles.handle
+          handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
         }
       }));
 
@@ -167,9 +168,14 @@ const Profile = () => {
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
-            *,
-            profiles:user_id (*),
-            pet_profiles:pet_id (*)
+            id,
+            post_id,
+            pet_id,
+            content,
+            likes,
+            created_at,
+            pet_profiles:pet_id (*),
+            profiles:user_id (*)
           `)
           .eq('post_id', post.id)
           .order('created_at', { ascending: true });
@@ -180,35 +186,42 @@ const Profile = () => {
         }
 
         if (commentsData) {
-          const formattedComments = commentsData.map(comment => ({
-            id: comment.id,
-            postId: comment.post_id,
-            content: comment.content,
-            createdAt: comment.created_at,
-            likes: comment.likes,
-            userId: comment.user_id || undefined,
-            petId: comment.pet_id || undefined,
-            petProfile: comment.pet_profiles ? {
-              id: comment.pet_profiles.id,
-              name: comment.pet_profiles.name,
-              species: comment.pet_profiles.species,
-              breed: comment.pet_profiles.breed,
-              profilePicture: comment.pet_profiles.profile_picture || undefined,
-              age: comment.pet_profiles.age,
-              personality: comment.pet_profiles.personality,
-              bio: comment.pet_profiles.bio,
-              ownerId: comment.pet_profiles.owner_id,
-              createdAt: comment.pet_profiles.created_at,
-              followers: comment.pet_profiles.followers,
-              following: comment.pet_profiles.following,
-              handle: comment.pet_profiles.handle
-            } : undefined,
-            userProfile: comment.profiles ? {
-              id: comment.profiles.id,
-              username: comment.profiles.username,
-              avatarUrl: comment.profiles.avatar_url || undefined
-            } : undefined
-          }));
+          const formattedComments = commentsData.map(comment => {
+            let userProfile;
+            if (comment.profiles) {
+              userProfile = {
+                id: comment.profiles.id || '',
+                username: comment.profiles.username || 'Anonymous',
+                avatarUrl: comment.profiles.avatar_url
+              };
+            }
+            
+            return {
+              id: comment.id,
+              postId: comment.post_id,
+              content: comment.content,
+              createdAt: comment.created_at,
+              likes: comment.likes,
+              petId: comment.pet_id || undefined,
+              userId: comment.profiles?.id || undefined,
+              petProfile: comment.pet_profiles ? {
+                id: comment.pet_profiles.id,
+                name: comment.pet_profiles.name,
+                species: comment.pet_profiles.species,
+                breed: comment.pet_profiles.breed,
+                profilePicture: comment.pet_profiles.profile_picture || undefined,
+                age: comment.pet_profiles.age,
+                personality: comment.pet_profiles.personality,
+                bio: comment.pet_profiles.bio,
+                ownerId: comment.pet_profiles.owner_id,
+                createdAt: comment.pet_profiles.created_at,
+                followers: comment.pet_profiles.followers,
+                following: comment.pet_profiles.following,
+                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+              } : undefined,
+              userProfile: userProfile
+            };
+          });
           
           commentsMapping[post.id] = formattedComments;
         } else {
@@ -334,7 +347,7 @@ const Profile = () => {
     <>
       <HeaderCard 
         title={petProfile.name} 
-        subtitle={`${petProfile.species} • ${petProfile.breed} • ${petProfile.age} years old`}
+        subtitle={`@${petProfile.handle} • ${petProfile.species} • ${petProfile.breed} • ${petProfile.age} years old`}
       />
       
       <div className="w-full mb-6">
@@ -353,7 +366,7 @@ const Profile = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">{petProfile.name}</h2>
-                <p className="text-muted-foreground">{petProfile.species} • {petProfile.breed} • {petProfile.age} years old</p>
+                <p className="text-muted-foreground">@{petProfile.handle} • {petProfile.species} • {petProfile.breed} • {petProfile.age} years old</p>
               </div>
               
               <div className="flex items-center gap-4 mt-4 md:mt-0">
