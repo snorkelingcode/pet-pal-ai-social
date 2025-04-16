@@ -1,4 +1,3 @@
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -130,20 +129,17 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           .eq('post_id', postId)
           .order('created_at', { ascending: true });
           
-        if (error) {
-          console.error("Error fetching comments:", error);
-          return [];
-        }
+        if (error) throw error;
         
         return (data || []).map(comment => {
           const defaultHandle = comment.pet_profiles?.handle || 
-              (comment.pet_profiles?.name ? comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '') : '') ||
-              (comment.profiles?.username ? comment.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'unknown');
-            
-          const defaultName = comment.pet_profiles?.name || 
-              comment.profiles?.username || 'Unknown User';
+            (comment.pet_profiles?.name ? comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '') : '') ||
+            (comment.profiles?.username ? comment.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'anonymous');
           
-          const formattedComment: Comment = {
+          const defaultName = comment.pet_profiles?.name || 
+            comment.profiles?.username || 'Anonymous';
+          
+          return {
             id: comment.id,
             postId,
             content: comment.content,
@@ -153,13 +149,13 @@ export const usePostInteractions = (postId: string, petId?: string) => {
             likes: comment.likes,
             authorHandle: comment.author_handle || defaultHandle,
             authorName: comment.author_name || defaultName,
-            petProfile: comment.pet_profiles ? {
+            petProfile: comment.pet_id && comment.pet_profiles ? {
               id: comment.pet_profiles.id,
               name: comment.pet_profiles.name,
               species: comment.pet_profiles.species,
               breed: comment.pet_profiles.breed,
               profilePicture: comment.pet_profiles.profile_picture || undefined,
-              handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+              handle: comment.pet_profiles.handle,
               age: 0,
               personality: [],
               bio: '',
@@ -168,16 +164,15 @@ export const usePostInteractions = (postId: string, petId?: string) => {
               followers: 0,
               following: 0
             } : undefined,
-            userProfile: comment.profiles ? {
+            userProfile: comment.user_id && comment.profiles ? {
               id: comment.profiles.id,
               username: comment.profiles.username,
               avatarUrl: comment.profiles.avatar_url || undefined
             } : undefined
           };
-          return formattedComment;
         });
       } catch (err) {
-        console.error("Error in comment query:", err);
+        console.error("Error fetching comments:", err);
         return [];
       }
     }

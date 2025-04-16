@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -147,7 +146,7 @@ export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProf
   createdAt: dbPetProfile.created_at,
   followers: dbPetProfile.followers,
   following: dbPetProfile.following,
-  handle: dbPetProfile.handle || dbPetProfile.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+  handle: dbPetProfile.handle,
 });
 
 export const mapDbAIPersonaToAIPersona = (dbAIPersona: DbAIPersona): AIPersona => ({
