@@ -633,6 +633,19 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
       }
+      match_memories: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+          pet_id: string
+        }
+        Returns: {
+          id: string
+          content: string
+          similarity: number
+        }[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown

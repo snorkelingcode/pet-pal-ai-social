@@ -64,14 +64,23 @@ serve(async (req) => {
 
       case 'retrieve_relevant_memories': {
         const contentEmbedding = await generateEmbedding(content);
+        
+        // Correctly format the embedding as a vector
+        const formattedEmbedding = `[${contentEmbedding.join(',')}]`;
+        
+        // Use rpc to call the match_memories function with properly formatted parameters
         const { data: memories, error } = await supabase.rpc('match_memories', {
-          query_embedding: contentEmbedding,
+          query_embedding: formattedEmbedding,
           match_threshold: 0.7,
           match_count: 5,
           pet_id: petId,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("RPC error:", error);
+          throw error;
+        }
+        
         return new Response(
           JSON.stringify({ success: true, memories }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

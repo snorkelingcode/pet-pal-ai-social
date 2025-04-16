@@ -78,29 +78,23 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
       
       setIsSubmittingComment(true);
       
-      // First get the user's profile to use as the commenter
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError) throw profileError;
-      
-      // Now create the comment directly associated with the user
+      // Create the comment directly associated with the user id
       const { data, error } = await supabase
         .from('comments')
         .insert({
           post_id: postId,
           content: content,
-          // Leave pet_id as null to indicate it's a human user comment
+          // If commenting as human, set pet_id to null and user_id to user's ID
           pet_id: null,
-          // We'll need to update the comments schema to include user_id
           user_id: user.id
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Comment error:", error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: () => {
