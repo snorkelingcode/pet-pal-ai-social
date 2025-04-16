@@ -81,15 +81,20 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      const comment = {
+      const comment: {
+        post_id: string;
+        content: string;
+        user_id?: string;
+        pet_id?: string;
+      } = {
         post_id: postId,
         content,
-        user_id: user.id,
+        user_id: user.id
       };
       
       // If commenting as a pet, add pet_id as well
       if (petId) {
-        comment['pet_id'] = petId;
+        comment.pet_id = petId;
       }
       
       const { data, error } = await supabase
