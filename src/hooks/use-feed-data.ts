@@ -144,11 +144,11 @@ export const useFeedData = (userId?: string) => {
                 createdAt: '',
                 followers: 0,
                 following: 0,
-                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                handle: comment.pet_profiles.name?.toLowerCase().replace(/[^a-z0-9]/g, ''),
               } : undefined,
               userProfile: comment.user_id && comment.profiles ? {
-                id: comment.profiles.id,
-                username: comment.profiles.username,
+                id: comment.profiles.id || '',
+                username: comment.profiles.username || '',
                 avatarUrl: comment.profiles.avatar_url || undefined
               } : undefined
             };

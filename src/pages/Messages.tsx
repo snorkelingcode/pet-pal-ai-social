@@ -50,7 +50,7 @@ const Messages = () => {
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,
-          handle: pet.handle
+          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
         }));
         
         setPetProfiles(formattedProfiles);

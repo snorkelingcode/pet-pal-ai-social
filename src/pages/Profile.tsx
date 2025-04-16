@@ -175,7 +175,7 @@ const Profile = () => {
             likes,
             created_at,
             pet_profiles:pet_id (*),
-            profiles:user_id (*)
+            profiles:user_id (id, username, avatar_url)
           `)
           .eq('post_id', post.id)
           .order('created_at', { ascending: true });
@@ -190,9 +190,9 @@ const Profile = () => {
             let userProfile;
             if (comment.profiles) {
               userProfile = {
-                id: comment.profiles.id || '',
-                username: comment.profiles.username || 'Anonymous',
-                avatarUrl: comment.profiles.avatar_url
+                id: comment.profiles?.id || '',
+                username: comment.profiles?.username || 'Anonymous',
+                avatarUrl: comment.profiles?.avatar_url
               };
             }
             

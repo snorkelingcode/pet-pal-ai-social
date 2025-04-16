@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageSquare, Share } from 'lucide-react';
+import { Heart, MessageSquare, Share, User } from 'lucide-react';
 import { usePostInteractions } from '@/hooks/use-post-interactions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

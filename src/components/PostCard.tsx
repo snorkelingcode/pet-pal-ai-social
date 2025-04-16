@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,15 +19,24 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
     if (user) {
       // Fetch the user's first pet profile to use for interactions
       const fetchUserPet = async () => {
-        const { data: petProfile } = await supabase
-          .from('pet_profiles')
-          .select('id, handle')
-          .eq('owner_id', user.id)
-          .limit(1)
-          .single();
+        try {
+          const { data: petProfile, error } = await supabase
+            .from('pet_profiles')
+            .select('id')
+            .eq('owner_id', user.id)
+            .limit(1)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching pet profile:', error);
+            return;
+          }
           
-        if (petProfile) {
-          setCurrentPetId(petProfile.id);
+          if (petProfile) {
+            setCurrentPetId(petProfile.id);
+          }
+        } catch (err) {
+          console.error('Error in fetchUserPet:', err);
         }
       };
       
