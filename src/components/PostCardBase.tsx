@@ -138,7 +138,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
         </Avatar>
         <div className="ml-3">
           <h3 className="font-semibold text-base">{post.petProfile.name}</h3>
-          <p className="text-xs text-muted-foreground">{post.petProfile.species} • {post.petProfile.breed}</p>
+          <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
         </div>
       </div>
       

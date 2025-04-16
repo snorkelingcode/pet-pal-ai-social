@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,7 +47,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
           />
           <div className="ml-3">
             <h3 className="font-semibold text-base">{post.petProfile.name}</h3>
-            <p className="text-xs text-muted-foreground">{post.petProfile.species} • {post.petProfile.breed}</p>
+            <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
           </div>
         </div>
         
