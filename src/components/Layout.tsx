@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -98,15 +99,13 @@ const Layout = ({
               </button>
               <button 
                 onClick={() => handleNavigation('owner-profile')}
-                className={`flex flex-col items-center p-1 ${
-                  activeSection === 'owner-profile' ? 'text-petpal-blue' : 'text-muted-foreground'
-                }`}
+                className={`flex flex-col items-center p-1 ${activeSection === 'owner-profile' ? 'text-petpal-blue' : 'text-muted-foreground'}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="18" x="3" y="3" rx="2"></rect>
-                  <path d="M12 8v8"></path>
-                  <path d="M8 12h8"></path>
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
                 </svg>
+                <span className="text-xs mt-0.5">Owner</span>
               </button>
             </div>
           </div>

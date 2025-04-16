@@ -275,6 +275,35 @@ export interface Database {
           },
         ]
       }
+      user_favorites: {
+        Row: {
+          id: string
+          user_id: string
+          pet_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          pet_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          pet_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       scheduled_posts: {
         Row: {
           id: string
