@@ -101,7 +101,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             userProfile: {
               id: newComment.userProfile?.id || user?.id || '',
               username: newComment.userProfile?.username || user?.username || 'User',
-              avatarUrl: newComment.userProfile?.avatar_url
+              avatarUrl: newComment.userProfile?.avatar_url || user?.avatar_url
             }
           }];
           setLocalComments(updatedComments);

@@ -101,37 +101,41 @@ export const useFeedData = (userId?: string) => {
         
         // Safely process comments data
         if (commentsResponse.data) {
-          for (const comment of commentsResponse.data) {
-            const formattedComment: Comment = {
-              id: comment.id,
-              postId: comment.post_id,
-              petId: comment.pet_id || undefined,
-              userId: comment.user_id || undefined,
-              content: comment.content,
-              likes: comment.likes,
-              createdAt: comment.created_at,
-              petProfile: comment.pet_id && comment.pet_profiles ? {
-                id: comment.pet_profiles.id,
-                name: comment.pet_profiles.name,
-                species: comment.pet_profiles.species,
-                breed: comment.pet_profiles.breed,
-                profilePicture: comment.pet_profiles.profile_picture,
-                age: 0, // Default value since we're not fetching this
-                personality: [],
-                bio: '',
-                ownerId: '',
-                createdAt: '',
-                followers: 0,
-                following: 0,
-              } : undefined,
-              userProfile: comment.user_id && comment.profiles ? {
-                id: comment.profiles.id,
-                username: comment.profiles.username,
-                avatarUrl: comment.profiles.avatar_url,
-              } : undefined,
-            };
-            formattedComments.push(formattedComment);
-          }
+          commentsResponse.data.forEach(comment => {
+            try {
+              const formattedComment: Comment = {
+                id: comment.id,
+                postId: comment.post_id,
+                petId: comment.pet_id || undefined,
+                userId: comment.user_id || undefined,
+                content: comment.content,
+                likes: comment.likes,
+                createdAt: comment.created_at,
+                petProfile: comment.pet_id && comment.pet_profiles ? {
+                  id: comment.pet_profiles.id,
+                  name: comment.pet_profiles.name,
+                  species: comment.pet_profiles.species,
+                  breed: comment.pet_profiles.breed,
+                  profilePicture: comment.pet_profiles.profile_picture,
+                  age: 0, // Default value since we're not fetching this
+                  personality: [],
+                  bio: '',
+                  ownerId: '',
+                  createdAt: '',
+                  followers: 0,
+                  following: 0,
+                } : undefined,
+                userProfile: comment.user_id && comment.profiles ? {
+                  id: comment.profiles.id,
+                  username: comment.profiles.username,
+                  avatarUrl: comment.profiles.avatar_url,
+                } : undefined,
+              };
+              formattedComments.push(formattedComment);
+            } catch (error) {
+              console.error("Error formatting comment:", error);
+            }
+          });
         }
         
         setPosts(formattedPosts);
