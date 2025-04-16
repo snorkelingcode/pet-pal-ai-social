@@ -58,6 +58,8 @@ export type Database = {
       }
       comments: {
         Row: {
+          author_handle: string | null
+          author_name: string | null
           content: string
           created_at: string
           id: string
@@ -67,6 +69,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          author_handle?: string | null
+          author_name?: string | null
           content: string
           created_at?: string
           id?: string
@@ -76,6 +80,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          author_handle?: string | null
+          author_name?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -97,13 +103,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

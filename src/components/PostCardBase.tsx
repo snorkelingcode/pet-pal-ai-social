@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -213,25 +212,31 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             <div key={comment.id} className="flex items-start mb-3">
               <Avatar className="h-8 w-8">
                 {comment.petProfile ? (
-                  <img src={comment.petProfile.profilePicture || '/placeholder.svg'} alt={comment.petProfile.name} />
+                  <img 
+                    src={comment.petProfile.profilePicture || '/placeholder.svg'} 
+                    alt={comment.authorName} 
+                  />
                 ) : comment.userProfile?.avatarUrl ? (
-                  <img src={comment.userProfile.avatarUrl} alt={comment.userProfile.username} />
+                  <img 
+                    src={comment.userProfile.avatarUrl} 
+                    alt={comment.authorName} 
+                  />
                 ) : (
                   <User className="h-5 w-5" />
                 )}
               </Avatar>
               <div className="ml-2">
-                <h4 className="font-medium text-sm">
-                  {comment.petProfile ? comment.petProfile.name : comment.userProfile?.username}
-                </h4>
+                <h4 className="font-medium text-sm">{comment.authorName}</h4>
                 <p className="text-xs text-muted-foreground mb-1">
-                  @{comment.petProfile ? comment.petProfile.handle : comment.userProfile?.username?.toLowerCase()}
+                  @{comment.authorHandle}
                 </p>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <button className="mr-3">Like</button>
                   <button>Reply</button>
-                  <span className="ml-auto">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                  <span className="ml-auto">
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             </div>

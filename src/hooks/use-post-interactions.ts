@@ -1,10 +1,8 @@
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
-// Define a type for comment data from Supabase
 type CommentResponseData = {
   id: string;
   post_id: string;
@@ -31,7 +29,6 @@ export const usePostInteractions = (postId: string, petId?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Check if user has liked the post
   const { data: hasLiked = false, isLoading: isCheckingLike } = useQuery({
     queryKey: ['post-like', postId],
     queryFn: async () => {
@@ -55,13 +52,11 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     enabled: !!petId && !!user,
   });
   
-  // Toggle like
   const toggleLike = useMutation({
     mutationFn: async () => {
       if (!petId || !user) throw new Error("Must be logged in with a pet profile to like posts");
       
       if (hasLiked) {
-        // Unlike
         const { error } = await supabase
           .from('post_interactions')
           .delete()
@@ -72,7 +67,6 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         if (error) throw error;
         return false;
       } else {
-        // Like
         const { error } = await supabase
           .from('post_interactions')
           .insert({
@@ -99,7 +93,6 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     },
   });
   
-  // Get comments for the post
   const { data: comments = [], isLoading: isLoadingComments } = useQuery({
     queryKey: ['comments', postId],
     queryFn: async () => {
@@ -109,20 +102,22 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           id, 
           content, 
           created_at,
-          user_id,
           pet_id,
           likes,
-          profiles:user_id (
-            id,
-            username,
-            avatar_url
-          ),
+          author_handle,
+          author_name,
           pet_profiles:pet_id (
             id,
             name,
             species,
             breed,
-            profile_picture
+            profile_picture,
+            handle
+          ),
+          profiles:user_id (
+            id,
+            username,
+            avatar_url
           )
         `)
         .eq('post_id', postId)
@@ -133,25 +128,50 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         return [];
       }
       
-      return data || [];
+      return (data || []).map(comment => ({
+        id: comment.id,
+        postId,
+        content: comment.content,
+        createdAt: comment.created_at,
+        petId: comment.pet_id || undefined,
+        likes: comment.likes,
+        authorHandle: comment.author_handle,
+        authorName: comment.author_name,
+        petProfile: comment.pet_profiles ? {
+          id: comment.pet_profiles.id,
+          name: comment.pet_profiles.name,
+          species: comment.pet_profiles.species,
+          breed: comment.pet_profiles.breed,
+          profilePicture: comment.pet_profiles.profile_picture || undefined,
+          handle: comment.pet_profiles.handle,
+          age: 0,
+          personality: [],
+          bio: '',
+          ownerId: '',
+          createdAt: '',
+          followers: 0,
+          following: 0
+        } : undefined,
+        userProfile: comment.profiles ? {
+          id: comment.profiles.id,
+          username: comment.profiles.username,
+          avatarUrl: comment.profiles.avatar_url || undefined
+        } : undefined
+      }));
     }
   });
   
-  // Add comment
   const addComment = useMutation({
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      // Create comment data - ensure pet_id is not optional when required by DB
       const commentData = {
         post_id: postId,
         content: content,
         user_id: user.id,
-        // If petId exists, use it; otherwise set to null
         pet_id: petId || null
       };
       
-      // Type assertion to ensure DB expects pet_id to be nullable
       const { data, error } = await supabase
         .from('comments')
         .insert(commentData as any)
@@ -185,7 +205,6 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         throw new Error("Failed to create comment");
       }
       
-      // Safe type assertion after error checking
       const commentResponse = data as unknown as CommentResponseData;
       
       return {

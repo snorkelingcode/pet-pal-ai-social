@@ -39,16 +39,18 @@ export interface Comment {
   id: string;
   postId: string;
   petId?: string;
-  petProfile?: PetProfile;
   userId?: string;
+  content: string;
+  likes: number;
+  createdAt: string;
+  authorHandle: string;
+  authorName: string;
+  petProfile?: PetProfile;
   userProfile?: {
     username: string;
     avatarUrl?: string;
     id: string;
   };
-  content: string;
-  likes: number;
-  createdAt: string;
 }
 
 export interface AIPersona {

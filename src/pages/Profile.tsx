@@ -63,52 +63,26 @@ const Profile = () => {
           throw petError;
         }
         
-        if (!petData) {
-          setLoading(false);
-          return;
+        if (petData) {
+          const profile: PetProfile = {
+            id: petData.id,
+            ownerId: petData.owner_id,
+            name: petData.name,
+            species: petData.species,
+            breed: petData.breed,
+            age: petData.age,
+            personality: petData.personality || [],
+            bio: petData.bio || '',
+            profilePicture: petData.profile_picture || '',
+            createdAt: petData.created_at,
+            followers: petData.followers || 0,
+            following: petData.following || 0,
+            handle: petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          };
+          
+          setPetProfile(profile);
+          fetchPetPosts(petData.id);
         }
-        
-        const profile: PetProfile = {
-          id: petData.id,
-          ownerId: petData.owner_id,
-          name: petData.name,
-          species: petData.species,
-          breed: petData.breed,
-          age: petData.age,
-          personality: petData.personality || [],
-          bio: petData.bio || '',
-          profilePicture: petData.profile_picture || '',
-          createdAt: petData.created_at,
-          followers: petData.followers || 0,
-          following: petData.following || 0,
-          handle: petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-        };
-        
-        setFollowCount({
-          followers: petData.followers || 0,
-          following: petData.following || 0
-        });
-        
-        setPetProfile(profile);
-        
-        if (user && user.id === petData.owner_id) {
-          setIsOwner(true);
-        }
-        
-        if (user) {
-          const { data: followingData, error: followingError } = await supabase
-            .from('pet_follows')
-            .select('*')
-            .eq('follower_id', user.id)
-            .eq('following_id', petData.id);
-            
-          if (!followingError && followingData && followingData.length > 0) {
-            setIsFollowing(true);
-          }
-        }
-
-        fetchPetPosts(petData.id);
-        
       } catch (error) {
         console.error("Error fetching pet profile:", error);
         toast({
