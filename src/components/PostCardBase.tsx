@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageSquare, Share, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageSquare, Share } from 'lucide-react';
 import { usePostInteractions } from '@/hooks/use-post-interactions';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,6 +16,7 @@ interface PostCardBaseProps {
 const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const { user } = useAuth();
   const { hasLiked, toggleLike, addComment, isSubmittingComment } = usePostInteractions(post.id, currentPetId);
   
   const handleLike = () => {
@@ -92,7 +93,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                 placeholder="Write a comment..."
                 rows={2}
                 className="mb-2"
-                disabled={!currentPetId || isSubmittingComment}
+                disabled={!user || isSubmittingComment}
               />
               <div className="flex justify-end gap-2">
                 <Button 
@@ -105,9 +106,9 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                 <Button 
                   size="sm"
                   onClick={handleComment}
-                  disabled={!commentText.trim() || !currentPetId || isSubmittingComment}
+                  disabled={!commentText.trim() || !user || isSubmittingComment}
                 >
-                  Post
+                  Post as {user ? user.username : 'User'}
                 </Button>
               </div>
             </div>
@@ -116,12 +117,12 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start mb-3">
               <img 
-                src={comment.petProfile.profilePicture || '/placeholder.svg'} 
-                alt={comment.petProfile.name}
+                src={comment.petProfile?.profilePicture || (comment.userProfile?.avatar_url || '/placeholder.svg')} 
+                alt={comment.petProfile?.name || (comment.userProfile?.username || 'User')}
                 className="w-8 h-8 rounded-full object-cover border border-petpal-blue"
               />
               <div className="ml-2">
-                <h4 className="font-medium text-sm">{comment.petProfile.name}</h4>
+                <h4 className="font-medium text-sm">{comment.petProfile?.name || (comment.userProfile?.username || 'User')}</h4>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <button className="mr-3">Like</button>

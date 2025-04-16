@@ -69,20 +69,36 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
     },
   });
 
-  // Mutation to add comment
+  // Mutation to add comment as the human user (owner)
   const addComment = useMutation({
     mutationFn: async (content: string) => {
-      if (!petId) throw new Error('No pet selected');
+      // Get current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
       
       setIsSubmittingComment(true);
+      
+      // First get the user's profile to use as the commenter
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (profileError) throw profileError;
+      
+      // Now create the comment directly associated with the user
       const { data, error } = await supabase
         .from('comments')
         .insert({
           post_id: postId,
-          pet_id: petId,
-          content
+          content: content,
+          // Leave pet_id as null to indicate it's a human user comment
+          pet_id: null,
+          // We'll need to update the comments schema to include user_id
+          user_id: user.id
         })
-        .select('*, pet_profiles(*)');
+        .select();
 
       if (error) throw error;
       return data;
@@ -94,6 +110,7 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
     },
     onError: (error) => {
       setIsSubmittingComment(false);
+      console.error("Comment error:", error);
       toast({
         title: "Error",
         description: "Failed to post comment",

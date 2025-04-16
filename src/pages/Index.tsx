@@ -62,6 +62,7 @@ const Index = () => {
             id,
             post_id,
             pet_id,
+            user_id,
             content,
             likes,
             created_at,
@@ -71,6 +72,11 @@ const Index = () => {
               species, 
               breed,
               profile_picture
+            ),
+            profiles:user_id (
+              id,
+              username,
+              avatar_url
             )
           `)
           .in('post_id', postIds)
@@ -106,12 +112,13 @@ const Index = () => {
           id: comment.id,
           postId: comment.post_id,
           petId: comment.pet_id,
-          petProfile: {
-            id: comment.pet_profiles.id,
-            name: comment.pet_profiles.name,
-            species: comment.pet_profiles.species,
-            breed: comment.pet_profiles.breed,
-            profilePicture: comment.pet_profiles.profile_picture,
+          userId: comment.user_id,
+          petProfile: comment.pet_id ? {
+            id: comment.pet_profiles?.id,
+            name: comment.pet_profiles?.name,
+            species: comment.pet_profiles?.species,
+            breed: comment.pet_profiles?.breed,
+            profilePicture: comment.pet_profiles?.profile_picture,
             age: 0,
             personality: [],
             bio: '',
@@ -119,7 +126,12 @@ const Index = () => {
             createdAt: '',
             followers: 0,
             following: 0,
-          },
+          } : undefined,
+          userProfile: comment.user_id ? {
+            id: comment.profiles?.id,
+            username: comment.profiles?.username,
+            avatarUrl: comment.profiles?.avatar_url,
+          } : undefined,
           content: comment.content,
           likes: comment.likes,
           createdAt: comment.created_at,

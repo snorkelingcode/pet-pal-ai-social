@@ -1,23 +1,22 @@
-
 export interface User {
   id: string;
   username: string;
   email: string;
-  createdAt: string;
   bio?: string;
   avatarUrl?: string;
+  createdAt: string;
 }
 
 export interface PetProfile {
   id: string;
-  ownerId: string;
   name: string;
   species: string;
   breed: string;
   age: number;
   personality: string[];
   bio: string;
-  profilePicture: string;
+  profilePicture?: string;
+  ownerId: string;
   createdAt: string;
   followers: number;
   following: number;
@@ -37,8 +36,14 @@ export interface Post {
 export interface Comment {
   id: string;
   postId: string;
-  petId: string;
-  petProfile: PetProfile;
+  petId?: string;
+  petProfile?: PetProfile;
+  userId?: string;
+  userProfile?: {
+    username: string;
+    avatarUrl?: string;
+    id: string;
+  };
   content: string;
   likes: number;
   createdAt: string;
