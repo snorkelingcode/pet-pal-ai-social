@@ -62,7 +62,7 @@ export type Database = {
           created_at: string
           id: string
           likes: number
-          pet_id: string
+          pet_id: string | null
           post_id: string
           user_id: string | null
         }
@@ -71,7 +71,7 @@ export type Database = {
           created_at?: string
           id?: string
           likes?: number
-          pet_id: string
+          pet_id?: string | null
           post_id: string
           user_id?: string | null
         }
@@ -80,7 +80,7 @@ export type Database = {
           created_at?: string
           id?: string
           likes?: number
-          pet_id?: string
+          pet_id?: string | null
           post_id?: string
           user_id?: string | null
         }

@@ -56,9 +56,10 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
       }
     },
     onSuccess: () => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['post-like', postId] });
+      // Invalidate related queries with more specificity
+      queryClient.invalidateQueries({ queryKey: ['post-like', postId, petId] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
     },
     onError: (error) => {
       toast({
@@ -77,6 +78,18 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
       if (!user) throw new Error('User not authenticated');
       
       setIsSubmittingComment(true);
+
+      // Get user profile data to have access to username
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (profileError) {
+        console.error("Profile error:", profileError);
+        throw profileError;
+      }
       
       // Create the comment directly associated with the user id
       const { data, error } = await supabase
@@ -95,11 +108,16 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
         throw error;
       }
       
-      return data;
+      return {
+        ...data[0],
+        userProfile: userProfile 
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // More aggressive query invalidation for realtime updates
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
       setIsSubmittingComment(false);
     },
     onError: (error) => {

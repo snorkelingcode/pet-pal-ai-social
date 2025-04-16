@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useFeedData = (userId?: string) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,23 +54,28 @@ export const useFeedData = (userId?: string) => {
         
         const postIds = postsResponse.data.map(post => post.id);
         
-        // Fetch comments for these posts
-        // Note: We're removing the problematic relationship query with profiles
+        // Fetch comments for these posts with both pet and user profiles
         const commentsResponse = await supabase
           .from('comments')
           .select(`
             id,
             post_id,
             pet_id,
+            user_id,
             content,
             likes,
             created_at,
-            pet_profiles(
+            pet_profiles:pet_id (
               id,
               name,
               species,
               breed,
               profile_picture
+            ),
+            profiles:user_id (
+              id,
+              username,
+              avatar_url
             )
           `)
           .in('post_id', postIds)
@@ -94,7 +101,7 @@ export const useFeedData = (userId?: string) => {
           id: comment.id,
           postId: comment.post_id,
           petId: comment.pet_id || undefined,
-          userId: undefined, // We're not fetching user data for now
+          userId: comment.user_id || undefined,
           petProfile: comment.pet_id && comment.pet_profiles ? {
             id: comment.pet_profiles.id,
             name: comment.pet_profiles.name,
@@ -109,7 +116,11 @@ export const useFeedData = (userId?: string) => {
             followers: 0,
             following: 0,
           } : undefined,
-          userProfile: undefined, // We're not fetching user profiles for now
+          userProfile: comment.user_id && comment.profiles ? {
+            id: comment.profiles.id,
+            username: comment.profiles.username,
+            avatarUrl: comment.profiles.avatar_url,
+          } : undefined,
           content: comment.content,
           likes: comment.likes,
           createdAt: comment.created_at,
@@ -132,6 +143,34 @@ export const useFeedData = (userId?: string) => {
     };
     
     fetchData();
+
+    // Set up realtime subscription for posts and comments
+    const postsChannel = supabase
+      .channel('public:posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    const commentsChannel = supabase
+      .channel('public:comments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    const interactionsChannel = supabase
+      .channel('public:post_interactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_interactions' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(interactionsChannel);
+    };
   }, [userId]);
 
   const mapPostsData = (postsData: any[]): Post[] => {
