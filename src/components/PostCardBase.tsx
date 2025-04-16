@@ -85,7 +85,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     if (!commentText.trim()) return;
     
     addComment.mutate(commentText, {
-      onSuccess: (newComment) => {
+      onSuccess: (newComment: any) => {
         setCommentText('');
         setIsCommenting(false);
         
@@ -94,7 +94,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           const updatedComments = [...localComments, {
             id: newComment.id || `temp-${Date.now()}`,
             postId: post.id,
-            userId: newComment.user_id,
+            userId: user?.id,
             content: commentText,
             likes: 0,
             createdAt: new Date().toISOString(),

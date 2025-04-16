@@ -119,6 +119,11 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
       queryClient.invalidateQueries({ queryKey: ['comments'] });
       setIsSubmittingComment(false);
+      
+      toast({
+        title: "Success",
+        description: "Comment posted successfully",
+      });
     },
     onError: (error) => {
       setIsSubmittingComment(false);
