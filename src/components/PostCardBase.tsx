@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -24,12 +23,10 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   const { hasLiked, toggleLike, addComment, isSubmittingComment } = usePostInteractions(post.id, currentPetId);
   const queryClient = useQueryClient();
   
-  // Update local comments whenever the prop changes
   useEffect(() => {
     setLocalComments(comments);
   }, [comments]);
 
-  // Set up real-time subscription to comments
   useEffect(() => {
     const channel = supabase
       .channel('public:comments')
@@ -41,7 +38,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           filter: `post_id=eq.${post.id}`
         }, 
         (payload) => {
-          // Invalidate queries to refresh data
           queryClient.invalidateQueries({ queryKey: ['comments', post.id] });
           queryClient.invalidateQueries({ queryKey: ['posts'] });
         }
@@ -53,7 +49,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     };
   }, [post.id, queryClient]);
 
-  // Set up real-time subscription to post likes
   useEffect(() => {
     const channel = supabase
       .channel('public:post_interactions')
@@ -65,7 +60,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           filter: `post_id=eq.${post.id}`
         }, 
         (payload) => {
-          // Invalidate queries to refresh data
           queryClient.invalidateQueries({ queryKey: ['post-like', post.id] });
           queryClient.invalidateQueries({ queryKey: ['posts'] });
         }
@@ -89,7 +83,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
         setCommentText('');
         setIsCommenting(false);
         
-        // Optimistically update the UI with the new comment
         if (newComment) {
           const updatedComments = [...localComments, {
             id: newComment.id || `temp-${Date.now()}`,
@@ -101,7 +94,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             userProfile: {
               id: newComment.userProfile?.id || user?.id || '',
               username: newComment.userProfile?.username || user?.username || 'User',
-              avatarUrl: newComment.userProfile?.avatar_url || user?.avatar_url
+              avatarUrl: newComment.userProfile?.avatarUrl || user?.avatarUrl
             }
           }];
           setLocalComments(updatedComments);
@@ -109,8 +102,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
       }
     });
   };
-  
-  // Helper function to get display name
+
   const getDisplayName = (comment: Comment) => {
     if (comment.petProfile) {
       return comment.petProfile.name;
@@ -120,7 +112,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     return "User";
   };
 
-  // Helper function to get avatar URL
   const getAvatarUrl = (comment: Comment) => {
     if (comment.petProfile?.profilePicture) {
       return comment.petProfile.profilePicture;
@@ -130,12 +121,11 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     return undefined;
   };
 
-  // Helper function to get first letter for avatar fallback
   const getAvatarFallback = (comment: Comment) => {
     const name = getDisplayName(comment);
     return name.charAt(0).toUpperCase();
   };
-  
+
   return (
     <div className="w-full max-w-[600px] p-4 mb-4 bg-card rounded-lg shadow-sm border relative">
       <div className="flex items-start mb-3">

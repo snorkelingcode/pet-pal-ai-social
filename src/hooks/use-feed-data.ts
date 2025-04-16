@@ -55,7 +55,7 @@ export const useFeedData = (userId?: string) => {
         const postIds = postsResponse.data.map(post => post.id);
         
         // Fetch comments for these posts with both pet and user profiles
-        const commentsResponse = await supabase
+        const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
             id,
@@ -81,8 +81,8 @@ export const useFeedData = (userId?: string) => {
           .in('post_id', postIds)
           .order('created_at', { ascending: true });
           
-        if (commentsResponse.error) {
-          console.error("Error fetching comments:", commentsResponse.error);
+        if (commentsError) {
+          console.error("Error fetching comments:", commentsError);
           toast({
             title: "Warning",
             description: "Could not load comments. Some features may be limited.",
@@ -100,8 +100,8 @@ export const useFeedData = (userId?: string) => {
         const formattedComments: Comment[] = [];
         
         // Safely process comments data
-        if (commentsResponse.data) {
-          commentsResponse.data.forEach(comment => {
+        if (commentsData) {
+          commentsData.forEach(comment => {
             try {
               const formattedComment: Comment = {
                 id: comment.id,
@@ -117,7 +117,7 @@ export const useFeedData = (userId?: string) => {
                   species: comment.pet_profiles.species,
                   breed: comment.pet_profiles.breed,
                   profilePicture: comment.pet_profiles.profile_picture,
-                  age: 0, // Default value since we're not fetching this
+                  age: 0,
                   personality: [],
                   bio: '',
                   ownerId: '',
