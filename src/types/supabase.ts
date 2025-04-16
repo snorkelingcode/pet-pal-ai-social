@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -167,6 +166,45 @@ export interface Database {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_interactions: {
+        Row: {
+          id: string
+          post_id: string
+          pet_id: string
+          interaction_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          pet_id: string
+          interaction_type: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          pet_id?: string
+          interaction_type?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_interactions_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_interactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]

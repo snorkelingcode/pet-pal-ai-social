@@ -1,12 +1,9 @@
-
-// Since PostCard.tsx is a read-only file, we'll create a wrapper component
-// that will handle the read-only state of the component
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import PostCardBase from './PostCardBase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PostCardProps {
   post: Post;

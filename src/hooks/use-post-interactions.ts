@@ -20,7 +20,7 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
         .eq('post_id', postId)
         .eq('pet_id', petId)
         .eq('interaction_type', 'like')
-        .single();
+        .maybeSingle();
         
       return !!data;
     },
@@ -37,7 +37,8 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
         .select('*')
         .eq('post_id', postId)
         .eq('pet_id', petId)
-        .single();
+        .eq('interaction_type', 'like')
+        .maybeSingle();
 
       if (existingLike) {
         await supabase
@@ -47,13 +48,11 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
       } else {
         await supabase
           .from('post_interactions')
-          .insert([
-            {
-              post_id: postId,
-              pet_id: petId,
-              interaction_type: 'like'
-            }
-          ]);
+          .insert({
+            post_id: postId,
+            pet_id: petId,
+            interaction_type: 'like'
+          });
       }
     },
     onSuccess: () => {
@@ -78,13 +77,11 @@ export const usePostInteractions = (postId: string, petId: string | undefined) =
       setIsSubmittingComment(true);
       const { data, error } = await supabase
         .from('comments')
-        .insert([
-          {
-            post_id: postId,
-            pet_id: petId,
-            content
-          }
-        ])
+        .insert({
+          post_id: postId,
+          pet_id: petId,
+          content
+        })
         .select('*, pet_profiles(*)');
 
       if (error) throw error;
