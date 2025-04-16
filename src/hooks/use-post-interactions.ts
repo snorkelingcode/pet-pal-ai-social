@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -80,12 +81,23 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      const commentData = {
+      // Create comment data ensuring only required fields are passed
+      const commentData: any = {
         post_id: postId,
-        content,
-        user_id: user.id,
-        ...(petId ? { pet_id: petId } : {})
+        content: content,
       };
+      
+      // Add user_id to all comments
+      commentData.user_id = user.id;
+      
+      // Only add pet_id if available (it's required by the schema)
+      if (petId) {
+        commentData.pet_id = petId;
+      } else {
+        // Handle the case where pet_id is required but not available
+        // You may need to use a placeholder value or treat differently based on your requirements
+        commentData.pet_id = null;
+      }
       
       const { data, error } = await supabase
         .from('comments')

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,7 +53,8 @@ export const useFeedData = (userId?: string) => {
         
         const postIds = postsResponse.data.map(post => post.id);
         
-        const commentsQuery = supabase
+        // Fixed query for comments to match the database schema
+        const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
             id,
@@ -76,8 +78,6 @@ export const useFeedData = (userId?: string) => {
             )
           `)
           .in('post_id', postIds);
-
-        const { data: commentsData, error: commentsError } = await commentsQuery;
           
         if (commentsError) {
           console.error("Error fetching comments:", commentsError);
@@ -101,6 +101,7 @@ export const useFeedData = (userId?: string) => {
           commentsData.forEach(comment => {
             if (!comment) return;
             
+            // Handle nullability for pet_id and user_id
             const formattedComment: Comment = {
               id: comment.id,
               postId: comment.post_id,
@@ -109,7 +110,7 @@ export const useFeedData = (userId?: string) => {
               content: comment.content,
               likes: comment.likes,
               createdAt: comment.created_at,
-              petProfile: comment.pet_profiles ? {
+              petProfile: comment.pet_id && comment.pet_profiles ? {
                 id: comment.pet_profiles.id,
                 name: comment.pet_profiles.name,
                 species: comment.pet_profiles.species,
@@ -123,7 +124,7 @@ export const useFeedData = (userId?: string) => {
                 followers: 0,
                 following: 0,
               } : undefined,
-              userProfile: comment.profiles ? {
+              userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
                 username: comment.profiles.username,
                 avatarUrl: comment.profiles.avatar_url
