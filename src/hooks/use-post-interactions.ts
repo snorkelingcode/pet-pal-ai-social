@@ -4,6 +4,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
+// Define a type for comment data from Supabase
+type CommentResponseData = {
+  id: string;
+  post_id: string;
+  content: string;
+  created_at: string;
+  user_id: string | null;
+  pet_id: string | null;
+  likes: number;
+  profiles?: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  } | null;
+  pet_profiles?: {
+    id: string;
+    name: string;
+    species: string;
+    breed: string;
+    profile_picture: string | null;
+  } | null;
+};
+
 export const usePostInteractions = (postId: string, petId?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -81,22 +104,21 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      // Create comment data ensuring only required fields are passed
-      const commentData: any = {
+      // Create comment data with required fields
+      const commentData: {
+        post_id: string;
+        content: string;
+        user_id: string;
+        pet_id?: string | null;
+      } = {
         post_id: postId,
         content: content,
+        user_id: user.id,
       };
       
-      // Add user_id to all comments
-      commentData.user_id = user.id;
-      
-      // Only add pet_id if available (it's required by the schema)
+      // Only add pet_id if available
       if (petId) {
         commentData.pet_id = petId;
-      } else {
-        // Handle the case where pet_id is required but not available
-        // You may need to use a placeholder value or treat differently based on your requirements
-        commentData.pet_id = null;
       }
       
       const { data, error } = await supabase
@@ -125,17 +147,20 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         throw new Error("Failed to create comment");
       }
       
+      // Use type assertion to handle the response data safely
+      const commentResponse = data as CommentResponseData;
+      
       return {
-        id: data.id,
+        id: commentResponse.id,
         postId,
-        content: data.content,
-        createdAt: data.created_at,
-        userId: data.user_id,
-        petId: data.pet_id || undefined,
-        userProfile: data.profiles ? {
-          id: data.profiles.id,
-          username: data.profiles.username,
-          avatarUrl: data.profiles.avatar_url
+        content: commentResponse.content,
+        createdAt: commentResponse.created_at,
+        userId: commentResponse.user_id || undefined,
+        petId: commentResponse.pet_id || undefined,
+        userProfile: commentResponse.profiles ? {
+          id: commentResponse.profiles.id,
+          username: commentResponse.profiles.username,
+          avatarUrl: commentResponse.profiles.avatar_url || undefined
         } : undefined
       };
     },

@@ -5,6 +5,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
+// Define a type for the comment data from Supabase
+type CommentData = {
+  id: string;
+  post_id: string;
+  pet_id: string | null;
+  user_id: string | null;
+  content: string;
+  likes: number;
+  created_at: string;
+  pet_profiles?: {
+    id: string;
+    name: string;
+    species: string;
+    breed: string;
+    profile_picture: string | null;
+  } | null;
+  profiles?: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  } | null;
+};
+
 export const useFeedData = (userId?: string) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -53,7 +76,7 @@ export const useFeedData = (userId?: string) => {
         
         const postIds = postsResponse.data.map(post => post.id);
         
-        // Fixed query for comments to match the database schema
+        // Query for comments with proper error handling
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
@@ -98,7 +121,8 @@ export const useFeedData = (userId?: string) => {
         const formattedComments: Comment[] = [];
         
         if (commentsData) {
-          commentsData.forEach(comment => {
+          // Type assertion to ensure TypeScript recognizes commentsData as an array of CommentData
+          (commentsData as CommentData[]).forEach(comment => {
             if (!comment) return;
             
             // Handle nullability for pet_id and user_id
@@ -115,7 +139,7 @@ export const useFeedData = (userId?: string) => {
                 name: comment.pet_profiles.name,
                 species: comment.pet_profiles.species,
                 breed: comment.pet_profiles.breed,
-                profilePicture: comment.pet_profiles.profile_picture,
+                profilePicture: comment.pet_profiles.profile_picture || undefined,
                 age: 0,
                 personality: [],
                 bio: '',
@@ -127,7 +151,7 @@ export const useFeedData = (userId?: string) => {
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
                 username: comment.profiles.username,
-                avatarUrl: comment.profiles.avatar_url
+                avatarUrl: comment.profiles.avatar_url || undefined
               } : undefined
             };
             formattedComments.push(formattedComment);
