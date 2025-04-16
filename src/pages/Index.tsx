@@ -82,7 +82,10 @@ const Index = () => {
           .in('post_id', postIds)
           .order('created_at', { ascending: true });
           
-        if (commentsError) throw commentsError;
+        if (commentsError) {
+          console.error("Error fetching comments:", commentsError);
+          throw commentsError;
+        }
         
         const formattedPosts: Post[] = postsData.map(post => ({
           id: post.id,
@@ -113,12 +116,12 @@ const Index = () => {
           postId: comment.post_id,
           petId: comment.pet_id,
           userId: comment.user_id,
-          petProfile: comment.pet_id ? {
-            id: comment.pet_profiles?.id,
-            name: comment.pet_profiles?.name,
-            species: comment.pet_profiles?.species,
-            breed: comment.pet_profiles?.breed,
-            profilePicture: comment.pet_profiles?.profile_picture,
+          petProfile: comment.pet_id && comment.pet_profiles ? {
+            id: comment.pet_profiles.id,
+            name: comment.pet_profiles.name,
+            species: comment.pet_profiles.species,
+            breed: comment.pet_profiles.breed,
+            profilePicture: comment.pet_profiles.profile_picture,
             age: 0,
             personality: [],
             bio: '',
@@ -127,10 +130,10 @@ const Index = () => {
             followers: 0,
             following: 0,
           } : undefined,
-          userProfile: comment.user_id ? {
-            id: comment.profiles?.id,
-            username: comment.profiles?.username,
-            avatarUrl: comment.profiles?.avatar_url,
+          userProfile: comment.user_id && comment.profiles ? {
+            id: comment.profiles.id,
+            username: comment.profiles.username,
+            avatarUrl: comment.profiles.avatar_url,
           } : undefined,
           content: comment.content,
           likes: comment.likes,
