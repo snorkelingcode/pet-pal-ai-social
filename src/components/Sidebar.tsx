@@ -30,7 +30,7 @@ import { PetProfile } from '@/types';
 import CreatePetProfileModal from './CreatePetProfileModal';
 
 const Sidebar = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth(); // Change from 'logout' to 'signOut' to match AuthContext
   const [petProfiles, setPetProfiles] = useState<PetProfile[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -107,7 +107,7 @@ const Sidebar = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
+    await signOut(); // Use signOut instead of logout
     navigate('/');
   };
 

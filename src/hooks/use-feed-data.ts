@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -225,7 +226,7 @@ export const useFeedData = (userId?: string) => {
         following: post.pet_profiles.following,
         ownerId: '',
         createdAt: '',
-        handle: post.pet_profiles.handle,
+        handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
       },
       content: post.content,
       image: post.image,

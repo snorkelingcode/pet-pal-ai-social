@@ -8,23 +8,23 @@ const nameToBasicHandle = (name: string): string => {
 
 // Generate a unique handle for a pet profile
 const generateUniqueHandle = async (baseName: string): Promise<string> => {
-  let handle = nameToBasicHandle(baseName);
+  const baseHandle = nameToBasicHandle(baseName);
   
   // Check if the handle is already taken
   const { data, error } = await supabase
     .from('pet_profiles')
     .select('id')
-    .eq('handle', handle)
+    .eq('handle', baseHandle)
     .single();
   
   // If handle is available, return it
-  if (error || !data) {
-    return handle;
+  if (error && error.code === 'PGRST116') {
+    return baseHandle;
   }
   
   // If handle is taken, add a random number suffix
   const suffix = Math.floor(Math.random() * 10000).toString();
-  return handle + suffix;
+  return baseHandle + suffix;
 };
 
 export const petProfileService = {

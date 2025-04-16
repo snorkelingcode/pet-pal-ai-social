@@ -131,47 +131,51 @@ const Profile = () => {
         .select('*, pet_profiles(*)')
         .eq('pet_id', petId)
         .order('created_at', { ascending: false });
-      
-      if (error) throw error;
 
-      const transformedPosts: Post[] = data.map(post => ({
-        id: post.id,
-        petId: post.pet_id,
-        content: post.content,
-        image: post.image,
-        likes: post.likes,
-        comments: post.comments,
-        createdAt: post.created_at,
-        petProfile: {
-          id: post.pet_profiles.id,
-          name: post.pet_profiles.name,
-          species: post.pet_profiles.species,
-          breed: post.pet_profiles.breed,
-          profilePicture: post.pet_profiles.profile_picture,
-          bio: post.pet_profiles.bio,
-          personality: post.pet_profiles.personality,
-          age: post.pet_profiles.age,
-          ownerId: post.pet_profiles.owner_id,
-          createdAt: post.pet_profiles.created_at,
-          followers: post.pet_profiles.followers,
-          following: post.pet_profiles.following,
-          handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
-        }
-      }));
+      if (error) {
+        throw error;
+      }
 
-      setPosts(transformedPosts);
+      if (data) {
+        const formattedPosts: Post[] = data.map(post => ({
+          id: post.id,
+          petId: post.pet_id,
+          content: post.content,
+          image: post.image,
+          likes: post.likes,
+          comments: post.comments,
+          createdAt: post.created_at,
+          petProfile: {
+            id: post.pet_profiles.id,
+            name: post.pet_profiles.name,
+            species: post.pet_profiles.species,
+            breed: post.pet_profiles.breed,
+            profilePicture: post.pet_profiles.profile_picture || undefined,
+            bio: post.pet_profiles.bio || '',
+            personality: post.pet_profiles.personality || [],
+            age: post.pet_profiles.age,
+            ownerId: post.pet_profiles.owner_id,
+            createdAt: post.pet_profiles.created_at,
+            followers: post.pet_profiles.followers || 0,
+            following: post.pet_profiles.following || 0,
+            handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
+          }
+        }));
+        
+        setPosts(formattedPosts);
+      }
     } catch (error) {
       console.error("Error fetching pet posts:", error);
       toast({
         title: "Error",
-        description: "Failed to load pet posts",
+        description: "Failed to load posts",
         variant: "destructive"
       });
     } finally {
       setLoadingPosts(false);
     }
   };
-  
+
   const handleFollowToggle = async () => {
     if (!user) {
       toast({
@@ -225,7 +229,7 @@ const Profile = () => {
       });
     }
   };
-  
+
   const handleEditProfile = () => {
     setIsEditProfileOpen(true);
   };

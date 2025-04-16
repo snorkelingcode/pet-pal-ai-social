@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/avatar";
@@ -16,6 +15,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { PetProfile } from '@/types';
+import { PawPrint } from 'lucide-react';
 
 const profileSchema = z.object({
   name: z.string().min(2, {
@@ -107,11 +107,13 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
           
           setUserPets(formattedPets);
         }
+
+        await fetchFriends();
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load your profile data.',
+          description: 'Failed to load profile data. Please try again later.',
           variant: 'destructive',
         });
       } finally {
