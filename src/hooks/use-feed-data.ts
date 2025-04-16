@@ -53,27 +53,22 @@ export const useFeedData = (userId?: string) => {
         const postIds = postsResponse.data.map(post => post.id);
         
         // Fetch comments for these posts
+        // Note: We're removing the problematic relationship query with profiles
         const commentsResponse = await supabase
           .from('comments')
           .select(`
             id,
             post_id,
             pet_id,
-            user_id,
             content,
             likes,
             created_at,
-            pet_profiles!comments_pet_id_fkey (
+            pet_profiles(
               id,
               name,
               species,
               breed,
               profile_picture
-            ),
-            profiles!comments_user_id_fkey (
-              id,
-              username,
-              avatar_url
             )
           `)
           .in('post_id', postIds)
@@ -99,14 +94,14 @@ export const useFeedData = (userId?: string) => {
           id: comment.id,
           postId: comment.post_id,
           petId: comment.pet_id || undefined,
-          userId: comment.user_id || undefined,
+          userId: undefined, // We're not fetching user data for now
           petProfile: comment.pet_id && comment.pet_profiles ? {
             id: comment.pet_profiles.id,
             name: comment.pet_profiles.name,
             species: comment.pet_profiles.species,
             breed: comment.pet_profiles.breed,
             profilePicture: comment.pet_profiles.profile_picture,
-            age: 0,
+            age: 0, // Default value since we're not fetching this
             personality: [],
             bio: '',
             ownerId: '',
@@ -114,11 +109,7 @@ export const useFeedData = (userId?: string) => {
             followers: 0,
             following: 0,
           } : undefined,
-          userProfile: comment.user_id && comment.profiles ? {
-            id: comment.profiles.id,
-            username: comment.profiles.username,
-            avatarUrl: comment.profiles.avatar_url,
-          } : undefined,
+          userProfile: undefined, // We're not fetching user profiles for now
           content: comment.content,
           likes: comment.likes,
           createdAt: comment.created_at,
@@ -171,4 +162,3 @@ export const useFeedData = (userId?: string) => {
 
   return { posts, comments, loadingData };
 };
-
