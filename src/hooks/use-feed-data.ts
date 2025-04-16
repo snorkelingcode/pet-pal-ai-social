@@ -18,11 +18,13 @@ type CommentData = {
     species: string;
     breed: string;
     profile_picture: string | null;
+    handle: string;
   } | null;
   profiles?: {
     id: string;
     username: string;
     avatar_url: string | null;
+    handle: string | null;
   } | null;
 };
 
@@ -56,7 +58,8 @@ export const useFeedData = (userId?: string) => {
               bio,
               profile_picture,
               followers,
-              following
+              following,
+              handle
             )
           `)
           .order('created_at', { ascending: false });
@@ -89,12 +92,14 @@ export const useFeedData = (userId?: string) => {
               name,
               species,
               breed,
-              profile_picture
+              profile_picture,
+              handle
             ),
             profiles:user_id (
               id,
               username,
-              avatar_url
+              avatar_url,
+              handle
             )
           `)
           .in('post_id', postIds);
@@ -149,7 +154,8 @@ export const useFeedData = (userId?: string) => {
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
                 username: comment.profiles.username,
-                avatarUrl: comment.profiles.avatar_url || undefined
+                avatarUrl: comment.profiles.avatar_url || undefined,
+                handle: comment.profiles.handle || ''
               } : undefined
             };
             formattedComments.push(formattedComment);

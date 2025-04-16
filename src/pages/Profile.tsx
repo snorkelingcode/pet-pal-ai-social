@@ -80,7 +80,7 @@ const Profile = () => {
           createdAt: petData.created_at,
           followers: petData.followers || 0,
           following: petData.following || 0,
-          handle: petData.handle
+          handle: petData.handle || petData.name.toLowerCase().replace(/\s+/g, '')
         };
         
         setFollowCount({
@@ -155,7 +155,7 @@ const Profile = () => {
           createdAt: post.pet_profiles.created_at,
           followers: post.pet_profiles.followers,
           following: post.pet_profiles.following,
-          handle: post.pet_profiles.handle
+          handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
         }
       }));
 

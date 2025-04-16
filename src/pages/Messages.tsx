@@ -44,13 +44,13 @@ const Messages = () => {
           species: pet.species,
           breed: pet.breed,
           age: pet.age,
-          personality: pet.personality,
-          bio: pet.bio,
+          personality: pet.personality || [],
+          bio: pet.bio || '',
           profilePicture: pet.profile_picture,
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,
-          handle: pet.handle
+          handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
         }));
         
         setPetProfiles(formattedProfiles);

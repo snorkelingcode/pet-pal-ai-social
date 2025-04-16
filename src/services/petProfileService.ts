@@ -1,31 +1,30 @@
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
+// Helper function to convert a name to a basic handle (lowercase, no spaces)
+const nameToBasicHandle = (name: string): string => {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+};
+
+// Generate a unique handle for a pet profile
 const generateUniqueHandle = async (baseName: string): Promise<string> => {
-  let handle = baseName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  let suffix = '';
-  let isUnique = false;
-  let attempts = 0;
-
-  while (!isUnique && attempts < 10) {
-    const testHandle = handle + suffix;
-    
-    const { data, error } = await supabase
-      .from('pet_profiles')
-      .select('id')
-      .eq('handle', testHandle)
-      .single();
-      
-    if (error || !data) {
-      isUnique = true;
-      handle = testHandle;
-    } else {
-      attempts++;
-      suffix = Math.floor(Math.random() * 10000).toString();
-    }
+  let handle = nameToBasicHandle(baseName);
+  
+  // Check if the handle is already taken
+  const { data, error } = await supabase
+    .from('pet_profiles')
+    .select('id')
+    .eq('handle', handle)
+    .single();
+  
+  // If handle is available, return it
+  if (error || !data) {
+    return handle;
   }
-
-  return handle;
+  
+  // If handle is taken, add a random number suffix
+  const suffix = Math.floor(Math.random() * 10000).toString();
+  return handle + suffix;
 };
 
 export const petProfileService = {
@@ -130,6 +129,12 @@ export const petProfileService = {
       if (profileData.personality !== undefined) updates.personality = profileData.personality;
       if (profileData.bio !== undefined) updates.bio = profileData.bio;
       if (profileData.profilePicture !== undefined) updates.profile_picture = profileData.profilePicture;
+      if (profileData.handle !== undefined) updates.handle = profileData.handle;
+      
+      // If name changes but handle doesn't, update the handle too
+      if (profileData.name !== undefined && profileData.handle === undefined) {
+        updates.handle = await generateUniqueHandle(profileData.name);
+      }
       
       const { data, error } = await supabase
         .from('pet_profiles')
