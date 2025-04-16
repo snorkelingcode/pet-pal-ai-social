@@ -14,6 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import PetProfileCard from './PetProfileCard';
+import { User } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OwnerProfileModalProps {
   open: boolean;
@@ -24,6 +31,22 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const { user } = useAuth();
   const [pets, setPets] = useState<PetProfile[]>([]);
   const [loadingPets, setLoadingPets] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const ownerProfileSchema = z.object({
+    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+    email: z.string().email({ message: "Please enter a valid email address." }),
+    bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
+  });
+
+  const form = useForm<z.infer<typeof ownerProfileSchema>>({
+    resolver: zodResolver(ownerProfileSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      bio: "",
+    },
+  });
 
   useEffect(() => {
     const fetchUserPets = async () => {
@@ -31,6 +54,23 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       
       try {
         setLoadingPets(true);
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        if (profileData) {
+          form.reset({
+            name: profileData.username || '',
+            email: user.email || '',
+            bio: profileData.bio || '',
+          });
+          setAvatarUrl(profileData.avatar_url);
+        }
         
         const { data, error } = await supabase
           .from('pet_profiles')
@@ -77,10 +117,21 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Owner Profile</DialogTitle>
-          <DialogDescription>
-            View and manage your pet profiles.
-          </DialogDescription>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={form.getValues().name} className="object-cover" />
+              ) : (
+                <User className="h-5 w-5 text-muted-foreground" />
+              )}
+            </Avatar>
+            <div>
+              <DialogTitle>{form.getValues().name}</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                @{user?.email?.split('@')[0] || 'user'}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         <Card>
           <CardContent className="grid gap-4">
