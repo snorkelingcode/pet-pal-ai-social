@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';

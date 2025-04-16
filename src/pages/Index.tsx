@@ -56,6 +56,17 @@ const Index = () => {
         }
         
         const postIds = postsData.map(post => post.id);
+        
+        const { error: tableCheckError } = await supabase
+          .from('comments')
+          .select('id, user_id')
+          .limit(1);
+        
+        if (tableCheckError && tableCheckError.message.includes("column 'user_id' does not exist")) {
+          console.error("Comments table structure is incorrect:", tableCheckError);
+          throw new Error("Database schema needs to be updated. The user_id column is missing in the comments table.");
+        }
+        
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
