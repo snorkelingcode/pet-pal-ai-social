@@ -263,6 +263,7 @@ export type Database = {
           created_at: string
           followers: number
           following: number
+          handle: string
           id: string
           name: string
           owner_id: string
@@ -277,6 +278,7 @@ export type Database = {
           created_at?: string
           followers?: number
           following?: number
+          handle: string
           id?: string
           name: string
           owner_id: string
@@ -291,6 +293,7 @@ export type Database = {
           created_at?: string
           followers?: number
           following?: number
+          handle?: string
           id?: string
           name?: string
           owner_id?: string
@@ -439,6 +442,7 @@ export type Database = {
           bio: string | null
           created_at: string
           email: string
+          handle: string
           id: string
           username: string
         }
@@ -447,6 +451,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           email: string
+          handle: string
           id: string
           username: string
         }
@@ -455,6 +460,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           email?: string
+          handle?: string
           id?: string
           username?: string
         }

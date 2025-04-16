@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -6,6 +5,7 @@ export interface User {
   bio?: string;
   avatarUrl?: string;
   createdAt: string;
+  handle: string;
 }
 
 export interface PetProfile {
@@ -21,6 +21,7 @@ export interface PetProfile {
   createdAt: string;
   followers: number;
   following: number;
+  handle: string;
 }
 
 export interface Post {
@@ -68,6 +69,7 @@ export interface DbUser {
   bio: string | null;
   avatar_url: string | null;
   created_at: string;
+  handle: string;
 }
 
 export interface DbPetProfile {
@@ -83,6 +85,7 @@ export interface DbPetProfile {
   created_at: string;
   followers: number;
   following: number;
+  handle: string;
 }
 
 export interface DbPost {
@@ -123,6 +126,7 @@ export const mapDbUserToUser = (dbUser: DbUser): User => ({
   createdAt: dbUser.created_at,
   bio: dbUser.bio || undefined,
   avatarUrl: dbUser.avatar_url || undefined,
+  handle: dbUser.handle,
 });
 
 export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProfile => ({
@@ -138,6 +142,7 @@ export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProf
   createdAt: dbPetProfile.created_at,
   followers: dbPetProfile.followers,
   following: dbPetProfile.following,
+  handle: dbPetProfile.handle,
 });
 
 export const mapDbAIPersonaToAIPersona = (dbAIPersona: DbAIPersona): AIPersona => ({

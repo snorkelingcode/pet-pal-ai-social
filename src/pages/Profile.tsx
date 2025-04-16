@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,6 @@ const Profile = () => {
   const [postComments, setPostComments] = useState<Record<string, Comment[]>>({});
   const [loadingPosts, setLoadingPosts] = useState(false);
   
-  // Use either the route param or query param for petId
   const effectivePetId = paramPetId || queryPetId;
   
   useEffect(() => {
@@ -40,7 +38,6 @@ const Profile = () => {
       setLoading(true);
       
       try {
-        // If no specific pet ID, fetch the user's first pet
         let petQuery = supabase
           .from('pet_profiles')
           .select('*, ai_personas(*)')
@@ -55,7 +52,6 @@ const Profile = () => {
         
         if (petError) {
           if (petError.code === 'PGRST116') {
-            // No profile found
             toast({
               title: "No Pet Profile Found",
               description: "Create your first pet profile to get started!",
@@ -72,7 +68,6 @@ const Profile = () => {
           return;
         }
         
-        // Map database pet profile to our frontend type
         const profile: PetProfile = {
           id: petData.id,
           ownerId: petData.owner_id,
@@ -95,12 +90,10 @@ const Profile = () => {
         
         setPetProfile(profile);
         
-        // Check if the current user is the owner
         if (user && user.id === petData.owner_id) {
           setIsOwner(true);
         }
         
-        // Check if the current user is following this profile
         if (user) {
           const { data: followingData, error: followingError } = await supabase
             .from('pet_follows')
@@ -113,7 +106,6 @@ const Profile = () => {
           }
         }
 
-        // Fetch the pet's posts
         fetchPetPosts(petData.id);
         
       } catch (error) {
@@ -134,7 +126,6 @@ const Profile = () => {
   const fetchPetPosts = async (petId: string) => {
     setLoadingPosts(true);
     try {
-      // Fetch posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*, pet_profiles(*)')
@@ -143,7 +134,6 @@ const Profile = () => {
       
       if (postsError) throw postsError;
 
-      // Transform to our Post type
       const transformedPosts: Post[] = postsData.map(post => ({
         id: post.id,
         petId: post.pet_id,
@@ -164,38 +154,22 @@ const Profile = () => {
           ownerId: post.pet_profiles.owner_id,
           createdAt: post.pet_profiles.created_at,
           followers: post.pet_profiles.followers,
-          following: post.pet_profiles.following
+          following: post.pet_profiles.following,
+          handle: post.pet_profiles.handle
         }
       }));
 
       setPosts(transformedPosts);
 
-      // Fetch comments for each post
       const commentsMapping: Record<string, Comment[]> = {};
       
       for (const post of transformedPosts) {
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
-            id,
-            post_id,
-            content,
-            created_at,
-            user_id,
-            pet_id,
-            likes,
-            profiles:user_id (
-              id,
-              username,
-              avatar_url
-            ),
-            pet_profiles:pet_id (
-              id,
-              name,
-              species,
-              breed,
-              profile_picture
-            )
+            *,
+            profiles:user_id (*),
+            pet_profiles:pet_id (*)
           `)
           .eq('post_id', post.id)
           .order('created_at', { ascending: true });
@@ -205,7 +179,7 @@ const Profile = () => {
           continue;
         }
 
-        if (commentsData && commentsData.length > 0) {
+        if (commentsData) {
           const formattedComments = commentsData.map(comment => ({
             id: comment.id,
             postId: comment.post_id,
@@ -220,14 +194,14 @@ const Profile = () => {
               species: comment.pet_profiles.species,
               breed: comment.pet_profiles.breed,
               profilePicture: comment.pet_profiles.profile_picture || undefined,
-              // Add required fields with placeholder values
-              age: 0,
-              personality: [],
-              bio: '',
-              ownerId: '',
-              createdAt: '',
-              followers: 0,
-              following: 0,
+              age: comment.pet_profiles.age,
+              personality: comment.pet_profiles.personality,
+              bio: comment.pet_profiles.bio,
+              ownerId: comment.pet_profiles.owner_id,
+              createdAt: comment.pet_profiles.created_at,
+              followers: comment.pet_profiles.followers,
+              following: comment.pet_profiles.following,
+              handle: comment.pet_profiles.handle
             } : undefined,
             userProfile: comment.profiles ? {
               id: comment.profiles.id,
@@ -270,7 +244,6 @@ const Profile = () => {
     
     try {
       if (isFollowing) {
-        // Unfollow
         const { error } = await supabase
           .from('pet_follows')
           .delete()
@@ -287,7 +260,6 @@ const Profile = () => {
           description: `You are no longer following ${petProfile.name}`
         });
       } else {
-        // Follow
         const { error } = await supabase
           .from('pet_follows')
           .insert([{ follower_id: user.id, following_id: petProfile.id }]);
