@@ -104,26 +104,19 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      // Create comment data with required fields
-      const commentData: {
-        post_id: string;
-        content: string;
-        user_id: string;
-        pet_id?: string | null;
-      } = {
+      // Create comment data - ensure pet_id is not optional when required by DB
+      const commentData = {
         post_id: postId,
         content: content,
         user_id: user.id,
+        // If petId exists, use it; otherwise set an empty string which will be converted to NULL
+        pet_id: petId || null
       };
       
-      // Only add pet_id if available
-      if (petId) {
-        commentData.pet_id = petId;
-      }
-      
+      // Type assertion to ensure DB expects pet_id to be nullable
       const { data, error } = await supabase
         .from('comments')
-        .insert(commentData)
+        .insert(commentData as any)
         .select(`
           id, 
           content, 
@@ -147,8 +140,8 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         throw new Error("Failed to create comment");
       }
       
-      // Use type assertion to handle the response data safely
-      const commentResponse = data as CommentResponseData;
+      // Safe type assertion after error checking
+      const commentResponse = data as unknown as CommentResponseData;
       
       return {
         id: commentResponse.id,

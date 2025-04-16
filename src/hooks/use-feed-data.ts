@@ -121,8 +121,10 @@ export const useFeedData = (userId?: string) => {
         const formattedComments: Comment[] = [];
         
         if (commentsData) {
-          // Type assertion to ensure TypeScript recognizes commentsData as an array of CommentData
-          (commentsData as CommentData[]).forEach(comment => {
+          // Ensure TypeScript recognizes commentsData as an array of valid objects
+          const typedCommentsData = commentsData as unknown as CommentData[];
+          
+          typedCommentsData.forEach(comment => {
             if (!comment) return;
             
             // Handle nullability for pet_id and user_id
