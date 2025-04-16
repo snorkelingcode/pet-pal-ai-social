@@ -75,52 +75,50 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
     },
   ];
 
-  useEffect(() => {
-    const fetchUserPets = async () => {
-      if (!user) return;
-      
-      setLoadingPets(true);
-      try {
-        const { data, error } = await supabase
-          .from('pet_profiles')
-          .select('*')
-          .eq('owner_id', user.id);
-        
-        if (error) {
-          throw error;
-        }
-        
-        const petProfiles: PetProfile[] = data.map(pet => ({
-          id: pet.id,
-          ownerId: pet.owner_id,
-          name: pet.name,
-          species: pet.species,
-          breed: pet.breed,
-          age: pet.age,
-          personality: pet.personality || [],
-          bio: pet.bio || '',
-          profilePicture: pet.profile_picture || null,
-          createdAt: pet.created_at,
-          followers: pet.followers || 0,
-          following: pet.following || 0,
-          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-        }));
-        
-        setUserPets(petProfiles);
-      } catch (error) {
-        console.error('Error fetching user pets:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load your pet profiles',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoadingPets(false);
-      }
-    };
+useEffect(() => {
+  const fetchUserPets = async () => {
+    if (!user) return;
     
-    fetchUserPets();
-  }, [user]);
+    setLoadingPets(true);
+    try {
+      const { data, error } = await supabase
+        .from('pet_profiles')
+        .select('*')
+        .eq('owner_id', user.id);
+      
+      if (error) throw error;
+      
+      const petProfiles: PetProfile[] = data.map(pet => ({
+        id: pet.id,
+        ownerId: pet.owner_id,
+        name: pet.name,
+        species: pet.species,
+        breed: pet.breed,
+        age: pet.age,
+        personality: pet.personality || [],
+        bio: pet.bio || '',
+        profilePicture: pet.profile_picture || null,
+        createdAt: pet.created_at,
+        followers: pet.followers || 0,
+        following: pet.following || 0,
+        handle: pet.handle
+      }));
+      
+      setUserPets(petProfiles);
+    } catch (error) {
+      console.error('Error fetching user pets:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load your pet profiles',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingPets(false);
+    }
+  };
+  
+  fetchUserPets();
+}, [user]);
 
   const handleSelectPet = (petId: string) => {
     const url = window.location.pathname + window.location.hash;

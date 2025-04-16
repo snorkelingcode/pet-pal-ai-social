@@ -26,6 +26,13 @@ type CommentResponseData = {
     breed: string;
     profile_picture: string | null;
     handle: string;
+    age: number;
+    personality: string[];
+    bio: string;
+    owner_id: string;
+    created_at: string;
+    followers: number;
+    following: number;
   } | null;
 };
 
@@ -104,8 +111,8 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         const { data, error } = await supabase
           .from('comments')
           .select(`
-            id, 
-            content, 
+            id,
+            content,
             created_at,
             pet_id,
             user_id,
@@ -118,7 +125,14 @@ export const usePostInteractions = (postId: string, petId?: string) => {
               species,
               breed,
               profile_picture,
-              handle
+              handle,
+              age,
+              personality,
+              bio,
+              owner_id,
+              created_at,
+              followers,
+              following
             ),
             profiles:user_id (
               id,
@@ -132,12 +146,27 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         if (error) throw error;
         
         return (data || []).map(comment => {
-          const defaultHandle = comment.pet_profiles?.handle || 
-            (comment.pet_profiles?.name ? comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '') : '') ||
-            (comment.profiles?.username ? comment.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'anonymous');
+          const petProfile = comment.pet_profiles ? {
+            id: comment.pet_profiles.id,
+            name: comment.pet_profiles.name,
+            species: comment.pet_profiles.species,
+            breed: comment.pet_profiles.breed,
+            profilePicture: comment.pet_profiles.profile_picture || undefined,
+            handle: comment.pet_profiles.handle,
+            age: comment.pet_profiles.age,
+            personality: comment.pet_profiles.personality,
+            bio: comment.pet_profiles.bio,
+            ownerId: comment.pet_profiles.owner_id,
+            createdAt: comment.pet_profiles.created_at,
+            followers: comment.pet_profiles.followers,
+            following: comment.pet_profiles.following
+          } : undefined;
           
-          const defaultName = comment.pet_profiles?.name || 
-            comment.profiles?.username || 'Anonymous';
+          const userProfile = comment.profiles ? {
+            id: comment.profiles.id,
+            username: comment.profiles.username,
+            avatarUrl: comment.profiles.avatar_url || undefined
+          } : undefined;
           
           return {
             id: comment.id,
@@ -147,28 +176,10 @@ export const usePostInteractions = (postId: string, petId?: string) => {
             petId: comment.pet_id || undefined,
             userId: comment.user_id || undefined,
             likes: comment.likes,
-            authorHandle: comment.author_handle || defaultHandle,
-            authorName: comment.author_name || defaultName,
-            petProfile: comment.pet_id && comment.pet_profiles ? {
-              id: comment.pet_profiles.id,
-              name: comment.pet_profiles.name,
-              species: comment.pet_profiles.species,
-              breed: comment.pet_profiles.breed,
-              profilePicture: comment.pet_profiles.profile_picture || undefined,
-              handle: comment.pet_profiles.handle,
-              age: 0,
-              personality: [],
-              bio: '',
-              ownerId: '',
-              createdAt: '',
-              followers: 0,
-              following: 0
-            } : undefined,
-            userProfile: comment.user_id && comment.profiles ? {
-              id: comment.profiles.id,
-              username: comment.profiles.username,
-              avatarUrl: comment.profiles.avatar_url || undefined
-            } : undefined
+            authorHandle: comment.author_handle || '',
+            authorName: comment.author_name || '',
+            petProfile,
+            userProfile
           };
         });
       } catch (err) {

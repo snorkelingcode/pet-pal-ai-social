@@ -47,9 +47,9 @@ export interface Comment {
   authorName: string;
   petProfile?: PetProfile;
   userProfile?: {
+    id: string;
     username: string;
     avatarUrl?: string;
-    id: string;
   };
 }
 
@@ -146,7 +146,7 @@ export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProf
   createdAt: dbPetProfile.created_at,
   followers: dbPetProfile.followers,
   following: dbPetProfile.following,
-  handle: dbPetProfile.handle,
+  handle: dbPetProfile.handle || dbPetProfile.name.toLowerCase().replace(/[^a-z0-9]/g, '')
 });
 
 export const mapDbAIPersonaToAIPersona = (dbAIPersona: DbAIPersona): AIPersona => ({
