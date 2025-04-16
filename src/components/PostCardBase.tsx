@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -117,7 +116,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start mb-3">
               <img 
-                src={comment.petProfile?.profilePicture || (comment.userProfile?.avatar_url || '/placeholder.svg')} 
+                src={comment.petProfile?.profilePicture || (comment.userProfile?.avatarUrl || '/placeholder.svg')} 
                 alt={comment.petProfile?.name || (comment.userProfile?.username || 'User')}
                 className="w-8 h-8 rounded-full object-cover border border-petpal-blue"
               />

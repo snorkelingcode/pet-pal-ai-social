@@ -64,6 +64,7 @@ export type Database = {
           likes: number
           pet_id: string
           post_id: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -72,6 +73,7 @@ export type Database = {
           likes?: number
           pet_id: string
           post_id: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -80,6 +82,7 @@ export type Database = {
           likes?: number
           pet_id?: string
           post_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
