@@ -103,6 +103,9 @@ export const useFeedData = (userId?: string) => {
         if (commentsData) {
           commentsData.forEach(comment => {
             try {
+              // Handle potential missing data
+              if (!comment) return;
+              
               const formattedComment: Comment = {
                 id: comment.id,
                 postId: comment.post_id,

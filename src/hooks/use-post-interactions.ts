@@ -81,25 +81,21 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      const comment: {
-        post_id: string;
-        content: string;
-        user_id?: string;
-        pet_id?: string;
-      } = {
+      // Create comment object with required fields
+      let commentData: any = {
         post_id: postId,
         content,
         user_id: user.id
       };
       
-      // If commenting as a pet, add pet_id as well
+      // If commenting as a pet, add pet_id
       if (petId) {
-        comment.pet_id = petId;
+        commentData.pet_id = petId;
       }
       
       const { data, error } = await supabase
         .from('comments')
-        .insert(comment)
+        .insert(commentData)
         .select(`
           id, 
           content, 
@@ -113,7 +109,15 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         `)
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error in comment insertion:", error);
+        throw error;
+      }
+      
+      // Handle possible null data
+      if (!data) {
+        throw new Error("Failed to create comment");
+      }
       
       return {
         id: data.id,
