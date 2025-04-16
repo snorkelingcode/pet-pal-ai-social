@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,6 +109,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
             content, 
             created_at,
             pet_id,
+            user_id,
             likes,
             author_handle,
             author_name,
@@ -134,15 +136,23 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         }
         
         return (data || []).map(comment => {
+          const defaultHandle = comment.pet_profiles?.handle || 
+              (comment.pet_profiles?.name ? comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '') : '') ||
+              (comment.profiles?.username ? comment.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'unknown');
+            
+          const defaultName = comment.pet_profiles?.name || 
+              comment.profiles?.username || 'Unknown User';
+          
           const formattedComment: Comment = {
             id: comment.id,
             postId,
             content: comment.content,
             createdAt: comment.created_at,
             petId: comment.pet_id || undefined,
+            userId: comment.user_id || undefined,
             likes: comment.likes,
-            authorHandle: comment.author_handle || (comment.pet_profiles?.handle || 'unknown'),
-            authorName: comment.author_name || (comment.pet_profiles?.name || 'Unknown User'),
+            authorHandle: comment.author_handle || defaultHandle,
+            authorName: comment.author_name || defaultName,
             petProfile: comment.pet_profiles ? {
               id: comment.pet_profiles.id,
               name: comment.pet_profiles.name,
@@ -241,27 +251,40 @@ export const usePostInteractions = (postId: string, petId?: string) => {
 
   const getPetName = async (petId: string): Promise<string | null> => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('pet_profiles')
         .select('name')
         .eq('id', petId)
         .single();
+      
+      if (error) {
+        console.error("Error fetching pet name:", error);
+        return null;
+      }
+      
       return data?.name || null;
-    } catch {
+    } catch (err) {
+      console.error("Exception in getPetName:", err);
       return null;
     }
   };
 
   const getPetHandle = async (petId: string): Promise<string> => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('pet_profiles')
         .select('name, handle')
         .eq('id', petId)
         .single();
       
+      if (error) {
+        console.error("Error fetching pet handle:", error);
+        return petId;
+      }
+      
       return data?.handle || (data?.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || petId);
-    } catch {
+    } catch (err) {
+      console.error("Exception in getPetHandle:", err);
       return petId;
     }
   };

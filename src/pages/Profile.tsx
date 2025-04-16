@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -82,6 +81,11 @@ const Profile = () => {
           };
           
           setPetProfile(profile);
+          setIsOwner(user?.id === profile.ownerId);
+          setFollowCount({
+            followers: profile.followers,
+            following: profile.following
+          });
           fetchPetPosts(petData.id);
         }
       } catch (error) {
@@ -176,16 +180,12 @@ const Profile = () => {
                 };
               }
               
-              const handle = comment.author_handle || 
-                             (comment.pet_profiles?.handle || 
-                              comment.pet_profiles?.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
-                              comment.profiles?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
-                              'anonymous');
-                              
-              const name = comment.author_name || 
-                           (comment.pet_profiles?.name || 
-                            comment.profiles?.username || 
-                            'Anonymous');
+              const defaultHandle = comment.pet_profiles?.handle || 
+                           (comment.pet_profiles?.name ? comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '') : '') || 
+                           (comment.profiles?.username ? comment.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'anonymous');
+                           
+              const defaultName = comment.pet_profiles?.name || 
+                           comment.profiles?.username || 'Anonymous';
               
               const formattedComment: Comment = {
                 id: comment.id,
@@ -195,22 +195,23 @@ const Profile = () => {
                 likes: comment.likes,
                 petId: comment.pet_id || undefined,
                 userId: comment.user_id || undefined,
-                authorHandle: handle,
-                authorName: name,
+                authorHandle: comment.author_handle || defaultHandle,
+                authorName: comment.author_name || defaultName,
                 petProfile: comment.pet_profiles ? {
                   id: comment.pet_profiles.id,
                   name: comment.pet_profiles.name,
                   species: comment.pet_profiles.species,
                   breed: comment.pet_profiles.breed,
                   profilePicture: comment.pet_profiles.profile_picture || undefined,
+                  handle: comment.pet_profiles.handle || 
+                          comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
                   age: comment.pet_profiles.age,
                   personality: comment.pet_profiles.personality,
                   bio: comment.pet_profiles.bio,
                   ownerId: comment.pet_profiles.owner_id,
                   createdAt: comment.pet_profiles.created_at,
                   followers: comment.pet_profiles.followers,
-                  following: comment.pet_profiles.following,
-                  handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+                  following: comment.pet_profiles.following
                 } : undefined,
                 userProfile: userProfile
               };
@@ -240,7 +241,7 @@ const Profile = () => {
       setLoadingPosts(false);
     }
   };
-  
+
   const handleFollowToggle = async () => {
     if (!user) {
       toast({

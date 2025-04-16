@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -97,9 +98,9 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           species: pet.species,
           breed: pet.breed,
           age: pet.age,
-          personality: pet.personality,
-          bio: pet.bio,
-          profilePicture: pet.profile_picture,
+          personality: pet.personality || [],
+          bio: pet.bio || '',
+          profilePicture: pet.profile_picture || null,
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,

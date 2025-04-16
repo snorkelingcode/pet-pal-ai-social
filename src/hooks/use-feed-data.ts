@@ -60,7 +60,8 @@ export const useFeedData = (userId?: string) => {
               bio,
               profile_picture,
               followers,
-              following
+              following,
+              handle
             )
           `)
           .order('created_at', { ascending: false });
@@ -78,103 +79,109 @@ export const useFeedData = (userId?: string) => {
         
         const postIds = postsResponse.data.map(post => post.id);
         
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('comments')
-          .select(`
-            id,
-            post_id,
-            pet_id,
-            user_id,
-            content,
-            likes,
-            created_at,
-            author_handle,
-            author_name,
-            pet_profiles:pet_id (
+        try {
+          const { data: commentsData, error: commentsError } = await supabase
+            .from('comments')
+            .select(`
               id,
-              name,
-              species,
-              breed,
-              profile_picture,
-              handle
-            ),
-            profiles:user_id (
-              id,
-              username,
-              avatar_url
-            )
-          `)
-          .in('post_id', postIds);
+              post_id,
+              pet_id,
+              user_id,
+              content,
+              likes,
+              created_at,
+              author_handle,
+              author_name,
+              pet_profiles:pet_id (
+                id,
+                name,
+                species,
+                breed,
+                profile_picture,
+                handle
+              ),
+              profiles:user_id (
+                id,
+                username,
+                avatar_url
+              )
+            `)
+            .in('post_id', postIds);
           
-        if (commentsError) {
-          console.error("Error fetching comments:", commentsError);
-          toast({
-            title: "Warning",
-            description: "Could not load comments. Some features may be limited.",
-            variant: "destructive",
-          });
+          if (commentsError) {
+            console.error("Error fetching comments:", commentsError);
+            toast({
+              title: "Warning",
+              description: "Could not load comments. Some features may be limited.",
+              variant: "destructive",
+            });
+            
+            const formattedPosts = mapPostsData(postsResponse.data);
+            setPosts(formattedPosts);
+            setComments([]);
+            setLoadingData(false);
+            return;
+          }
           
+          const formattedPosts = mapPostsData(postsResponse.data);
+          const formattedComments: Comment[] = [];
+          
+          if (commentsData) {
+            const typedCommentsData = commentsData as unknown as CommentData[];
+            
+            typedCommentsData.forEach(comment => {
+              if (!comment) return;
+              
+              const defaultHandle = comment.pet_profiles?.handle || 
+                (comment.pet_profiles?.name ? comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '') : '') || 
+                (comment.profiles?.username ? comment.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'anonymous');
+                
+              const defaultName = comment.pet_profiles?.name || 
+                comment.profiles?.username || 'Anonymous';
+              
+              const formattedComment: Comment = {
+                id: comment.id,
+                postId: comment.post_id,
+                petId: comment.pet_id || undefined,
+                userId: comment.user_id || undefined,
+                content: comment.content,
+                likes: comment.likes,
+                createdAt: comment.created_at,
+                authorHandle: comment.author_handle || defaultHandle,
+                authorName: comment.author_name || defaultName,
+                petProfile: comment.pet_id && comment.pet_profiles ? {
+                  id: comment.pet_profiles.id,
+                  name: comment.pet_profiles.name,
+                  species: comment.pet_profiles.species,
+                  breed: comment.pet_profiles.breed,
+                  profilePicture: comment.pet_profiles.profile_picture || undefined,
+                  handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                  age: 0,
+                  personality: [],
+                  bio: '',
+                  ownerId: '',
+                  createdAt: '',
+                  followers: 0,
+                  following: 0
+                } : undefined,
+                userProfile: comment.user_id && comment.profiles ? {
+                  id: comment.profiles.id || '',
+                  username: comment.profiles.username || '',
+                  avatarUrl: comment.profiles.avatar_url || undefined
+                } : undefined
+              };
+              formattedComments.push(formattedComment);
+            });
+          }
+          
+          setPosts(formattedPosts);
+          setComments(formattedComments);
+        } catch (error) {
+          console.error("Error processing comments:", error);
           const formattedPosts = mapPostsData(postsResponse.data);
           setPosts(formattedPosts);
           setComments([]);
-          setLoadingData(false);
-          return;
         }
-        
-        const formattedPosts = mapPostsData(postsResponse.data);
-        const formattedComments: Comment[] = [];
-        
-        if (commentsData) {
-          const typedCommentsData = commentsData as unknown as CommentData[];
-          
-          typedCommentsData.forEach(comment => {
-            if (!comment) return;
-            
-            const formattedComment: Comment = {
-              id: comment.id,
-              postId: comment.post_id,
-              petId: comment.pet_id || undefined,
-              userId: comment.user_id || undefined,
-              content: comment.content,
-              likes: comment.likes,
-              createdAt: comment.created_at,
-              authorHandle: comment.author_handle || 
-                (comment.pet_profiles?.handle || 
-                 comment.pet_profiles?.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
-                 comment.profiles?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
-                 'anonymous'),
-              authorName: comment.author_name || 
-                (comment.pet_profiles?.name || 
-                 comment.profiles?.username || 
-                 'Anonymous'),
-              petProfile: comment.pet_id && comment.pet_profiles ? {
-                id: comment.pet_profiles.id,
-                name: comment.pet_profiles.name,
-                species: comment.pet_profiles.species,
-                breed: comment.pet_profiles.breed,
-                profilePicture: comment.pet_profiles.profile_picture || undefined,
-                handle: comment.pet_profiles.handle || 
-                       comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-                age: 0,
-                personality: [],
-                bio: '',
-                ownerId: '',
-                createdAt: '',
-                followers: 0,
-                following: 0
-              } : undefined,
-              userProfile: comment.user_id && comment.profiles ? {
-                id: comment.profiles.id || '',
-                username: comment.profiles.username || '',
-                avatarUrl: comment.profiles.avatar_url || undefined
-              } : undefined
-            };
-            formattedComments.push(formattedComment);
-          });
-        }
-        
-        setPosts(formattedPosts);
-        setComments(formattedComments);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
@@ -220,30 +227,36 @@ export const useFeedData = (userId?: string) => {
   }, [userId]);
 
   const mapPostsData = (postsData: any[]): Post[] => {
-    return postsData.map(post => ({
-      id: post.id,
-      petId: post.pet_id,
-      petProfile: {
-        id: post.pet_profiles.id,
-        name: post.pet_profiles.name,
-        species: post.pet_profiles.species,
-        breed: post.pet_profiles.breed,
-        age: post.pet_profiles.age,
-        personality: post.pet_profiles.personality,
-        bio: post.pet_profiles.bio,
-        profilePicture: post.pet_profiles.profile_picture,
-        followers: post.pet_profiles.followers,
-        following: post.pet_profiles.following,
-        ownerId: '',
-        createdAt: '',
-        handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      },
-      content: post.content,
-      image: post.image,
-      likes: post.likes,
-      comments: post.comments,
-      createdAt: post.created_at,
-    }));
+    return postsData.map(post => {
+      // Ensure handle is available, fallback to lowercase name if needed
+      const handle = post.pet_profiles.handle || 
+                    post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    
+      return {
+        id: post.id,
+        petId: post.pet_id,
+        petProfile: {
+          id: post.pet_profiles.id,
+          name: post.pet_profiles.name,
+          species: post.pet_profiles.species,
+          breed: post.pet_profiles.breed,
+          age: post.pet_profiles.age,
+          personality: post.pet_profiles.personality,
+          bio: post.pet_profiles.bio,
+          profilePicture: post.pet_profiles.profile_picture,
+          followers: post.pet_profiles.followers,
+          following: post.pet_profiles.following,
+          ownerId: '',
+          createdAt: '',
+          handle: handle,
+        },
+        content: post.content,
+        image: post.image,
+        likes: post.likes,
+        comments: post.comments,
+        createdAt: post.created_at,
+      };
+    });
   };
 
   return { posts, comments, loadingData };
