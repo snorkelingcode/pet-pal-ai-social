@@ -1,4 +1,3 @@
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,17 +80,12 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      // Create comment object with required fields
-      let commentData: any = {
+      const commentData = {
         post_id: postId,
         content,
-        user_id: user.id
+        user_id: user.id,
+        ...(petId ? { pet_id: petId } : {})
       };
-      
-      // If commenting as a pet, add pet_id
-      if (petId) {
-        commentData.pet_id = petId;
-      }
       
       const { data, error } = await supabase
         .from('comments')
@@ -101,6 +95,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           content, 
           created_at,
           user_id,
+          pet_id,
           profiles:user_id (
             id,
             username,
@@ -114,16 +109,17 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         throw error;
       }
       
-      // Handle possible null data
       if (!data) {
         throw new Error("Failed to create comment");
       }
       
       return {
         id: data.id,
+        postId,
         content: data.content,
         createdAt: data.created_at,
         userId: data.user_id,
+        petId: data.pet_id || undefined,
         userProfile: data.profiles ? {
           id: data.profiles.id,
           username: data.profiles.username,
@@ -136,7 +132,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast({
         title: "Comment added",
-        description: "Your comment has been posted successfully.",
+        description: "Your comment has been posted successfully."
       });
     },
     onError: (error) => {
@@ -144,9 +140,9 @@ export const usePostInteractions = (postId: string, petId?: string) => {
       toast({
         title: "Error",
         description: "Could not post your comment. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
+    }
   });
   
   return {
@@ -154,6 +150,6 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     isCheckingLike,
     toggleLike,
     addComment,
-    isSubmittingComment: addComment.isPending,
+    isSubmittingComment: addComment.isPending
   };
 };

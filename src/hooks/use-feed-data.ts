@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +14,6 @@ export const useFeedData = (userId?: string) => {
     const fetchData = async () => {
       setLoadingData(true);
       try {
-        // Fetch posts first
         const postsResponse = await supabase
           .from('posts')
           .select(`
@@ -54,8 +52,7 @@ export const useFeedData = (userId?: string) => {
         
         const postIds = postsResponse.data.map(post => post.id);
         
-        // Fetch comments for these posts with both pet and user profiles
-        const { data: commentsData, error: commentsError } = await supabase
+        const commentsQuery = supabase
           .from('comments')
           .select(`
             id,
@@ -78,8 +75,9 @@ export const useFeedData = (userId?: string) => {
               avatar_url
             )
           `)
-          .in('post_id', postIds)
-          .order('created_at', { ascending: true });
+          .in('post_id', postIds);
+
+        const { data: commentsData, error: commentsError } = await commentsQuery;
           
         if (commentsError) {
           console.error("Error fetching comments:", commentsError);
@@ -99,45 +97,39 @@ export const useFeedData = (userId?: string) => {
         const formattedPosts = mapPostsData(postsResponse.data);
         const formattedComments: Comment[] = [];
         
-        // Safely process comments data
         if (commentsData) {
           commentsData.forEach(comment => {
-            try {
-              // Handle potential missing data
-              if (!comment) return;
-              
-              const formattedComment: Comment = {
-                id: comment.id,
-                postId: comment.post_id,
-                petId: comment.pet_id || undefined,
-                userId: comment.user_id || undefined,
-                content: comment.content,
-                likes: comment.likes,
-                createdAt: comment.created_at,
-                petProfile: comment.pet_id && comment.pet_profiles ? {
-                  id: comment.pet_profiles.id,
-                  name: comment.pet_profiles.name,
-                  species: comment.pet_profiles.species,
-                  breed: comment.pet_profiles.breed,
-                  profilePicture: comment.pet_profiles.profile_picture,
-                  age: 0,
-                  personality: [],
-                  bio: '',
-                  ownerId: '',
-                  createdAt: '',
-                  followers: 0,
-                  following: 0,
-                } : undefined,
-                userProfile: comment.user_id && comment.profiles ? {
-                  id: comment.profiles.id,
-                  username: comment.profiles.username,
-                  avatarUrl: comment.profiles.avatar_url,
-                } : undefined,
-              };
-              formattedComments.push(formattedComment);
-            } catch (error) {
-              console.error("Error formatting comment:", error);
-            }
+            if (!comment) return;
+            
+            const formattedComment: Comment = {
+              id: comment.id,
+              postId: comment.post_id,
+              petId: comment.pet_id || undefined,
+              userId: comment.user_id || undefined,
+              content: comment.content,
+              likes: comment.likes,
+              createdAt: comment.created_at,
+              petProfile: comment.pet_profiles ? {
+                id: comment.pet_profiles.id,
+                name: comment.pet_profiles.name,
+                species: comment.pet_profiles.species,
+                breed: comment.pet_profiles.breed,
+                profilePicture: comment.pet_profiles.profile_picture,
+                age: 0,
+                personality: [],
+                bio: '',
+                ownerId: '',
+                createdAt: '',
+                followers: 0,
+                following: 0,
+              } : undefined,
+              userProfile: comment.profiles ? {
+                id: comment.profiles.id,
+                username: comment.profiles.username,
+                avatarUrl: comment.profiles.avatar_url
+              } : undefined
+            };
+            formattedComments.push(formattedComment);
           });
         }
         
@@ -159,7 +151,6 @@ export const useFeedData = (userId?: string) => {
     
     fetchData();
 
-    // Set up realtime subscription for posts and comments
     const postsChannel = supabase
       .channel('public:posts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
