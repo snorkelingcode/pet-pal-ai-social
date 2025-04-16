@@ -138,7 +138,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
         </Avatar>
         <div className="ml-3">
           <h3 className="font-semibold text-base">{post.petProfile.name}</h3>
-          <p className="text-xs text-muted-foreground">{post.petProfile.species} • {post.petProfile.breed}</p>
+          <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
         </div>
       </div>
       
@@ -218,9 +218,13 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                 <AvatarFallback>{getAvatarFallback(comment)}</AvatarFallback>
               </Avatar>
               <div className="ml-2">
-                <h4 className="font-medium text-sm">
-                  {getDisplayName(comment)}
-                </h4>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm">{getDisplayName(comment)}</span>
+                  <span className="text-xs text-muted-foreground mb-1">
+                    {comment.petProfile ? `@${comment.petProfile.handle}` : 
+                     comment.userProfile ? `@${comment.userProfile.handle}` : '@user'}
+                  </span>
+                </div>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <button className="mr-3">Like</button>

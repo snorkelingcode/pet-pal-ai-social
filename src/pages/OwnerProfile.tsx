@@ -20,6 +20,8 @@ const ownerProfileSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
+  handle: z.string().min(2, { message: "Handle must be at least 2 characters." })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: "Handle can only contain letters, numbers, and underscores." })
 });
 
 const OwnerProfile = () => {
@@ -41,6 +43,7 @@ const OwnerProfile = () => {
       name: "",
       email: "",
       bio: "",
+      handle: "",
     },
   });
 
@@ -69,13 +72,12 @@ const OwnerProfile = () => {
             
           if (error) throw error;
           
-          console.log("Owner Profile - Fetched profile data:", profileData);
-          
           if (profileData) {
             form.reset({
               name: profileData.username || '',
               email: user.email || '',
               bio: profileData.bio || '',
+              handle: profileData.handle || '',
             });
             setAvatarUrl(profileData.avatar_url);
           }
@@ -86,8 +88,6 @@ const OwnerProfile = () => {
             .eq('owner_id', user.id);
             
           if (petsError) throw petsError;
-          
-          console.log("Owner Profile - Fetched pet profiles:", petsData);
           
           if (petsData) {
             const formattedPets: PetProfile[] = petsData.map(pet => ({
@@ -462,6 +462,7 @@ const OwnerProfile = () => {
         .update({
           username: data.name,
           bio: data.bio,
+          handle: data.handle.toLowerCase(),
         })
         .eq('id', user.id);
         
@@ -636,6 +637,21 @@ const OwnerProfile = () => {
                                 {...field} 
                               />
                             </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="handle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Handle</FormLabel>
+                            <FormControl>
+                              <Input placeholder="your_handle" {...field} />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                              Your unique handle for identification (letters, numbers, and underscores only)
+                            </p>
                           </FormItem>
                         )}
                       />
