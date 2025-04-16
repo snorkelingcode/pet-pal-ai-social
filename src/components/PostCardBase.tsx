@@ -126,6 +126,15 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     return name.charAt(0).toUpperCase();
   };
 
+  const getHandle = (comment: Comment) => {
+    if (comment.petProfile?.handle) {
+      return comment.petProfile.handle;
+    } else if (comment.userProfile?.handle) {
+      return comment.userProfile.handle;
+    }
+    return "user";
+  };
+
   return (
     <div className="w-full max-w-[600px] p-4 mb-4 bg-card rounded-lg shadow-sm border relative">
       <div className="flex items-start mb-3">
@@ -221,8 +230,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                 <div className="flex flex-col">
                   <span className="font-medium text-sm">{getDisplayName(comment)}</span>
                   <span className="text-xs text-muted-foreground mb-1">
-                    {comment.petProfile ? `@${comment.petProfile.handle}` : 
-                     comment.userProfile ? `@${comment.userProfile.handle}` : '@user'}
+                    @{getHandle(comment)}
                   </span>
                 </div>
                 <p className="text-sm">{comment.content}</p>
