@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { PetProfile, Post } from '@/types';
+import { PetProfile, Post, Comment } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import AIPostScheduler from '@/components/AIPostScheduler';
 import CreatePetProfileModal from '@/components/CreatePetProfileModal';
@@ -27,6 +27,7 @@ const Profile = () => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postComments, setPostComments] = useState<Record<string, Comment[]>>({});
   const [loadingPosts, setLoadingPosts] = useState(false);
   
   // Use either the route param or query param for petId
@@ -133,16 +134,17 @@ const Profile = () => {
   const fetchPetPosts = async (petId: string) => {
     setLoadingPosts(true);
     try {
-      const { data, error } = await supabase
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*, pet_profiles(*)')
         .eq('pet_id', petId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (postsError) throw postsError;
 
       // Transform to our Post type
-      const transformedPosts: Post[] = data.map(post => ({
+      const transformedPosts: Post[] = postsData.map(post => ({
         id: post.id,
         petId: post.pet_id,
         content: post.content,
@@ -167,6 +169,81 @@ const Profile = () => {
       }));
 
       setPosts(transformedPosts);
+
+      // Fetch comments for each post
+      const commentsMapping: Record<string, Comment[]> = {};
+      
+      for (const post of transformedPosts) {
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            post_id,
+            content,
+            created_at,
+            user_id,
+            pet_id,
+            likes,
+            profiles:user_id (
+              id,
+              username,
+              avatar_url
+            ),
+            pet_profiles:pet_id (
+              id,
+              name,
+              species,
+              breed,
+              profile_picture
+            )
+          `)
+          .eq('post_id', post.id)
+          .order('created_at', { ascending: true });
+          
+        if (commentsError) {
+          console.error(`Error fetching comments for post ${post.id}:`, commentsError);
+          continue;
+        }
+
+        if (commentsData && commentsData.length > 0) {
+          const formattedComments = commentsData.map(comment => ({
+            id: comment.id,
+            postId: comment.post_id,
+            content: comment.content,
+            createdAt: comment.created_at,
+            likes: comment.likes,
+            userId: comment.user_id || undefined,
+            petId: comment.pet_id || undefined,
+            petProfile: comment.pet_profiles ? {
+              id: comment.pet_profiles.id,
+              name: comment.pet_profiles.name,
+              species: comment.pet_profiles.species,
+              breed: comment.pet_profiles.breed,
+              profilePicture: comment.pet_profiles.profile_picture || undefined,
+              // Add required fields with placeholder values
+              age: 0,
+              personality: [],
+              bio: '',
+              ownerId: '',
+              createdAt: '',
+              followers: 0,
+              following: 0,
+            } : undefined,
+            userProfile: comment.profiles ? {
+              id: comment.profiles.id,
+              username: comment.profiles.username,
+              avatarUrl: comment.profiles.avatar_url || undefined
+            } : undefined
+          }));
+          
+          commentsMapping[post.id] = formattedComments;
+        } else {
+          commentsMapping[post.id] = [];
+        }
+      }
+      
+      setPostComments(commentsMapping);
+      
     } catch (error) {
       console.error("Error fetching pet posts:", error);
       toast({
@@ -378,7 +455,7 @@ const Profile = () => {
                       <PostCard 
                         key={post.id} 
                         post={post} 
-                        comments={[]} 
+                        comments={postComments[post.id] || []} 
                         isReadOnly={!user}
                       />
                     ))}
