@@ -1,9 +1,10 @@
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
-import { Comment } from '@/types';
 
+// Define a type for comment data from Supabase
 type CommentResponseData = {
   id: string;
   post_id: string;
@@ -12,8 +13,6 @@ type CommentResponseData = {
   user_id: string | null;
   pet_id: string | null;
   likes: number;
-  author_handle: string | null;
-  author_name: string | null;
   profiles?: {
     id: string;
     username: string;
@@ -25,14 +24,6 @@ type CommentResponseData = {
     species: string;
     breed: string;
     profile_picture: string | null;
-    handle: string;
-    age: number;
-    personality: string[];
-    bio: string;
-    owner_id: string;
-    created_at: string;
-    followers: number;
-    following: number;
   } | null;
 };
 
@@ -40,6 +31,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Check if user has liked the post
   const { data: hasLiked = false, isLoading: isCheckingLike } = useQuery({
     queryKey: ['post-like', postId],
     queryFn: async () => {
@@ -63,11 +55,13 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     enabled: !!petId && !!user,
   });
   
+  // Toggle like
   const toggleLike = useMutation({
     mutationFn: async () => {
       if (!petId || !user) throw new Error("Must be logged in with a pet profile to like posts");
       
       if (hasLiked) {
+        // Unlike
         const { error } = await supabase
           .from('post_interactions')
           .delete()
@@ -78,6 +72,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         if (error) throw error;
         return false;
       } else {
+        // Like
         const { error } = await supabase
           .from('post_interactions')
           .insert({
@@ -104,114 +99,36 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     },
   });
   
-  const { data: comments = [], isLoading: isLoadingComments } = useQuery({
-    queryKey: ['comments', postId],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('comments')
-          .select(`
-            id,
-            content,
-            created_at,
-            pet_id,
-            user_id,
-            likes,
-            author_handle,
-            author_name,
-            pet_profiles:pet_id (
-              id,
-              name,
-              species,
-              breed,
-              profile_picture,
-              handle,
-              age,
-              personality,
-              bio,
-              owner_id,
-              created_at,
-              followers,
-              following
-            ),
-            profiles:user_id (
-              id,
-              username,
-              avatar_url
-            )
-          `)
-          .eq('post_id', postId)
-          .order('created_at', { ascending: true });
-          
-        if (error) throw error;
-        
-        return (data || []).map(comment => {
-          const petProfile = comment.pet_profiles ? {
-            id: comment.pet_profiles.id,
-            name: comment.pet_profiles.name,
-            species: comment.pet_profiles.species,
-            breed: comment.pet_profiles.breed,
-            profilePicture: comment.pet_profiles.profile_picture || undefined,
-            handle: comment.pet_profiles.handle,
-            age: comment.pet_profiles.age,
-            personality: comment.pet_profiles.personality,
-            bio: comment.pet_profiles.bio,
-            ownerId: comment.pet_profiles.owner_id,
-            createdAt: comment.pet_profiles.created_at,
-            followers: comment.pet_profiles.followers,
-            following: comment.pet_profiles.following
-          } : undefined;
-          
-          const userProfile = comment.profiles ? {
-            id: comment.profiles.id,
-            username: comment.profiles.username,
-            avatarUrl: comment.profiles.avatar_url || undefined
-          } : undefined;
-          
-          return {
-            id: comment.id,
-            postId,
-            content: comment.content,
-            createdAt: comment.created_at,
-            petId: comment.pet_id || undefined,
-            userId: comment.user_id || undefined,
-            likes: comment.likes,
-            authorHandle: comment.author_handle || '',
-            authorName: comment.author_name || '',
-            petProfile,
-            userProfile
-          };
-        });
-      } catch (err) {
-        console.error("Error fetching comments:", err);
-        return [];
-      }
-    }
-  });
-  
+  // Add comment
   const addComment = useMutation({
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Must be logged in to comment");
       
-      const petName = petId ? await getPetName(petId) : null;
-      const authorName = petName || user.username;
-      const authorHandle = petId ? 
-        await getPetHandle(petId) :
-        (user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || user.id);
-      
+      // Create comment data - ensure pet_id is not optional when required by DB
       const commentData = {
         post_id: postId,
         content: content,
-        user_id: petId ? null : user.id,
-        pet_id: petId || null,
-        author_name: authorName,
-        author_handle: authorHandle
+        user_id: user.id,
+        // If petId exists, use it; otherwise set an empty string which will be converted to NULL
+        pet_id: petId || null
       };
       
+      // Type assertion to ensure DB expects pet_id to be nullable
       const { data, error } = await supabase
         .from('comments')
-        .insert(commentData)
-        .select()
+        .insert(commentData as any)
+        .select(`
+          id, 
+          content, 
+          created_at,
+          user_id,
+          pet_id,
+          profiles:user_id (
+            id,
+            username,
+            avatar_url
+          )
+        `)
         .single();
         
       if (error) {
@@ -223,18 +140,21 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         throw new Error("Failed to create comment");
       }
       
-      const commentResponse = data as CommentResponseData;
+      // Safe type assertion after error checking
+      const commentResponse = data as unknown as CommentResponseData;
       
       return {
         id: commentResponse.id,
         postId,
         content: commentResponse.content,
         createdAt: commentResponse.created_at,
-        petId: commentResponse.pet_id || undefined,
         userId: commentResponse.user_id || undefined,
-        authorName: commentResponse.author_name || authorName,
-        authorHandle: commentResponse.author_handle || authorHandle,
-        likes: 0
+        petId: commentResponse.pet_id || undefined,
+        userProfile: commentResponse.profiles ? {
+          id: commentResponse.profiles.id,
+          username: commentResponse.profiles.username,
+          avatarUrl: commentResponse.profiles.avatar_url || undefined
+        } : undefined
       };
     },
     onSuccess: () => {
@@ -254,53 +174,11 @@ export const usePostInteractions = (postId: string, petId?: string) => {
       });
     }
   });
-
-  const getPetName = async (petId: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('pet_profiles')
-        .select('name')
-        .eq('id', petId)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching pet name:", error);
-        return null;
-      }
-      
-      return data?.name || null;
-    } catch (err) {
-      console.error("Exception in getPetName:", err);
-      return null;
-    }
-  };
-
-  const getPetHandle = async (petId: string): Promise<string> => {
-    try {
-      const { data, error } = await supabase
-        .from('pet_profiles')
-        .select('name, handle')
-        .eq('id', petId)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching pet handle:", error);
-        return petId;
-      }
-      
-      return data?.handle || (data?.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || petId);
-    } catch (err) {
-      console.error("Exception in getPetHandle:", err);
-      return petId;
-    }
-  };
   
   return {
     hasLiked,
     isCheckingLike,
     toggleLike,
-    comments,
-    isLoadingComments,
     addComment,
     isSubmittingComment: addComment.isPending
   };

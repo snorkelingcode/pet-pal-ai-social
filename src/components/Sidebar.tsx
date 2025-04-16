@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 
+// Define the section types
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
 interface SidebarProps {
@@ -75,52 +76,54 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
     },
   ];
 
-useEffect(() => {
-  const fetchUserPets = async () => {
-    if (!user) return;
+  useEffect(() => {
+    const fetchUserPets = async () => {
+      if (!user) return;
+      
+      setLoadingPets(true);
+      try {
+        const { data, error } = await supabase
+          .from('pet_profiles')
+          .select('*')
+          .eq('owner_id', user.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        const petProfiles: PetProfile[] = data.map(pet => ({
+          id: pet.id,
+          ownerId: pet.owner_id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          personality: pet.personality,
+          bio: pet.bio,
+          profilePicture: pet.profile_picture,
+          createdAt: pet.created_at,
+          followers: pet.followers || 0,
+          following: pet.following || 0
+        }));
+        
+        setUserPets(petProfiles);
+      } catch (error) {
+        console.error('Error fetching user pets:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load your pet profiles',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoadingPets(false);
+      }
+    };
     
-    setLoadingPets(true);
-    try {
-      const { data, error } = await supabase
-        .from('pet_profiles')
-        .select('*')
-        .eq('owner_id', user.id);
-      
-      if (error) throw error;
-      
-      const petProfiles: PetProfile[] = data.map(pet => ({
-        id: pet.id,
-        ownerId: pet.owner_id,
-        name: pet.name,
-        species: pet.species,
-        breed: pet.breed,
-        age: pet.age,
-        personality: pet.personality || [],
-        bio: pet.bio || '',
-        profilePicture: pet.profile_picture || null,
-        createdAt: pet.created_at,
-        followers: pet.followers || 0,
-        following: pet.following || 0,
-        handle: pet.handle
-      }));
-      
-      setUserPets(petProfiles);
-    } catch (error) {
-      console.error('Error fetching user pets:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load your pet profiles',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoadingPets(false);
-    }
-  };
-  
-  fetchUserPets();
-}, [user]);
+    fetchUserPets();
+  }, [user]);
 
   const handleSelectPet = (petId: string) => {
+    // We still need search params for pet selection
     const url = window.location.pathname + window.location.hash;
     const newUrl = url.includes('?') 
       ? url.replace(/petId=[^&]+/, `petId=${petId}`)
@@ -198,6 +201,7 @@ useEffect(() => {
           <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
         </div>
         
+        {/* Pet selection dropdown for logged in users */}
         {user && selectedPet && userPets.length > 0 && (
           <div className="mb-4 p-3 bg-accent rounded-lg flex items-center">
             <Avatar className="h-10 w-10 mr-3">
@@ -208,6 +212,7 @@ useEffect(() => {
               <p className="text-xs text-muted-foreground">Active Profile</p>
             </div>
             
+            {/* Pet selection dropdown - only shows user's pets */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -266,6 +271,7 @@ useEffect(() => {
           })}
         </nav>
         
+        {/* Buttons for signed-in users */}
         {user && (
           <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
             <Button 
@@ -286,6 +292,7 @@ useEffect(() => {
           </div>
         )}
         
+        {/* Sign In button for guests */}
         {!user && (
           <div className="absolute bottom-8 right-4 left-0 pr-4">
             <Button 

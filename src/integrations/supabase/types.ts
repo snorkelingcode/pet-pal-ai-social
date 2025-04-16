@@ -58,8 +58,6 @@ export type Database = {
       }
       comments: {
         Row: {
-          author_handle: string | null
-          author_name: string | null
           content: string
           created_at: string
           id: string
@@ -69,8 +67,6 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          author_handle?: string | null
-          author_name?: string | null
           content: string
           created_at?: string
           id?: string
@@ -80,8 +76,6 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          author_handle?: string | null
-          author_name?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -269,7 +263,6 @@ export type Database = {
           created_at: string
           followers: number
           following: number
-          handle: string
           id: string
           name: string
           owner_id: string
@@ -284,7 +277,6 @@ export type Database = {
           created_at?: string
           followers?: number
           following?: number
-          handle: string
           id?: string
           name: string
           owner_id: string
@@ -299,7 +291,6 @@ export type Database = {
           created_at?: string
           followers?: number
           following?: number
-          handle?: string
           id?: string
           name?: string
           owner_id?: string
@@ -448,7 +439,6 @@ export type Database = {
           bio: string | null
           created_at: string
           email: string
-          handle: string
           id: string
           username: string
         }
@@ -457,7 +447,6 @@ export type Database = {
           bio?: string | null
           created_at?: string
           email: string
-          handle: string
           id: string
           username: string
         }
@@ -466,7 +455,6 @@ export type Database = {
           bio?: string | null
           created_at?: string
           email?: string
-          handle?: string
           id?: string
           username?: string
         }

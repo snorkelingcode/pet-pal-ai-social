@@ -49,8 +49,7 @@ const Messages = () => {
           profilePicture: pet.profile_picture,
           createdAt: pet.created_at,
           followers: pet.followers || 0,
-          following: pet.following || 0,
-          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          following: pet.following || 0
         }));
         
         setPetProfiles(formattedProfiles);

@@ -51,7 +51,6 @@ const formSchema = z.object({
     required_error: "Please select whether your pet is more of a hero or villain." 
   }),
   rivals: z.string().optional(),
-  handle: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -104,7 +103,6 @@ const CreatePetProfileModal = ({
       personality: [],
       heroOrVillain: "neutral",
       rivals: "",
-      handle: "",
     },
   });
 
@@ -119,7 +117,6 @@ const CreatePetProfileModal = ({
         personality: petProfile.personality,
         heroOrVillain: "neutral",
         rivals: "",
-        handle: petProfile.handle,
       });
       
       if (petProfile.profilePicture) {
@@ -199,8 +196,6 @@ const CreatePetProfileModal = ({
         }
       }
 
-      const handle = data.handle || data.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-
       if (isEditMode && petProfile) {
         console.log("Updating existing pet profile:", petProfile.id);
         const updatedProfile = await petProfileService.updatePetProfile(petProfile.id, {
@@ -211,7 +206,6 @@ const CreatePetProfileModal = ({
           personality: data.personality,
           bio: data.bio || '',
           profilePicture: profileImageUrl,
-          handle: handle,
         });
 
         console.log("Pet profile updated:", updatedProfile);
@@ -233,7 +227,6 @@ const CreatePetProfileModal = ({
           personality: data.personality,
           bio: data.bio || '',
           profilePicture: profileImageUrl,
-          handle: handle,
         });
 
         console.log("New pet profile created:", newProfile);
@@ -509,30 +502,6 @@ const CreatePetProfileModal = ({
                   </FormControl>
                   <FormDescription>
                     Does your pet have any rivals or things they strongly dislike?
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="handle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Handle (optional)</FormLabel>
-                  <FormControl>
-                    <div className="flex">
-                      <span className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">@</span>
-                      <Input 
-                        placeholder="petsname" 
-                        {...field} 
-                        className="rounded-l-none"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    A unique handle for your pet (no spaces or special characters). If left blank, we'll generate one based on the pet's name.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

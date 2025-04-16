@@ -103,7 +103,6 @@ const OwnerProfile = () => {
               createdAt: pet.created_at,
               followers: pet.followers || 0,
               following: pet.following || 0,
-              handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
             }));
             
             setUserPetProfiles(formattedPets);
@@ -571,7 +570,7 @@ const OwnerProfile = () => {
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-16 w-16">
                       {avatarUrl ? (
-                        <img src={avatarUrl} alt={form.getValues().name} className="object-cover" />
+                        <img src={avatarUrl} alt={form.getValues().name} />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <User className="h-8 w-8 text-gray-500" />
@@ -580,7 +579,7 @@ const OwnerProfile = () => {
                     </Avatar>
                     <div>
                       <CardTitle>{form.getValues().name}</CardTitle>
-                      <CardDescription className="text-sm">@{user?.email?.split('@')[0] || 'user'}</CardDescription>
+                      <CardDescription>{form.getValues().email}</CardDescription>
                     </div>
                   </div>
                   <label htmlFor="avatar-upload-page">

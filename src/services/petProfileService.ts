@@ -51,9 +51,6 @@ export const petProfileService = {
     try {
       console.log("Creating pet profile with data:", profileData);
       
-      // Generate a handle if not provided
-      const handle = profileData.handle || profileData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      
       // Convert from frontend structure to database structure
       const dbPetProfile: Omit<DbPetProfile, 'id' | 'created_at' | 'followers' | 'following'> = {
         owner_id: profileData.ownerId,
@@ -64,7 +61,6 @@ export const petProfileService = {
         personality: profileData.personality,
         bio: profileData.bio,
         profile_picture: profileData.profilePicture,
-        handle: handle,
       };
       
       const { data, error } = await supabase
@@ -104,7 +100,6 @@ export const petProfileService = {
       if (profileData.personality !== undefined) updates.personality = profileData.personality;
       if (profileData.bio !== undefined) updates.bio = profileData.bio;
       if (profileData.profilePicture !== undefined) updates.profile_picture = profileData.profilePicture;
-      if (profileData.handle !== undefined) updates.handle = profileData.handle;
       
       const { data, error } = await supabase
         .from('pet_profiles')

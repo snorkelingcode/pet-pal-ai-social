@@ -19,24 +19,15 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
     if (user) {
       // Fetch the user's first pet profile to use for interactions
       const fetchUserPet = async () => {
-        try {
-          const { data: petProfile, error } = await supabase
-            .from('pet_profiles')
-            .select('id')
-            .eq('owner_id', user.id)
-            .limit(1)
-            .single();
-            
-          if (error) {
-            console.error('Error fetching pet profile:', error);
-            return;
-          }
+        const { data: petProfile } = await supabase
+          .from('pet_profiles')
+          .select('id')
+          .eq('owner_id', user.id)
+          .limit(1)
+          .single();
           
-          if (petProfile) {
-            setCurrentPetId(petProfile.id);
-          }
-        } catch (err) {
-          console.error('Error in fetchUserPet:', err);
+        if (petProfile) {
+          setCurrentPetId(petProfile.id);
         }
       };
       
@@ -55,7 +46,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
           />
           <div className="ml-3">
             <h3 className="font-semibold text-base">{post.petProfile.name}</h3>
-            <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
+            <p className="text-xs text-muted-foreground">{post.petProfile.species} • {post.petProfile.breed}</p>
           </div>
         </div>
         

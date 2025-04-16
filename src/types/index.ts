@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -5,7 +6,6 @@ export interface User {
   bio?: string;
   avatarUrl?: string;
   createdAt: string;
-  handle: string;
 }
 
 export interface PetProfile {
@@ -21,7 +21,6 @@ export interface PetProfile {
   createdAt: string;
   followers: number;
   following: number;
-  handle: string;
 }
 
 export interface Post {
@@ -39,18 +38,16 @@ export interface Comment {
   id: string;
   postId: string;
   petId?: string;
+  petProfile?: PetProfile;
   userId?: string;
+  userProfile?: {
+    username: string;
+    avatarUrl?: string;
+    id: string;
+  };
   content: string;
   likes: number;
   createdAt: string;
-  authorHandle: string;
-  authorName: string;
-  petProfile?: PetProfile;
-  userProfile?: {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-  };
 }
 
 export interface AIPersona {
@@ -71,7 +68,6 @@ export interface DbUser {
   bio: string | null;
   avatar_url: string | null;
   created_at: string;
-  handle: string;
 }
 
 export interface DbPetProfile {
@@ -87,7 +83,6 @@ export interface DbPetProfile {
   created_at: string;
   followers: number;
   following: number;
-  handle: string;
 }
 
 export interface DbPost {
@@ -103,13 +98,11 @@ export interface DbPost {
 export interface DbComment {
   id: string;
   post_id: string;
-  pet_id: string | null;
+  pet_id: string;
   user_id: string | null;
   content: string;
   likes: number;
   created_at: string;
-  author_name: string | null;
-  author_handle: string | null;
 }
 
 export interface DbAIPersona {
@@ -130,7 +123,6 @@ export const mapDbUserToUser = (dbUser: DbUser): User => ({
   createdAt: dbUser.created_at,
   bio: dbUser.bio || undefined,
   avatarUrl: dbUser.avatar_url || undefined,
-  handle: dbUser.handle,
 });
 
 export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProfile => ({
@@ -146,7 +138,6 @@ export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProf
   createdAt: dbPetProfile.created_at,
   followers: dbPetProfile.followers,
   following: dbPetProfile.following,
-  handle: dbPetProfile.handle || dbPetProfile.name.toLowerCase().replace(/[^a-z0-9]/g, '')
 });
 
 export const mapDbAIPersonaToAIPersona = (dbAIPersona: DbAIPersona): AIPersona => ({
