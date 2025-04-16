@@ -1,145 +1,150 @@
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
-export const usePostInteractions = (postId: string, petId: string | undefined) => {
+export const usePostInteractions = (postId: string, petId?: string) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  // Query to check if the current pet has liked the post
-  const { data: hasLiked } = useQuery({
-    queryKey: ['post-like', postId, petId],
+  // Check if user has liked the post
+  const { data: hasLiked = false, isLoading: isCheckingLike } = useQuery({
+    queryKey: ['post-like', postId],
     queryFn: async () => {
-      if (!petId) return false;
+      if (!petId || !user) return false;
       
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('post_interactions')
-        .select('*')
+        .select('id')
         .eq('post_id', postId)
         .eq('pet_id', petId)
         .eq('interaction_type', 'like')
-        .maybeSingle();
+        .single();
         
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error checking like status:", error);
+        return false;
+      }
+      
       return !!data;
     },
-    enabled: !!petId,
+    enabled: !!petId && !!user,
   });
-
-  // Mutation to toggle like
+  
+  // Toggle like
   const toggleLike = useMutation({
     mutationFn: async () => {
-      if (!petId) throw new Error('No pet selected');
-
-      const { data: existingLike } = await supabase
-        .from('post_interactions')
-        .select('*')
-        .eq('post_id', postId)
-        .eq('pet_id', petId)
-        .eq('interaction_type', 'like')
-        .maybeSingle();
-
-      if (existingLike) {
-        await supabase
+      if (!petId || !user) throw new Error("Must be logged in with a pet profile to like posts");
+      
+      if (hasLiked) {
+        // Unlike
+        const { error } = await supabase
           .from('post_interactions')
           .delete()
-          .eq('id', existingLike.id);
+          .eq('post_id', postId)
+          .eq('pet_id', petId)
+          .eq('interaction_type', 'like');
+          
+        if (error) throw error;
+        return false;
       } else {
-        await supabase
+        // Like
+        const { error } = await supabase
           .from('post_interactions')
           .insert({
             post_id: postId,
             pet_id: petId,
             interaction_type: 'like'
           });
+          
+        if (error) throw error;
+        return true;
       }
     },
-    onSuccess: () => {
-      // Invalidate related queries with more specificity
-      queryClient.invalidateQueries({ queryKey: ['post-like', postId, petId] });
+    onSuccess: (newLiked) => {
+      queryClient.invalidateQueries({ queryKey: ['post-like', postId] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
     },
     onError: (error) => {
+      console.error("Error toggling like:", error);
       toast({
         title: "Error",
-        description: "Failed to update like status",
-        variant: "destructive"
+        description: "Could not process your interaction. Please try again.",
+        variant: "destructive",
       });
     },
   });
-
-  // Mutation to add comment as the human user (owner)
+  
+  // Add comment
   const addComment = useMutation({
     mutationFn: async (content: string) => {
-      // Get current authenticated user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error("Must be logged in to comment");
       
-      setIsSubmittingComment(true);
-
-      // Get user profile data to have access to username
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError) {
-        console.error("Profile error:", profileError);
-        throw profileError;
+      const comment = {
+        post_id: postId,
+        content,
+        user_id: user.id,
+      };
+      
+      // If commenting as a pet, add pet_id as well
+      if (petId) {
+        comment['pet_id'] = petId;
       }
       
-      // Create the comment directly associated with the user id
       const { data, error } = await supabase
         .from('comments')
-        .insert({
-          post_id: postId,
-          content: content,
-          // If commenting as human, set pet_id to null and user_id to user's ID
-          pet_id: null,
-          user_id: user.id
-        })
-        .select();
-
-      if (error) {
-        console.error("Comment error:", error);
-        throw error;
-      }
+        .insert(comment)
+        .select(`
+          id, 
+          content, 
+          created_at,
+          user_id,
+          profiles:user_id (
+            id,
+            username,
+            avatar_url
+          )
+        `)
+        .single();
+        
+      if (error) throw error;
       
       return {
-        ...data[0],
-        userProfile: userProfile 
+        id: data.id,
+        content: data.content,
+        createdAt: data.created_at,
+        userId: data.user_id,
+        userProfile: data.profiles ? {
+          id: data.profiles.id,
+          username: data.profiles.username,
+          avatarUrl: data.profiles.avatar_url
+        } : undefined
       };
     },
-    onSuccess: (data) => {
-      // More aggressive query invalidation for realtime updates
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      setIsSubmittingComment(false);
-      
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast({
-        title: "Success",
-        description: "Comment posted successfully",
+        title: "Comment added",
+        description: "Your comment has been posted successfully.",
       });
     },
     onError: (error) => {
-      setIsSubmittingComment(false);
-      console.error("Comment error:", error);
+      console.error("Error adding comment:", error);
       toast({
         title: "Error",
-        description: "Failed to post comment",
-        variant: "destructive"
+        description: "Could not post your comment. Please try again.",
+        variant: "destructive",
       });
     },
   });
-
+  
   return {
     hasLiked,
+    isCheckingLike,
     toggleLike,
     addComment,
-    isSubmittingComment
+    isSubmittingComment: addComment.isPending,
   };
 };
