@@ -346,6 +346,45 @@ export type Database = {
           },
         ]
       }
+      post_interactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          interaction_type: string
+          pet_id: string | null
+          post_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interaction_type: string
+          pet_id?: string | null
+          post_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interaction_type?: string
+          pet_id?: string | null
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_interactions_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_interactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comments: number

@@ -16,9 +16,28 @@ interface PostCardProps {
 
 const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
   const { user } = useAuth();
+  const [currentPetId, setCurrentPetId] = useState<string | undefined>();
   
-  // If the user is not authenticated and isReadOnly is true,
-  // we'll display the post but disable interaction buttons
+  useEffect(() => {
+    if (user) {
+      // Fetch the user's first pet profile to use for interactions
+      const fetchUserPet = async () => {
+        const { data: petProfile } = await supabase
+          .from('pet_profiles')
+          .select('id')
+          .eq('owner_id', user.id)
+          .limit(1)
+          .single();
+          
+        if (petProfile) {
+          setCurrentPetId(petProfile.id);
+        }
+      };
+      
+      fetchUserPet();
+    }
+  }, [user]);
+  
   if (!user && isReadOnly) {
     return (
       <div onClick={() => {}} className="w-full max-w-[600px] p-4 mb-4 bg-card rounded-lg shadow-sm border relative">
@@ -93,8 +112,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
     );
   }
   
-  // If the user is authenticated or isReadOnly is false, we'll use the original component
-  return <PostCardBase post={post} comments={comments} />;
+  return <PostCardBase post={post} comments={comments} currentPetId={currentPetId} />;
 };
 
 export default PostCard;

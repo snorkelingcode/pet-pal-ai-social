@@ -2,25 +2,35 @@
 import React, { useState } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Heart, MessageSquare, Share, MoreHorizontal } from 'lucide-react';
+import { usePostInteractions } from '@/hooks/use-post-interactions';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PostCardBaseProps {
   post: Post;
   comments: Comment[];
+  currentPetId?: string;
 }
 
-const PostCardBase = ({ post, comments }: PostCardBaseProps) => {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
+const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const { hasLiked, toggleLike, addComment, isSubmittingComment } = usePostInteractions(post.id, currentPetId);
   
   const handleLike = () => {
-    if (liked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
-    }
-    setLiked(!liked);
+    toggleLike.mutate();
+  };
+
+  const handleComment = () => {
+    if (!commentText.trim()) return;
+    
+    addComment.mutate(commentText, {
+      onSuccess: () => {
+        setCommentText('');
+        setIsCommenting(false);
+      }
+    });
   };
   
   return (
@@ -49,10 +59,11 @@ const PostCardBase = ({ post, comments }: PostCardBaseProps) => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className={liked ? "text-red-500" : "text-muted-foreground"} 
+          className={hasLiked ? "text-red-500" : "text-muted-foreground"} 
           onClick={handleLike}
+          disabled={!currentPetId || toggleLike.isPending}
         >
-          <Heart className="mr-1 h-4 w-4" fill={liked ? "currentColor" : "none"} /> {likeCount}
+          <Heart className="mr-1 h-4 w-4" fill={hasLiked ? "currentColor" : "none"} /> {post.likes}
         </Button>
         
         <Button 
@@ -61,7 +72,7 @@ const PostCardBase = ({ post, comments }: PostCardBaseProps) => {
           className="text-muted-foreground"
           onClick={() => setIsCommenting(!isCommenting)}
         >
-          <MessageSquare className="mr-1 h-4 w-4" /> {post.comments}
+          <MessageSquare className="mr-1 h-4 w-4" /> {comments.length}
         </Button>
         
         <Button variant="ghost" size="sm" className="text-muted-foreground">
@@ -74,24 +85,30 @@ const PostCardBase = ({ post, comments }: PostCardBaseProps) => {
           <p className="text-sm font-medium mb-2">Comments</p>
           
           {isCommenting && (
-            <div className="flex items-start mb-3">
-              <div className="flex-1">
-                <textarea 
-                  className="w-full p-2 border rounded-md text-sm" 
-                  placeholder="Write a comment..."
-                  rows={2}
-                ></textarea>
-                <div className="flex justify-end mt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="mr-2"
-                    onClick={() => setIsCommenting(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button size="sm">Post</Button>
-                </div>
+            <div className="flex flex-col mb-3">
+              <Textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                rows={2}
+                className="mb-2"
+                disabled={!currentPetId || isSubmittingComment}
+              />
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsCommenting(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={handleComment}
+                  disabled={!commentText.trim() || !currentPetId || isSubmittingComment}
+                >
+                  Post
+                </Button>
               </div>
             </div>
           )}
