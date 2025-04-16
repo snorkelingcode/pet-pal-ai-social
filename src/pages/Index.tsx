@@ -57,102 +57,137 @@ const Index = () => {
         
         const postIds = postsData.map(post => post.id);
         
-        const { error: tableCheckError } = await supabase
-          .from('comments')
-          .select('id, user_id')
-          .limit(1);
-        
-        if (tableCheckError && tableCheckError.message.includes("column 'user_id' does not exist")) {
-          console.error("Comments table structure is incorrect:", tableCheckError);
-          throw new Error("Database schema needs to be updated. The user_id column is missing in the comments table.");
-        }
-        
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('comments')
-          .select(`
-            id,
-            post_id,
-            pet_id,
-            user_id,
-            content,
-            likes,
-            created_at,
-            pet_profiles:pet_id (
-              id, 
-              name, 
-              species, 
-              breed,
-              profile_picture
-            ),
-            profiles:user_id (
-              id,
-              username,
-              avatar_url
-            )
-          `)
-          .in('post_id', postIds)
-          .order('created_at', { ascending: true });
+        try {
+          const { error: tableCheckError } = await supabase
+            .from('comments')
+            .select('id, user_id')
+            .limit(1);
           
-        if (commentsError) {
-          console.error("Error fetching comments:", commentsError);
-          throw commentsError;
+          if (tableCheckError && tableCheckError.message.includes("column 'user_id' does not exist")) {
+            console.error("Comments table structure is incorrect:", tableCheckError);
+            throw new Error("Database schema needs to be updated. The user_id column is missing in the comments table.");
+          }
+          
+          const { data: commentsData, error: commentsError } = await supabase
+            .from('comments')
+            .select(`
+              id,
+              post_id,
+              pet_id,
+              user_id,
+              content,
+              likes,
+              created_at,
+              pet_profiles:pet_id (
+                id, 
+                name, 
+                species, 
+                breed,
+                profile_picture
+              ),
+              profiles:user_id (
+                id,
+                username,
+                avatar_url
+              )
+            `)
+            .in('post_id', postIds)
+            .order('created_at', { ascending: true });
+            
+          if (commentsError) {
+            console.error("Error fetching comments:", commentsError);
+            throw commentsError;
+          }
+          
+          const formattedPosts: Post[] = postsData.map(post => ({
+            id: post.id,
+            petId: post.pet_id,
+            petProfile: {
+              id: post.pet_profiles.id,
+              name: post.pet_profiles.name,
+              species: post.pet_profiles.species,
+              breed: post.pet_profiles.breed,
+              age: post.pet_profiles.age,
+              personality: post.pet_profiles.personality,
+              bio: post.pet_profiles.bio,
+              profilePicture: post.pet_profiles.profile_picture,
+              followers: post.pet_profiles.followers,
+              following: post.pet_profiles.following,
+              ownerId: '',
+              createdAt: '',
+            },
+            content: post.content,
+            image: post.image,
+            likes: post.likes,
+            comments: post.comments,
+            createdAt: post.created_at,
+          }));
+          
+          const formattedComments: Comment[] = commentsData.map(comment => ({
+            id: comment.id,
+            postId: comment.post_id,
+            petId: comment.pet_id,
+            userId: comment.user_id,
+            petProfile: comment.pet_id && comment.pet_profiles ? {
+              id: comment.pet_profiles.id,
+              name: comment.pet_profiles.name,
+              species: comment.pet_profiles.species,
+              breed: comment.pet_profiles.breed,
+              profilePicture: comment.pet_profiles.profile_picture,
+              age: 0,
+              personality: [],
+              bio: '',
+              ownerId: '',
+              createdAt: '',
+              followers: 0,
+              following: 0,
+            } : undefined,
+            userProfile: comment.user_id && comment.profiles ? {
+              id: comment.profiles.id,
+              username: comment.profiles.username,
+              avatarUrl: comment.profiles.avatar_url,
+            } : undefined,
+            content: comment.content,
+            likes: comment.likes,
+            createdAt: comment.created_at,
+          }));
+          
+          setPosts(formattedPosts);
+          setComments(formattedComments);
+        } catch (commentError) {
+          console.error("Error with comments:", commentError);
+          const formattedPosts: Post[] = postsData.map(post => ({
+            id: post.id,
+            petId: post.pet_id,
+            petProfile: {
+              id: post.pet_profiles.id,
+              name: post.pet_profiles.name,
+              species: post.pet_profiles.species,
+              breed: post.pet_profiles.breed,
+              age: post.pet_profiles.age,
+              personality: post.pet_profiles.personality,
+              bio: post.pet_profiles.bio,
+              profilePicture: post.pet_profiles.profile_picture,
+              followers: post.pet_profiles.followers,
+              following: post.pet_profiles.following,
+              ownerId: '',
+              createdAt: '',
+            },
+            content: post.content,
+            image: post.image,
+            likes: post.likes,
+            comments: post.comments,
+            createdAt: post.created_at,
+          }));
+          
+          setPosts(formattedPosts);
+          setComments([]);
+          toast({
+            title: "Warning",
+            description: "Could not load comments. Some features may be limited.",
+            variant: "destructive",
+          });
         }
-        
-        const formattedPosts: Post[] = postsData.map(post => ({
-          id: post.id,
-          petId: post.pet_id,
-          petProfile: {
-            id: post.pet_profiles.id,
-            name: post.pet_profiles.name,
-            species: post.pet_profiles.species,
-            breed: post.pet_profiles.breed,
-            age: post.pet_profiles.age,
-            personality: post.pet_profiles.personality,
-            bio: post.pet_profiles.bio,
-            profilePicture: post.pet_profiles.profile_picture,
-            followers: post.pet_profiles.followers,
-            following: post.pet_profiles.following,
-            ownerId: '',
-            createdAt: '',
-          },
-          content: post.content,
-          image: post.image,
-          likes: post.likes,
-          comments: post.comments,
-          createdAt: post.created_at,
-        }));
-        
-        const formattedComments: Comment[] = commentsData.map(comment => ({
-          id: comment.id,
-          postId: comment.post_id,
-          petId: comment.pet_id,
-          userId: comment.user_id,
-          petProfile: comment.pet_id && comment.pet_profiles ? {
-            id: comment.pet_profiles.id,
-            name: comment.pet_profiles.name,
-            species: comment.pet_profiles.species,
-            breed: comment.pet_profiles.breed,
-            profilePicture: comment.pet_profiles.profile_picture,
-            age: 0,
-            personality: [],
-            bio: '',
-            ownerId: '',
-            createdAt: '',
-            followers: 0,
-            following: 0,
-          } : undefined,
-          userProfile: comment.user_id && comment.profiles ? {
-            id: comment.profiles.id,
-            username: comment.profiles.username,
-            avatarUrl: comment.profiles.avatar_url,
-          } : undefined,
-          content: comment.content,
-          likes: comment.likes,
-          createdAt: comment.created_at,
-        }));
-        
-        setPosts(formattedPosts);
-        setComments(formattedComments);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({

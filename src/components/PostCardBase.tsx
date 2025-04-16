@@ -117,12 +117,20 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start mb-3">
               <img 
-                src={comment.petProfile?.profilePicture || (comment.userProfile?.avatarUrl || '/placeholder.svg')} 
-                alt={comment.petProfile?.name || (comment.userProfile?.username || 'User')}
+                src={
+                  comment.petProfile?.profilePicture || 
+                  (comment.userProfile?.avatarUrl || '/placeholder.svg')
+                } 
+                alt={
+                  comment.petProfile?.name || 
+                  (comment.userProfile?.username || 'User')
+                }
                 className="w-8 h-8 rounded-full object-cover border border-petpal-blue"
               />
               <div className="ml-2">
-                <h4 className="font-medium text-sm">{comment.petProfile?.name || (comment.userProfile?.username || 'User')}</h4>
+                <h4 className="font-medium text-sm">
+                  {comment.petProfile?.name || (comment.userProfile?.username || 'User')}
+                </h4>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <button className="mr-3">Like</button>
