@@ -1,6 +1,32 @@
-
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+
+const generateUniqueHandle = async (baseName: string): Promise<string> => {
+  let handle = baseName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let suffix = '';
+  let isUnique = false;
+  let attempts = 0;
+
+  while (!isUnique && attempts < 10) {
+    const testHandle = handle + suffix;
+    
+    const { data, error } = await supabase
+      .from('pet_profiles')
+      .select('id')
+      .eq('handle', testHandle)
+      .single();
+      
+    if (error || !data) {
+      isUnique = true;
+      handle = testHandle;
+    } else {
+      attempts++;
+      suffix = Math.floor(Math.random() * 10000).toString();
+    }
+  }
+
+  return handle;
+};
 
 export const petProfileService = {
   // Get all pet profiles for a user
@@ -46,10 +72,13 @@ export const petProfileService = {
   
   // Create a new pet profile
   createPetProfile: async (
-    profileData: Omit<PetProfile, 'id' | 'createdAt' | 'followers' | 'following'>
+    profileData: Omit<PetProfile, 'id' | 'createdAt' | 'followers' | 'following' | 'handle'>
   ): Promise<PetProfile> => {
     try {
       console.log("Creating pet profile with data:", profileData);
+      
+      // Generate a unique handle for the pet
+      const handle = await generateUniqueHandle(profileData.name);
       
       // Convert from frontend structure to database structure
       const dbPetProfile: Omit<DbPetProfile, 'id' | 'created_at' | 'followers' | 'following'> = {
@@ -61,6 +90,7 @@ export const petProfileService = {
         personality: profileData.personality,
         bio: profileData.bio,
         profile_picture: profileData.profilePicture,
+        handle: handle,
       };
       
       const { data, error } = await supabase

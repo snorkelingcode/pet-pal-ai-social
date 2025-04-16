@@ -1,11 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
-// Define a type for the comment data from Supabase
 type CommentData = {
   id: string;
   post_id: string;
@@ -76,7 +74,6 @@ export const useFeedData = (userId?: string) => {
         
         const postIds = postsResponse.data.map(post => post.id);
         
-        // Query for comments with proper error handling
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
@@ -121,13 +118,11 @@ export const useFeedData = (userId?: string) => {
         const formattedComments: Comment[] = [];
         
         if (commentsData) {
-          // Ensure TypeScript recognizes commentsData as an array of valid objects
           const typedCommentsData = commentsData as unknown as CommentData[];
           
           typedCommentsData.forEach(comment => {
             if (!comment) return;
             
-            // Handle nullability for pet_id and user_id
             const formattedComment: Comment = {
               id: comment.id,
               postId: comment.post_id,
@@ -149,6 +144,7 @@ export const useFeedData = (userId?: string) => {
                 createdAt: '',
                 followers: 0,
                 following: 0,
+                handle: comment.pet_profiles.handle
               } : undefined,
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
@@ -223,6 +219,7 @@ export const useFeedData = (userId?: string) => {
         following: post.pet_profiles.following,
         ownerId: '',
         createdAt: '',
+        handle: post.pet_profiles.handle,
       },
       content: post.content,
       image: post.image,

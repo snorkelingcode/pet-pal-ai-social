@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,6 @@ const Profile = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   
-  // Use either the route param or query param for petId
   const effectivePetId = paramPetId || queryPetId;
   
   useEffect(() => {
@@ -39,7 +37,6 @@ const Profile = () => {
       setLoading(true);
       
       try {
-        // If no specific pet ID, fetch the user's first pet
         let petQuery = supabase
           .from('pet_profiles')
           .select('*, ai_personas(*)')
@@ -54,7 +51,6 @@ const Profile = () => {
         
         if (petError) {
           if (petError.code === 'PGRST116') {
-            // No profile found
             toast({
               title: "No Pet Profile Found",
               description: "Create your first pet profile to get started!",
@@ -71,7 +67,6 @@ const Profile = () => {
           return;
         }
         
-        // Map database pet profile to our frontend type
         const profile: PetProfile = {
           id: petData.id,
           ownerId: petData.owner_id,
@@ -84,7 +79,8 @@ const Profile = () => {
           profilePicture: petData.profile_picture || '',
           createdAt: petData.created_at,
           followers: petData.followers || 0,
-          following: petData.following || 0
+          following: petData.following || 0,
+          handle: petData.handle
         };
         
         setFollowCount({
@@ -94,12 +90,10 @@ const Profile = () => {
         
         setPetProfile(profile);
         
-        // Check if the current user is the owner
         if (user && user.id === petData.owner_id) {
           setIsOwner(true);
         }
         
-        // Check if the current user is following this profile
         if (user) {
           const { data: followingData, error: followingError } = await supabase
             .from('pet_follows')
@@ -112,7 +106,6 @@ const Profile = () => {
           }
         }
 
-        // Fetch the pet's posts
         fetchPetPosts(petData.id);
         
       } catch (error) {
@@ -141,7 +134,6 @@ const Profile = () => {
       
       if (error) throw error;
 
-      // Transform to our Post type
       const transformedPosts: Post[] = data.map(post => ({
         id: post.id,
         petId: post.pet_id,
@@ -162,7 +154,8 @@ const Profile = () => {
           ownerId: post.pet_profiles.owner_id,
           createdAt: post.pet_profiles.created_at,
           followers: post.pet_profiles.followers,
-          following: post.pet_profiles.following
+          following: post.pet_profiles.following,
+          handle: post.pet_profiles.handle
         }
       }));
 
@@ -193,7 +186,6 @@ const Profile = () => {
     
     try {
       if (isFollowing) {
-        // Unfollow
         const { error } = await supabase
           .from('pet_follows')
           .delete()
@@ -210,7 +202,6 @@ const Profile = () => {
           description: `You are no longer following ${petProfile.name}`
         });
       } else {
-        // Follow
         const { error } = await supabase
           .from('pet_follows')
           .insert([{ follower_id: user.id, following_id: petProfile.id }]);
