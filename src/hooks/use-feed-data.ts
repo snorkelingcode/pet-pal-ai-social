@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,12 +13,15 @@ type CommentData = {
   content: string;
   likes: number;
   created_at: string;
+  author_handle: string | null;
+  author_name: string | null;
   pet_profiles?: {
     id: string;
     name: string;
     species: string;
     breed: string;
     profile_picture: string | null;
+    handle: string;
   } | null;
   profiles?: {
     id: string;
@@ -84,12 +88,15 @@ export const useFeedData = (userId?: string) => {
             content,
             likes,
             created_at,
+            author_handle,
+            author_name,
             pet_profiles:pet_id (
               id,
               name,
               species,
               breed,
-              profile_picture
+              profile_picture,
+              handle
             ),
             profiles:user_id (
               id,
@@ -131,20 +138,30 @@ export const useFeedData = (userId?: string) => {
               content: comment.content,
               likes: comment.likes,
               createdAt: comment.created_at,
+              authorHandle: comment.author_handle || 
+                (comment.pet_profiles?.handle || 
+                 comment.pet_profiles?.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
+                 comment.profiles?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
+                 'anonymous'),
+              authorName: comment.author_name || 
+                (comment.pet_profiles?.name || 
+                 comment.profiles?.username || 
+                 'Anonymous'),
               petProfile: comment.pet_id && comment.pet_profiles ? {
                 id: comment.pet_profiles.id,
                 name: comment.pet_profiles.name,
                 species: comment.pet_profiles.species,
                 breed: comment.pet_profiles.breed,
                 profilePicture: comment.pet_profiles.profile_picture || undefined,
+                handle: comment.pet_profiles.handle || 
+                       comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
                 age: 0,
                 personality: [],
                 bio: '',
                 ownerId: '',
                 createdAt: '',
                 followers: 0,
-                following: 0,
-                handle: comment.pet_profiles.name?.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                following: 0
               } : undefined,
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id || '',

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -139,66 +140,89 @@ const Profile = () => {
       const commentsMapping: Record<string, Comment[]> = {};
       
       for (const post of transformedPosts) {
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('comments')
-          .select(`
-            id,
-            post_id,
-            pet_id,
-            content,
-            likes,
-            created_at,
-            pet_profiles:pet_id (*),
-            profiles:user_id (id, username, avatar_url)
-          `)
-          .eq('post_id', post.id)
-          .order('created_at', { ascending: true });
-          
-        if (commentsError) {
-          console.error(`Error fetching comments for post ${post.id}:`, commentsError);
-          continue;
-        }
-
-        if (commentsData) {
-          const formattedComments = commentsData.map(comment => {
-            let userProfile;
-            if (comment.profiles) {
-              userProfile = {
-                id: comment.profiles?.id || '',
-                username: comment.profiles?.username || 'Anonymous',
-                avatarUrl: comment.profiles?.avatar_url
-              };
-            }
+        try {
+          const { data: commentsData, error: commentsError } = await supabase
+            .from('comments')
+            .select(`
+              id,
+              post_id,
+              pet_id,
+              user_id,
+              content,
+              likes,
+              created_at,
+              author_name,
+              author_handle,
+              pet_profiles:pet_id (*),
+              profiles:user_id (id, username, avatar_url)
+            `)
+            .eq('post_id', post.id)
+            .order('created_at', { ascending: true });
             
-            return {
-              id: comment.id,
-              postId: comment.post_id,
-              content: comment.content,
-              createdAt: comment.created_at,
-              likes: comment.likes,
-              petId: comment.pet_id || undefined,
-              userId: comment.profiles?.id || undefined,
-              petProfile: comment.pet_profiles ? {
-                id: comment.pet_profiles.id,
-                name: comment.pet_profiles.name,
-                species: comment.pet_profiles.species,
-                breed: comment.pet_profiles.breed,
-                profilePicture: comment.pet_profiles.profile_picture || undefined,
-                age: comment.pet_profiles.age,
-                personality: comment.pet_profiles.personality,
-                bio: comment.pet_profiles.bio,
-                ownerId: comment.pet_profiles.owner_id,
-                createdAt: comment.pet_profiles.created_at,
-                followers: comment.pet_profiles.followers,
-                following: comment.pet_profiles.following,
-                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-              } : undefined,
-              userProfile: userProfile
-            };
-          });
-          
-          commentsMapping[post.id] = formattedComments;
-        } else {
+          if (commentsError) {
+            console.error(`Error fetching comments for post ${post.id}:`, commentsError);
+            commentsMapping[post.id] = [];
+            continue;
+          }
+
+          if (commentsData && Array.isArray(commentsData)) {
+            const formattedComments = commentsData.map(comment => {
+              let userProfile = undefined;
+              if (comment.profiles) {
+                userProfile = {
+                  id: comment.profiles.id || '',
+                  username: comment.profiles.username || 'Anonymous',
+                  avatarUrl: comment.profiles.avatar_url
+                };
+              }
+              
+              const handle = comment.author_handle || 
+                             (comment.pet_profiles?.handle || 
+                              comment.pet_profiles?.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
+                              comment.profiles?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 
+                              'anonymous');
+                              
+              const name = comment.author_name || 
+                           (comment.pet_profiles?.name || 
+                            comment.profiles?.username || 
+                            'Anonymous');
+              
+              const formattedComment: Comment = {
+                id: comment.id,
+                postId: comment.post_id,
+                content: comment.content,
+                createdAt: comment.created_at,
+                likes: comment.likes,
+                petId: comment.pet_id || undefined,
+                userId: comment.user_id || undefined,
+                authorHandle: handle,
+                authorName: name,
+                petProfile: comment.pet_profiles ? {
+                  id: comment.pet_profiles.id,
+                  name: comment.pet_profiles.name,
+                  species: comment.pet_profiles.species,
+                  breed: comment.pet_profiles.breed,
+                  profilePicture: comment.pet_profiles.profile_picture || undefined,
+                  age: comment.pet_profiles.age,
+                  personality: comment.pet_profiles.personality,
+                  bio: comment.pet_profiles.bio,
+                  ownerId: comment.pet_profiles.owner_id,
+                  createdAt: comment.pet_profiles.created_at,
+                  followers: comment.pet_profiles.followers,
+                  following: comment.pet_profiles.following,
+                  handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+                } : undefined,
+                userProfile: userProfile
+              };
+              return formattedComment;
+            });
+            
+            commentsMapping[post.id] = formattedComments;
+          } else {
+            commentsMapping[post.id] = [];
+          }
+        } catch (error) {
+          console.error(`Error processing comments for post ${post.id}:`, error);
           commentsMapping[post.id] = [];
         }
       }

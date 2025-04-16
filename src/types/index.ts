@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -103,11 +104,13 @@ export interface DbPost {
 export interface DbComment {
   id: string;
   post_id: string;
-  pet_id: string;
+  pet_id: string | null;
   user_id: string | null;
   content: string;
   likes: number;
   created_at: string;
+  author_name: string | null;
+  author_handle: string | null;
 }
 
 export interface DbAIPersona {
@@ -144,7 +147,7 @@ export const mapDbPetProfileToPetProfile = (dbPetProfile: DbPetProfile): PetProf
   createdAt: dbPetProfile.created_at,
   followers: dbPetProfile.followers,
   following: dbPetProfile.following,
-  handle: dbPetProfile.handle,
+  handle: dbPetProfile.handle || dbPetProfile.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
 });
 
 export const mapDbAIPersonaToAIPersona = (dbAIPersona: DbAIPersona): AIPersona => ({

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -18,13 +19,28 @@ interface PostCardBaseProps {
 const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [localComments, setLocalComments] = useState<Comment[]>(comments);
+  const [localComments, setLocalComments] = useState<Comment[]>([]);
   const { user } = useAuth();
   const { hasLiked, toggleLike, addComment, isSubmittingComment } = usePostInteractions(post.id, currentPetId);
   const queryClient = useQueryClient();
   
   useEffect(() => {
-    setLocalComments(comments);
+    // Ensure comments is an array and each comment has required properties
+    if (Array.isArray(comments)) {
+      setLocalComments(
+        comments.map(comment => {
+          // Ensure each comment has authorHandle and authorName
+          if (!comment.authorHandle || !comment.authorName) {
+            return {
+              ...comment,
+              authorHandle: comment.petProfile?.handle || comment.userProfile?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'anonymous',
+              authorName: comment.petProfile?.name || comment.userProfile?.username || 'Anonymous'
+            };
+          }
+          return comment;
+        })
+      );
+    }
   }, [comments]);
 
   useEffect(() => {
@@ -84,32 +100,30 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
         setIsCommenting(false);
         
         if (newComment) {
-          const updatedComments = [...localComments, {
+          const updatedComment: Comment = {
             id: newComment.id || `temp-${Date.now()}`,
             postId: post.id,
             userId: user?.id,
             content: commentText,
             likes: 0,
             createdAt: new Date().toISOString(),
-            userProfile: {
-              id: newComment.userProfile?.id || user?.id || '',
-              username: newComment.userProfile?.username || user?.username || 'User',
-              avatarUrl: newComment.userProfile?.avatarUrl || user?.avatarUrl
+            authorHandle: newComment.authorHandle || user?.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'anonymous',
+            authorName: newComment.authorName || user?.username || 'Anonymous',
+            userProfile: newComment.userProfile || {
+              id: user?.id || '',
+              username: user?.username || 'User',
+              avatarUrl: user?.avatarUrl
             }
-          }];
-          setLocalComments(updatedComments);
+          };
+          
+          setLocalComments(prevComments => [...prevComments, updatedComment]);
         }
       }
     });
   };
 
   const getDisplayName = (comment: Comment) => {
-    if (comment.petProfile) {
-      return comment.petProfile.name;
-    } else if (comment.userProfile) {
-      return comment.userProfile.username;
-    }
-    return "User";
+    return comment.authorName || (comment.petProfile?.name || comment.userProfile?.username || "User");
   };
 
   const getAvatarUrl = (comment: Comment) => {
