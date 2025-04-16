@@ -7,10 +7,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { PetProfile } from '@/types';
+import { PetProfile, Post } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import AIPostScheduler from '@/components/AIPostScheduler';
 import CreatePetProfileModal from '@/components/CreatePetProfileModal';
+import PostCard from '@/components/PostCard';
 
 const Profile = () => {
   const { petId: paramPetId } = useParams<{ petId: string }>();
@@ -25,6 +26,8 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<string>("posts");
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const navigate = useNavigate();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
   
   // Use either the route param or query param for petId
   const effectivePetId = paramPetId || queryPetId;
@@ -108,6 +111,9 @@ const Profile = () => {
             setIsFollowing(true);
           }
         }
+
+        // Fetch the pet's posts
+        fetchPetPosts(petData.id);
         
       } catch (error) {
         console.error("Error fetching pet profile:", error);
@@ -123,6 +129,55 @@ const Profile = () => {
     
     fetchPetProfile();
   }, [effectivePetId, user]);
+
+  const fetchPetPosts = async (petId: string) => {
+    setLoadingPosts(true);
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, pet_profiles(*)')
+        .eq('pet_id', petId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+
+      // Transform to our Post type
+      const transformedPosts: Post[] = data.map(post => ({
+        id: post.id,
+        petId: post.pet_id,
+        content: post.content,
+        image: post.image,
+        likes: post.likes,
+        comments: post.comments,
+        createdAt: post.created_at,
+        petProfile: {
+          id: post.pet_profiles.id,
+          name: post.pet_profiles.name,
+          species: post.pet_profiles.species,
+          breed: post.pet_profiles.breed,
+          profilePicture: post.pet_profiles.profile_picture,
+          bio: post.pet_profiles.bio,
+          personality: post.pet_profiles.personality,
+          age: post.pet_profiles.age,
+          ownerId: post.pet_profiles.owner_id,
+          createdAt: post.pet_profiles.created_at,
+          followers: post.pet_profiles.followers,
+          following: post.pet_profiles.following
+        }
+      }));
+
+      setPosts(transformedPosts);
+    } catch (error) {
+      console.error("Error fetching pet posts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load pet posts",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
   
   const handleFollowToggle = async () => {
     if (!user) {
@@ -312,12 +367,30 @@ const Profile = () => {
               </TabsList>
               
               <TabsContent value="posts" className="mt-6">
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-2">No posts yet.</p>
-                  {isOwner && (
-                    <Button size="sm" variant="outline">Create First Post</Button>
-                  )}
-                </div>
+                {loadingPosts ? (
+                  <div className="animate-pulse space-y-4">
+                    <div className="bg-muted rounded-md h-32 w-full"></div>
+                    <div className="bg-muted rounded-md h-32 w-full"></div>
+                  </div>
+                ) : posts.length > 0 ? (
+                  <div className="space-y-4">
+                    {posts.map(post => (
+                      <PostCard 
+                        key={post.id} 
+                        post={post} 
+                        comments={[]} 
+                        isReadOnly={!user}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-2">No posts yet.</p>
+                    {isOwner && (
+                      <Button size="sm" variant="outline">Create First Post</Button>
+                    )}
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="media" className="mt-6">

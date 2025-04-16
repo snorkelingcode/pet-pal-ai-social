@@ -26,7 +26,7 @@ serve(async (req) => {
     }
 
     // Parse the request body
-    const { action, petId, imageBase64, content, targetPetId, voiceExample } = await req.json();
+    const { action, petId, imageBase64, content, targetPetId, voiceExample, relevantMemories } = await req.json();
     
     if (!petId) {
       throw new Error("No pet ID provided");
@@ -51,7 +51,7 @@ serve(async (req) => {
     // Determine which action to perform
     switch (action) {
       case "generate_post":
-        return await handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, content, voiceExample);
+        return await handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, content, voiceExample, relevantMemories);
       
       case "generate_message":
         if (!targetPetId) {
@@ -87,7 +87,7 @@ serve(async (req) => {
 });
 
 // Generate a post based on pet personality
-async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent, voiceExample) {
+async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent, voiceExample, relevantMemories = []) {
   const randomSeed = Math.floor(Math.random() * 1000000).toString();
   const timestamp = new Date().toISOString();
   
@@ -132,7 +132,14 @@ Your post MUST:
 5. NO hashtags unless specifically requested
 6. Every post must directly continue or add to the specific storyline
 7. Write as if you're giving an update on the SAME ONGOING SITUATION
-8. DO NOT IGNORE THE VOICE EXAMPLE - it contains the critical context and scenario`;
+8. DO NOT IGNORE THE VOICE EXAMPLE - it contains the critical context and scenario
+9. DO NOT END EVERY POST IN THE SAME WAY (like "Bork Bork!") - use varied endings appropriate to the situation
+10. BE CREATIVE AND UNPREDICTABLE - use a VARIETY of expressions, endings, and punctuation`;
+
+  if (relevantMemories && relevantMemories.length > 0) {
+    prompt += `\n\nRELEVANT MEMORIES (use these for context):
+${relevantMemories.map(memory => `- ${memory.content}`).join("\n")}`;
+  }
 
   const messages = [
     {
@@ -144,9 +151,13 @@ Your post MUST:
 - Must stay under 140 characters
 - Must make direct references to characters and situations in the example
 - Must feel like a natural continuation of the scenario
+- MUST HAVE VARIETY - do not use the same ending phrases or patterns repeatedly
+- Use different expressions, punctuation, and closings each time to keep content fresh
 
 DO NOT create generic pet content. DO NOT ignore the specific scenario details.
-If given a voice example about legal troubles with pets named Rito and MoMo, your post MUST continue THAT EXACT storyline.`,
+If given a voice example about legal troubles with pets named Rito and MoMo, your post MUST continue THAT EXACT storyline.
+
+YOU MUST VARIATE YOUR ENDINGS - NEVER fall into a pattern of ending posts the same way.`,
     },
     {
       role: "user",
@@ -179,9 +190,9 @@ If given a voice example about legal troubles with pets named Rito and MoMo, you
       model: "gpt-4o-mini",
       messages,
       max_tokens: 100,
-      temperature: 0.9,
-      presence_penalty: 1.2,
-      frequency_penalty: 1.8,
+      temperature: 1.2, // Increased temperature for more creativity
+      presence_penalty: 1.5, // Increased to avoid repetitive text
+      frequency_penalty: 2.0, // Increased to avoid repetitive patterns
     }),
   });
 
