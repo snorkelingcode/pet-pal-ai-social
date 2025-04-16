@@ -13,7 +13,8 @@ export const useFeedData = (userId?: string) => {
     const fetchData = async () => {
       setLoadingData(true);
       try {
-        const { data: postsData, error: postsError } = await supabase
+        // Fetch posts first
+        const postsResponse = await supabase
           .from('posts')
           .select(`
             id, 
@@ -38,18 +39,21 @@ export const useFeedData = (userId?: string) => {
           `)
           .order('created_at', { ascending: false });
           
-        if (postsError) throw postsError;
+        if (postsResponse.error) {
+          throw postsResponse.error;
+        }
         
-        if (!postsData || postsData.length === 0) {
+        if (!postsResponse.data || postsResponse.data.length === 0) {
           setPosts([]);
           setComments([]);
           setLoadingData(false);
           return;
         }
         
-        const postIds = postsData.map(post => post.id);
+        const postIds = postsResponse.data.map(post => post.id);
         
-        const { data: commentsData, error: commentsError } = await supabase
+        // Fetch comments for these posts
+        const commentsResponse = await supabase
           .from('comments')
           .select(`
             id,
@@ -59,14 +63,14 @@ export const useFeedData = (userId?: string) => {
             content,
             likes,
             created_at,
-            pet_profiles:pet_id (
+            pet_profiles!comments_pet_id_fkey (
               id,
               name,
               species,
               breed,
               profile_picture
             ),
-            profiles:user_id (
+            profiles!comments_user_id_fkey (
               id,
               username,
               avatar_url
@@ -75,22 +79,23 @@ export const useFeedData = (userId?: string) => {
           .in('post_id', postIds)
           .order('created_at', { ascending: true });
           
-        if (commentsError) {
-          console.error("Error fetching comments:", commentsError);
+        if (commentsResponse.error) {
+          console.error("Error fetching comments:", commentsResponse.error);
           toast({
             title: "Warning",
             description: "Could not load comments. Some features may be limited.",
             variant: "destructive",
           });
-          const formattedPosts = mapPostsData(postsData);
+          
+          const formattedPosts = mapPostsData(postsResponse.data);
           setPosts(formattedPosts);
           setComments([]);
           setLoadingData(false);
           return;
         }
         
-        const formattedPosts = mapPostsData(postsData);
-        const formattedComments = (commentsData || []).map((comment): Comment => ({
+        const formattedPosts = mapPostsData(postsResponse.data);
+        const formattedComments = (commentsResponse.data || []).map((comment): Comment => ({
           id: comment.id,
           postId: comment.post_id,
           petId: comment.pet_id || undefined,
@@ -166,3 +171,4 @@ export const useFeedData = (userId?: string) => {
 
   return { posts, comments, loadingData };
 };
+
