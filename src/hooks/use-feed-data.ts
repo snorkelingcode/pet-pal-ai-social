@@ -25,7 +25,7 @@ type CommentData = {
     id: string;
     username: string;
     avatar_url: string | null;
-    handle: string | null;
+    handle: string;
   } | null;
 };
 

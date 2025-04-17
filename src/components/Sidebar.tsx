@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -76,7 +75,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
             createdAt: pet.created_at,
             followers: pet.followers || 0,
             following: pet.following || 0,
-            handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
+            handle: pet.handle
           }));
           
           setPetProfiles(formattedProfiles);
@@ -326,7 +325,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
                 createdAt: pet.created_at,
                 followers: pet.followers || 0,
                 following: pet.following || 0,
-                handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
+                handle: pet.handle
               }));
               
               setPetProfiles(formattedProfiles);
