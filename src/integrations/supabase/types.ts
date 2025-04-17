@@ -275,7 +275,6 @@ export type Database = {
           owner_id: string
           personality: string[]
           profile_picture: string | null
-          profile_url: string
           species: string
         }
         Insert: {
@@ -291,7 +290,6 @@ export type Database = {
           owner_id: string
           personality?: string[]
           profile_picture?: string | null
-          profile_url?: string
           species: string
         }
         Update: {
@@ -307,7 +305,6 @@ export type Database = {
           owner_id?: string
           personality?: string[]
           profile_picture?: string | null
-          profile_url?: string
           species?: string
         }
         Relationships: [
