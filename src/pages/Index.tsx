@@ -5,13 +5,13 @@ import LoggedInFeed from '@/components/LoggedInFeed';
 import LoggedOutFeed from '@/components/LoggedOutFeed';
 import HeaderCard from '@/components/HeaderCard';
 import usePostFeed from '@/hooks/use-feed-data';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Comment } from '@/types';
 
 const Index = () => {
   const { user } = useAuth();
   const { posts, loading } = usePostFeed();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [comments, setComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState<string>("for-you");
 

@@ -25,7 +25,9 @@ export function mapDbPetProfileData(pet: any): PetProfile {
     };
   }
 
-  const handle = pet.handle || pet.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+  // Generate handle if it's not present in the database record
+  const handle = pet.handle || pet.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'unknown';
+  // Generate profile URL if it's not present
   const profileUrl = pet.profile_url || `/pet/${handle}`;
 
   return {
