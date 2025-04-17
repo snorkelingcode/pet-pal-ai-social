@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { User } from 'lucide-react';
 import { PetProfile } from '@/types';
-import CreatePetProfileModal from '@/components/CreatePetProfileModal';
 import PetProfileCard from '@/components/PetProfileCard';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface PetsListProps {
   pets: PetProfile[];
@@ -17,10 +16,10 @@ interface PetsListProps {
 export const PetsList = ({ pets, onCreateProfile }: PetsListProps) => {
   const [selectedPet, setSelectedPet] = useState<PetProfile | null>(null);
   const [isPetProfileModalOpen, setIsPetProfileModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleViewProfile = (pet: PetProfile) => {
-    setSelectedPet(pet);
-    setIsPetProfileModalOpen(true);
+    navigate(pet.profile_url);
   };
 
   return (
@@ -85,14 +84,6 @@ export const PetsList = ({ pets, onCreateProfile }: PetsListProps) => {
           </div>
         )}
       </Card>
-
-      {/* Pet Profile Modal */}
-      <Dialog open={isPetProfileModalOpen} onOpenChange={setIsPetProfileModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          {selectedPet && <PetProfileCard petProfile={selectedPet} />}
-        </DialogContent>
-      </Dialog>
     </>
   );
 };
-

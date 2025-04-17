@@ -15,12 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import PetProfileCard from './PetProfileCard';
 import { User } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+import { useNavigate } from 'react-router-dom';
 
 interface OwnerProfileModalProps {
   open: boolean;
@@ -29,6 +24,7 @@ interface OwnerProfileModalProps {
 
 const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [pets, setPets] = useState<PetProfile[]>([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -113,6 +109,11 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
     fetchUserPets();
   }, [user]);
 
+  const handleViewProfile = (pet: PetProfile) => {
+    navigate(pet.profile_url);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -139,7 +140,16 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
               <p>Loading pet profiles...</p>
             ) : pets.length > 0 ? (
               pets.map((pet) => (
-                <PetProfileCard key={pet.id} petProfile={pet} compact showViewButton />
+                <div key={pet.id} className="flex items-center justify-between">
+                  <PetProfileCard petProfile={pet} compact />
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleViewProfile(pet)}
+                    className="bg-petpal-blue hover:bg-petpal-blue/90"
+                  >
+                    View Profile
+                  </Button>
+                </div>
               ))
             ) : (
               <p>No pet profiles found. Create one to get started!</p>
