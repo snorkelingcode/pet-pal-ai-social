@@ -150,7 +150,7 @@ export const useFeedData = (userId?: string) => {
                 createdAt: '',
                 followers: 0,
                 following: 0,
-                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
+                handle: comment.pet_profiles.handle
               } : undefined,
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
@@ -226,7 +226,7 @@ export const useFeedData = (userId?: string) => {
         following: post.pet_profiles.following || 0,
         ownerId: '',
         createdAt: '',
-        handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
+        handle: post.pet_profiles.handle
       },
       content: post.content,
       image: post.image,

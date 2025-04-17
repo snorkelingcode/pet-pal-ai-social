@@ -1,4 +1,3 @@
-
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -10,6 +9,7 @@ const nameToBasicHandle = (name: string): string => {
 // Generate a unique handle for a pet profile
 const generateUniqueHandle = async (baseName: string): Promise<string> => {
   try {
+    // Convert name to a basic handle format
     const baseHandle = nameToBasicHandle(baseName);
     
     // Check if the handle is already taken

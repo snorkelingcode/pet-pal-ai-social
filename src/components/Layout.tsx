@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,7 +38,7 @@ const Layout = ({
     <div className="min-h-screen bg-background paw-print-bg flex justify-center">
       <div className="flex w-full max-w-[1200px] px-4 relative">
         {!isMobile && <div className="flex-none w-[275px]">
-          <Sidebar activeSection={activeSection} onSectionChange={(section: string) => onSectionChange(section as SectionType)} />
+          <Sidebar activeSection={activeSection} onSectionChange={(section) => onSectionChange(section as SectionType)} />
         </div>}
         
         <main className={`flex-1 p-4 flex justify-center ${isMobile ? 'w-full' : ''}`}>
