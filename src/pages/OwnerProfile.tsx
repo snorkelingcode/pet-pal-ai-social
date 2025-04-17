@@ -44,17 +44,6 @@ const OwnerProfile = () => {
     },
   });
 
-  const handleEditProfile = (petId: string) => {
-    const petProfile = userPetProfiles.find(pet => pet.id === petId);
-    if (petProfile) {
-      navigate(`/pet/${petId}`);
-      toast({
-        title: "Edit Profile",
-        description: "Navigating to pet profile page where you can edit."
-      });
-    }
-  };
-
   useEffect(() => {
     if (user) {
       setLoading(true);
@@ -90,7 +79,7 @@ const OwnerProfile = () => {
           console.log("Owner Profile - Fetched pet profiles:", petsData);
           
           if (petsData) {
-            const formattedPets: PetProfile[] = petsData.map(pet => ({
+            const formattedPets = petsData.map(pet => ({
               id: pet.id,
               ownerId: pet.owner_id,
               name: pet.name,
@@ -103,6 +92,7 @@ const OwnerProfile = () => {
               createdAt: pet.created_at,
               followers: pet.followers || 0,
               following: pet.following || 0,
+              handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
             }));
             
             setUserPetProfiles(formattedPets);
@@ -528,6 +518,13 @@ const OwnerProfile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditProfile = (petId: string) => {
+    const createProfileEvent = new CustomEvent('open-create-profile', {
+      detail: { petId }
+    });
+    window.dispatchEvent(createProfileEvent);
   };
 
   return (

@@ -54,7 +54,6 @@ const Messages = () => {
         }));
         
         setPetProfiles(formattedProfiles);
-        console.log("Fetched pet profiles:", formattedProfiles);
       } catch (error) {
         console.error("Error fetching pet profiles:", error);
         toast({

@@ -90,7 +90,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
           age: pet.age,
           personality: pet.personality || [],
           bio: pet.bio || '',
-          profilePicture: pet.profile_picture || null,
+          profilePicture: pet.profile_picture || '',
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,

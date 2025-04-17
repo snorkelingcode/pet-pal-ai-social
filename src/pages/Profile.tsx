@@ -84,11 +84,6 @@ const Profile = () => {
           handle: petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '')
         };
         
-        setFollowCount({
-          followers: petData.followers || 0,
-          following: petData.following || 0
-        });
-        
         setPetProfile(profile);
         
         if (user && user.id === petData.owner_id) {

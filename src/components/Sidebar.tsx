@@ -79,13 +79,23 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
     const fetchUserPets = async () => {
       if (!user) return;
       
-      setLoadingPets(true);
       try {
+        setLoadingPets(true);
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        
         const { data, error } = await supabase
           .from('pet_profiles')
           .select('*')
           .eq('owner_id', user.id);
-        
+          
         if (error) {
           throw error;
         }
@@ -97,9 +107,9 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           species: pet.species,
           breed: pet.breed,
           age: pet.age,
-          personality: pet.personality,
-          bio: pet.bio,
-          profilePicture: pet.profile_picture,
+          personality: pet.personality || [],
+          bio: pet.bio || '',
+          profilePicture: pet.profile_picture || null,
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,
@@ -118,7 +128,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
         setLoadingPets(false);
       }
     };
-    
+
     fetchUserPets();
   }, [user]);
 
