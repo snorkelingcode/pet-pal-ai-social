@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -65,7 +66,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
 
         if (petsData) {
           const formattedPets = petsData.map(pet => {
-            const handle = pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
             return {
               id: pet.id,
               ownerId: pet.owner_id,
@@ -80,7 +81,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
               followers: pet.followers || 0,
               following: pet.following || 0,
               handle: handle,
-              profile_url: `/pet/${handle}`
+              profile_url: pet.profile_url || `/pet/${handle}`
             };
           });
           

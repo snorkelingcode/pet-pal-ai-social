@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import AIPostScheduler from '@/components/AIPostScheduler';
 import CreatePetProfileModal from '@/components/CreatePetProfileModal';
 import PostCard from '@/components/PostCard';
+import { mapDbPetProfileData } from '@/utils/dataMappers';
 
 const Profile = () => {
   const { petId: paramPetId } = useParams<{ petId: string }>();
@@ -68,24 +69,7 @@ const Profile = () => {
           return;
         }
         
-        const handle = petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        
-        const profile: PetProfile = {
-          id: petData.id,
-          ownerId: petData.owner_id,
-          name: petData.name,
-          species: petData.species,
-          breed: petData.breed,
-          age: petData.age,
-          personality: petData.personality || [],
-          bio: petData.bio || '',
-          profilePicture: petData.profile_picture || '',
-          createdAt: petData.created_at,
-          followers: petData.followers || 0,
-          following: petData.following || 0,
-          handle: handle,
-          profile_url: `/pet/${handle}`
-        };
+        const profile = mapDbPetProfileData(petData);
         
         setPetProfile(profile);
         
@@ -134,32 +118,17 @@ const Profile = () => {
       if (postsError) throw postsError;
 
       const transformedPosts: Post[] = postsData.map(post => {
-        const handle = post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const petProfile = mapDbPetProfileData(post.pet_profiles);
         
         return {
           id: post.id,
           petId: post.pet_id,
           content: post.content,
-          image: post.image,
-          likes: post.likes,
-          comments: post.comments,
+          image: post.image || '',
+          likes: post.likes || 0,
+          comments: post.comments || 0,
           createdAt: post.created_at,
-          petProfile: {
-            id: post.pet_profiles.id,
-            name: post.pet_profiles.name,
-            species: post.pet_profiles.species,
-            breed: post.pet_profiles.breed,
-            profilePicture: post.pet_profiles.profile_picture,
-            bio: post.pet_profiles.bio || '',
-            personality: post.pet_profiles.personality || [],
-            age: post.pet_profiles.age,
-            ownerId: post.pet_profiles.owner_id,
-            createdAt: post.pet_profiles.created_at,
-            followers: post.pet_profiles.followers || 0,
-            following: post.pet_profiles.following || 0,
-            handle: handle,
-            profile_url: `/pet/${handle}`
-          }
+          petProfile: petProfile
         };
       });
 
@@ -191,33 +160,19 @@ const Profile = () => {
             let userProfile = undefined;
             
             if (comment.pet_id && comment.pet_profiles) {
-              const handle = comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-              petProfile = {
-                id: comment.pet_profiles.id,
-                name: comment.pet_profiles.name,
-                species: comment.pet_profiles.species,
-                breed: comment.pet_profiles.breed,
-                profilePicture: comment.pet_profiles.profile_picture || undefined,
-                age: comment.pet_profiles.age,
-                personality: comment.pet_profiles.personality || [],
-                bio: comment.pet_profiles.bio || '',
-                ownerId: comment.pet_profiles.owner_id,
-                createdAt: comment.pet_profiles.created_at,
-                followers: comment.pet_profiles.followers || 0,
-                following: comment.pet_profiles.following || 0,
-                handle: handle,
-                profile_url: `/pet/${handle}`
-              };
+              petProfile = mapDbPetProfileData(comment.pet_profiles);
             }
             
             if (comment.user_id && comment.profiles) {
               try {
-                userProfile = {
-                  id: comment.profiles.id,
-                  username: comment.profiles.username || 'Anonymous',
-                  avatarUrl: comment.profiles.avatar_url,
-                  handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
-                };
+                if (typeof comment.profiles === 'object' && !('error' in comment.profiles)) {
+                  userProfile = {
+                    id: comment.profiles.id,
+                    username: comment.profiles.username || 'Anonymous',
+                    avatarUrl: comment.profiles.avatar_url,
+                    handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
+                  };
+                }
               } catch (err) {
                 console.error("Error processing user profile for comment:", err);
               }

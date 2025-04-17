@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { petProfileService } from '@/services/petProfileService';
 
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
@@ -81,42 +82,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
       
       try {
         setLoadingPets(true);
-
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (profileError) throw profileError;
-        
-        
-        const { data, error } = await supabase
-          .from('pet_profiles')
-          .select('*')
-          .eq('owner_id', user.id);
-          
-        if (error) {
-          throw error;
-        }
-        
-        const petProfiles: PetProfile[] = data.map(pet => ({
-          id: pet.id,
-          ownerId: pet.owner_id,
-          name: pet.name,
-          species: pet.species,
-          breed: pet.breed,
-          age: pet.age,
-          personality: pet.personality || [],
-          bio: pet.bio || '',
-          profilePicture: pet.profile_picture || null,
-          createdAt: pet.created_at,
-          followers: pet.followers || 0,
-          following: pet.following || 0,
-          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-          profile_url: `/pet/${pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`
-        }));
-        
+        const petProfiles = await petProfileService.getUserPetProfiles(user.id);
         setUserPets(petProfiles);
       } catch (error) {
         console.error('Error fetching user pets:', error);
@@ -284,7 +250,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           })}
         </nav>
         
-        {user && (
+        {user ? (
           <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
             <Button 
               className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave"
@@ -299,9 +265,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
               Owner Profile
             </Button>
           </div>
-        )}
-        
-        {!user && (
+        ) : (
           <div className="absolute bottom-8 right-4 left-0 pr-4">
             <Button 
               className="w-full bg-petpal-blue hover:bg-petpal-blue/90"

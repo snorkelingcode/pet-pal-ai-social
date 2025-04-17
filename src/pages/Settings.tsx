@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -15,6 +14,7 @@ import { PetProfile } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Shield, Bell, UserCircle, PawPrint } from 'lucide-react';
+import { mapDbPetProfileData } from '@/utils/dataMappers';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -47,23 +47,8 @@ const Settings = () => {
         if (error) throw error;
 
         if (pet) {
-          const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          setPetProfile({
-            id: pet.id,
-            ownerId: pet.owner_id,
-            name: pet.name,
-            species: pet.species,
-            breed: pet.breed,
-            age: pet.age,
-            personality: pet.personality || [],
-            bio: pet.bio || '',
-            profilePicture: pet.profile_picture || '',
-            createdAt: pet.created_at,
-            followers: pet.followers || 0,
-            following: pet.following || 0,
-            handle: handle,
-            profile_url: `/pet/${handle}`
-          });
+          const petProfile = mapDbPetProfileData(pet);
+          setPetProfile(petProfile);
         }
       } catch (error) {
         console.error('Error fetching pet profile:', error);

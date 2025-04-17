@@ -1,3 +1,4 @@
+
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -12,7 +13,25 @@ export const petProfileService = {
         
       if (error) throw error;
       
-      return (dbPetProfiles as DbPetProfile[]).map(mapDbPetProfileToPetProfile);
+      return (dbPetProfiles || []).map((pet) => {
+        const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return {
+          id: pet.id,
+          ownerId: pet.owner_id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          personality: pet.personality || [],
+          bio: pet.bio || '',
+          profilePicture: pet.profile_picture || '',
+          createdAt: pet.created_at,
+          followers: pet.followers || 0,
+          following: pet.following || 0,
+          handle: handle,
+          profile_url: pet.profile_url || `/pet/${handle}`
+        };
+      });
     } catch (error) {
       console.error('Error fetching user pet profiles:', error);
       throw error;
@@ -22,7 +41,7 @@ export const petProfileService = {
   // Get a single pet profile by ID
   getPetProfile: async (petId: string): Promise<PetProfile | null> => {
     try {
-      const { data: dbPetProfile, error } = await supabase
+      const { data: pet, error } = await supabase
         .from('pet_profiles')
         .select('*')
         .eq('id', petId)
@@ -36,7 +55,25 @@ export const petProfileService = {
         throw error;
       }
       
-      return dbPetProfile ? mapDbPetProfileToPetProfile(dbPetProfile as DbPetProfile) : null;
+      if (!pet) return null;
+      
+      const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return {
+        id: pet.id,
+        ownerId: pet.owner_id,
+        name: pet.name,
+        species: pet.species,
+        breed: pet.breed,
+        age: pet.age,
+        personality: pet.personality || [],
+        bio: pet.bio || '',
+        profilePicture: pet.profile_picture || '',
+        createdAt: pet.created_at,
+        followers: pet.followers || 0,
+        following: pet.following || 0,
+        handle: handle,
+        profile_url: pet.profile_url || `/pet/${handle}`
+      };
     } catch (error) {
       console.error('Error fetching pet profile:', error);
       throw error;

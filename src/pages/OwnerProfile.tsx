@@ -9,6 +9,7 @@ import { ProfileForm } from '@/components/owner-profile/ProfileForm';
 import { PetsList } from '@/components/owner-profile/PetsList';
 import { AccountSettings } from '@/components/owner-profile/AccountSettings';
 import { useNavigate } from 'react-router-dom';
+import { mapDbPetProfileData } from '@/utils/dataMappers';
 
 const OwnerProfile = () => {
   const { user } = useAuth();
@@ -47,23 +48,7 @@ const OwnerProfile = () => {
           console.log("Owner Profile - Fetched pet profiles:", petsData);
           
           if (petsData) {
-            const formattedPets = petsData.map(pet => ({
-              id: pet.id,
-              ownerId: pet.owner_id,
-              name: pet.name,
-              species: pet.species,
-              breed: pet.breed,
-              age: pet.age,
-              personality: pet.personality || [],
-              bio: pet.bio || '',
-              profilePicture: pet.profile_picture || '',
-              createdAt: pet.created_at,
-              followers: pet.followers || 0,
-              following: pet.following || 0,
-              handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-              profile_url: `/pet/${pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`
-            }));
-            
+            const formattedPets = petsData.map(mapDbPetProfileData);
             setUserPetProfiles(formattedPets);
           }
         } catch (error) {
