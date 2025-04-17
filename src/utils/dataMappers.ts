@@ -63,6 +63,10 @@ export function mapDbUserProfile(profile: any): User {
     };
   }
 
+  // Generate handle if it's not present
+  const handle = profile.handle || 
+    (profile.username ? String(profile.username).toLowerCase().replace(/[^a-z0-9]/g, '') : 'user');
+
   return {
     id: profile.id || '',
     username: profile.username || 'Anonymous',
@@ -70,7 +74,7 @@ export function mapDbUserProfile(profile: any): User {
     bio: profile.bio || undefined,
     avatarUrl: profile.avatar_url || undefined,
     createdAt: profile.created_at || new Date().toISOString(),
-    handle: profile.handle || profile.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user',
+    handle: handle
   };
 }
 
@@ -80,5 +84,16 @@ export function mapDbUserProfile(profile: any): User {
 export function safelyAccessProfileData<T>(data: any, fallback: T): T {
   if (!data) return fallback;
   if (data.error) return fallback;
+  if (typeof data !== 'object') return fallback;
   return data as T;
+}
+
+/**
+ * Check if an object is a valid profile or contains error information
+ */
+export function isValidProfile(profile: any): boolean {
+  return profile && 
+         typeof profile === 'object' && 
+         !('error' in profile) && 
+         profile !== null;
 }
