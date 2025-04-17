@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, PetProfile, DbPetProfile, mapDbPetProfileToPetProfile } from '@/types';
+import { User, PetProfile, DbPetProfile } from '@/types';
 
 export const profileService = {
   // Get pet profiles with handle property included
@@ -26,7 +26,7 @@ export const profileService = {
         createdAt: profile.created_at,
         followers: profile.followers || 0,
         following: profile.following || 0,
-        handle: profile.handle || profile.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+        handle: profile.handle
       }));
     } catch (error) {
       console.error('Error fetching pet profiles:', error);
@@ -65,7 +65,7 @@ export const profileService = {
         createdAt: petProfile.created_at,
         followers: petProfile.followers || 0,
         following: petProfile.following || 0,
-        handle: petProfile.handle || petProfile.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+        handle: petProfile.handle
       };
     } catch (error) {
       console.error('Error fetching pet profile:', error);

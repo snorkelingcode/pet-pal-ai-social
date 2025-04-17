@@ -9,7 +9,6 @@ import { ProfileForm } from '@/components/owner-profile/ProfileForm';
 import { PetsList } from '@/components/owner-profile/PetsList';
 import { AccountSettings } from '@/components/owner-profile/AccountSettings';
 import { useNavigate } from 'react-router-dom';
-import { User } from 'lucide-react';
 
 const OwnerProfile = () => {
   const { user } = useAuth();
@@ -17,12 +16,6 @@ const OwnerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [userPetProfiles, setUserPetProfiles] = useState<PetProfile[]>([]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [friends, setFriends] = useState<any[]>([]);
-  const [friendRequests, setFriendRequests] = useState<any[]>([]);
-  const [sentRequests, setSentRequests] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -67,7 +60,7 @@ const OwnerProfile = () => {
               createdAt: pet.created_at,
               followers: pet.followers || 0,
               following: pet.following || 0,
-              handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+              handle: pet.handle
             }));
             
             setUserPetProfiles(formattedPets);
@@ -135,13 +128,6 @@ const OwnerProfile = () => {
     }
   };
 
-  const handleEditProfile = (petId: string) => {
-    const createProfileEvent = new CustomEvent('open-create-profile', {
-      detail: { petId }
-    });
-    window.dispatchEvent(createProfileEvent);
-  };
-
   const handleCreateProfile = () => {
     const createProfileEvent = new CustomEvent('open-create-profile');
     window.dispatchEvent(createProfileEvent);
@@ -202,7 +188,6 @@ const OwnerProfile = () => {
         <TabsContent value="pets">
           <PetsList 
             pets={userPetProfiles}
-            onEditProfile={handleEditProfile}
             onCreateProfile={handleCreateProfile}
           />
         </TabsContent>

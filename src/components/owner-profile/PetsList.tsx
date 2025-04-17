@@ -9,11 +9,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface PetsListProps {
   pets: PetProfile[];
-  onEditProfile: (petId: string) => void;
   onCreateProfile: () => void;
 }
 
-export const PetsList = ({ pets, onEditProfile, onCreateProfile }: PetsListProps) => {
+export const PetsList = ({ pets, onCreateProfile }: PetsListProps) => {
   const navigate = useNavigate();
 
   const handleViewProfile = (petId: string) => {
