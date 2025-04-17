@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/avatar";
@@ -8,14 +9,13 @@ import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, UserPlus, Mail, MapPin, Calendar, X, Camera } from 'lucide-react';
+import { User, UserPlus, Mail, MapPin, Calendar, X, Camera, PawPrint } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { PetProfile } from '@/types';
-import { PawPrint } from 'lucide-react';
 
 const profileSchema = z.object({
   name: z.string().min(2, {
@@ -44,6 +44,8 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [userPets, setUserPets] = useState<PetProfile[]>([]);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [friendRequests, setFriendRequests] = useState<any[]>([]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -54,6 +56,54 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       handle: ""
     },
   });
+
+  const fetchFriends = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: friendsData, error: friendsError } = await supabase
+        .from('user_friends')
+        .select('*')
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${user.id})`)
+        .eq('status', 'accepted');
+      
+      if (friendsError) throw friendsError;
+      
+      if (friendsData && friendsData.length > 0) {
+        const friendIds = friendsData.map(connection => 
+          connection.user_id === user.id ? connection.friend_id : connection.user_id
+        );
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', friendIds);
+          
+        if (profilesError) throw profilesError;
+        
+        setFriends(profilesData || []);
+      } else {
+        setFriends([]);
+      }
+      
+      const { data: receivedRequests, error: receivedError } = await supabase
+        .from('user_friends')
+        .select('*')
+        .eq('friend_id', user.id)
+        .eq('status', 'pending');
+      
+      if (receivedError) throw receivedError;
+      
+      setFriendRequests(receivedRequests || []);
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load friends data. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   useEffect(() => {
     if (!open || !user) return;

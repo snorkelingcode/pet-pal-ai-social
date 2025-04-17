@@ -1,3 +1,4 @@
+
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,23 +9,29 @@ const nameToBasicHandle = (name: string): string => {
 
 // Generate a unique handle for a pet profile
 const generateUniqueHandle = async (baseName: string): Promise<string> => {
-  const baseHandle = nameToBasicHandle(baseName);
-  
-  // Check if the handle is already taken
-  const { data, error } = await supabase
-    .from('pet_profiles')
-    .select('id')
-    .eq('handle', baseHandle)
-    .single();
-  
-  // If handle is available, return it
-  if (error && error.code === 'PGRST116') {
-    return baseHandle;
+  try {
+    const baseHandle = nameToBasicHandle(baseName);
+    
+    // Check if the handle is already taken
+    const { data, error } = await supabase
+      .from('pet_profiles')
+      .select('id')
+      .eq('handle', baseHandle)
+      .single();
+    
+    // If handle is available, return it
+    if (error && error.code === 'PGRST116') {
+      return baseHandle;
+    }
+    
+    // If handle is taken, add a random number suffix
+    const suffix = Math.floor(Math.random() * 10000).toString();
+    return `${baseHandle}${suffix}`;
+  } catch (error) {
+    console.error('Error generating unique handle:', error);
+    // Fallback to a timestamp-based handle in case of error
+    return `pet${Date.now().toString().substring(7)}`;
   }
-  
-  // If handle is taken, add a random number suffix
-  const suffix = Math.floor(Math.random() * 10000).toString();
-  return baseHandle + suffix;
 };
 
 export const petProfileService = {
@@ -133,7 +140,8 @@ export const petProfileService = {
       
       // If name changes but handle doesn't, update the handle too
       if (profileData.name !== undefined && profileData.handle === undefined) {
-        updates.handle = await generateUniqueHandle(profileData.name);
+        const newHandle = await generateUniqueHandle(profileData.name);
+        updates.handle = newHandle;
       }
       
       const { data, error } = await supabase

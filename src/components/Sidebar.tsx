@@ -29,8 +29,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
 import CreatePetProfileModal from './CreatePetProfileModal';
 
-const Sidebar = () => {
-  const { user, signOut } = useAuth(); // Change from 'logout' to 'signOut' to match AuthContext
+interface SidebarProps {
+  activeSection: string;
+  onSectionChange: (section: string) => void;
+}
+
+const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
+  const { user, signOut } = useAuth(); // Use signOut from AuthContext
   const [petProfiles, setPetProfiles] = useState<PetProfile[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);

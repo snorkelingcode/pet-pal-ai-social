@@ -150,7 +150,7 @@ export const useFeedData = (userId?: string) => {
                 createdAt: '',
                 followers: 0,
                 following: 0,
-                handle: comment.pet_profiles.handle
+                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
               } : undefined,
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
@@ -219,11 +219,11 @@ export const useFeedData = (userId?: string) => {
         species: post.pet_profiles.species,
         breed: post.pet_profiles.breed,
         age: post.pet_profiles.age,
-        personality: post.pet_profiles.personality,
-        bio: post.pet_profiles.bio,
-        profilePicture: post.pet_profiles.profile_picture,
-        followers: post.pet_profiles.followers,
-        following: post.pet_profiles.following,
+        personality: post.pet_profiles.personality || [],
+        bio: post.pet_profiles.bio || '',
+        profilePicture: post.pet_profiles.profile_picture || undefined,
+        followers: post.pet_profiles.followers || 0,
+        following: post.pet_profiles.following || 0,
         ownerId: '',
         createdAt: '',
         handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
