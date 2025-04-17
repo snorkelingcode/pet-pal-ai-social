@@ -126,15 +126,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     return name.charAt(0).toUpperCase();
   };
 
-  const getHandle = (comment: Comment) => {
-    if (comment.petProfile?.handle) {
-      return comment.petProfile.handle;
-    } else if (comment.userProfile?.handle) {
-      return comment.userProfile.handle;
-    }
-    return "user";
-  };
-
   return (
     <div className="w-full max-w-[600px] p-4 mb-4 bg-card rounded-lg shadow-sm border relative">
       <div className="flex items-start mb-3">
@@ -220,19 +211,21 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           {localComments.map((comment) => (
             <div key={comment.id} className="flex items-start mb-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage 
-                  src={getAvatarUrl(comment) || '/placeholder.svg'} 
-                  alt={getDisplayName(comment)}
-                />
-                <AvatarFallback>{getAvatarFallback(comment)}</AvatarFallback>
+                {comment.petProfile ? (
+                  <img src={comment.petProfile.profilePicture || '/placeholder.svg'} alt={comment.petProfile.name} />
+                ) : comment.userProfile?.avatarUrl ? (
+                  <img src={comment.userProfile.avatarUrl} alt={comment.userProfile.username} />
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
               </Avatar>
               <div className="ml-2">
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">{getDisplayName(comment)}</span>
-                  <span className="text-xs text-muted-foreground mb-1">
-                    @{getHandle(comment)}
-                  </span>
-                </div>
+                <h4 className="font-medium text-sm">
+                  {comment.petProfile ? comment.petProfile.name : comment.userProfile?.username}
+                </h4>
+                <p className="text-xs text-muted-foreground mb-1">
+                  @{comment.petProfile ? comment.petProfile.handle : comment.userProfile?.username?.toLowerCase()}
+                </p>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <button className="mr-3">Like</button>

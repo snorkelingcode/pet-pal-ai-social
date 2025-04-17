@@ -1,335 +1,312 @@
-
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Home, 
-  User, 
-  Mail, 
-  Bell, 
-  Settings, 
-  LogOut, 
-  Plus, 
-  PawPrint,
-  Menu,
-  X
-} from 'lucide-react';
-import { Avatar } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint, LogIn } from 'lucide-react';
+import CreatePetProfileModal from './CreatePetProfileModal';
+import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { Avatar } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile } from '@/types';
-import CreatePetProfileModal from './CreatePetProfileModal';
+import { toast } from '@/components/ui/use-toast';
+
+type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
 interface SidebarProps {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
+  activeSection: SectionType;
+  onSectionChange: (section: SectionType) => void;
 }
 
 const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
-  const { user, signOut } = useAuth();
-  const [petProfiles, setPetProfiles] = useState<PetProfile[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [isCreateProfileOpen, setIsCreateProfileOpen] = useState(false);
+  const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
+  const { user, isLoading } = useAuth();
+  
+  const [searchParams] = useSearchParams();
+  const selectedPetId = searchParams.get('petId');
+  
+  const [userPets, setUserPets] = useState<PetProfile[]>([]);
+  const [loadingPets, setLoadingPets] = useState(false);
+  
+  const selectedPet = selectedPetId 
+    ? userPets.find(pet => pet.id === selectedPetId) 
+    : userPets.length > 0 ? userPets[0] : null;
+  
+  const navItems = [
+    { 
+      name: 'Feed', 
+      section: 'feed' as SectionType, 
+      icon: <Home className="h-5 w-5" />,
+      requiresAuth: false
+    },
+    { 
+      name: 'Profile', 
+      section: 'profile' as SectionType,
+      icon: <User className="h-5 w-5" />,
+      requiresAuth: true
+    },
+    { 
+      name: 'Messages', 
+      section: 'messages' as SectionType,
+      icon: <MessageSquare className="h-5 w-5" />,
+      requiresAuth: true
+    },
+    { 
+      name: 'Notifications', 
+      section: 'notifications' as SectionType,
+      icon: <Bell className="h-5 w-5" />,
+      requiresAuth: true
+    },
+    { 
+      name: 'Favorites', 
+      section: 'favorites' as SectionType,
+      icon: <Heart className="h-5 w-5" />,
+      requiresAuth: true
+    },
+    { 
+      name: 'Settings', 
+      section: 'settings' as SectionType,
+      icon: <Settings className="h-5 w-5" />,
+      requiresAuth: true
+    },
+  ];
 
   useEffect(() => {
-    const fetchPetProfiles = async () => {
-      if (!user) {
-        setPetProfiles([]);
-        setSelectedPetId(null);
-        return;
-      }
-
+    const fetchUserPets = async () => {
+      if (!user) return;
+      
+      setLoadingPets(true);
       try {
         const { data, error } = await supabase
           .from('pet_profiles')
           .select('*')
           .eq('owner_id', user.id);
-          
+        
         if (error) {
-          console.error('Error fetching pet profiles:', error);
-          return;
+          throw error;
         }
         
-        if (data && data.length > 0) {
-          const formattedProfiles: PetProfile[] = data.map(pet => ({
-            id: pet.id,
-            ownerId: pet.owner_id,
-            name: pet.name,
-            species: pet.species,
-            breed: pet.breed,
-            age: pet.age,
-            personality: pet.personality || [],
-            bio: pet.bio || '',
-            profilePicture: pet.profile_picture || '',
-            createdAt: pet.created_at,
-            followers: pet.followers || 0,
-            following: pet.following || 0,
-            handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
-          }));
-          
-          setPetProfiles(formattedProfiles);
-          if (!selectedPetId && formattedProfiles.length > 0) {
-            setSelectedPetId(formattedProfiles[0].id);
-          }
-        } else {
-          setPetProfiles([]);
-        }
+        const petProfiles: PetProfile[] = data.map(pet => ({
+          id: pet.id,
+          ownerId: pet.owner_id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          age: pet.age,
+          personality: pet.personality,
+          bio: pet.bio,
+          profilePicture: pet.profile_picture,
+          createdAt: pet.created_at,
+          followers: pet.followers || 0,
+          following: pet.following || 0,
+          handle: pet.handle
+        }));
+        
+        setUserPets(petProfiles);
       } catch (error) {
-        console.error('Error fetching pet profiles:', error);
+        console.error('Error fetching user pets:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load your pet profiles',
+          variant: 'destructive'
+        });
+      } finally {
+        setLoadingPets(false);
       }
     };
+    
+    fetchUserPets();
+  }, [user]);
 
-    fetchPetProfiles();
-
-    const handleOpenCreateProfile = () => {
-      setIsCreateProfileOpen(true);
-    };
-
-    window.addEventListener('open-create-profile', handleOpenCreateProfile);
-
-    return () => {
-      window.removeEventListener('open-create-profile', handleOpenCreateProfile);
-    };
-  }, [user, selectedPetId]);
-
-  const handlePetChange = (petId: string) => {
-    setSelectedPetId(petId);
-    setSidebarOpen(false);
+  const handleSelectPet = (petId: string) => {
+    const url = window.location.pathname + window.location.hash;
+    const newUrl = url.includes('?') 
+      ? url.replace(/petId=[^&]+/, `petId=${petId}`)
+      : `${url}${url.includes('?') ? '&' : '?'}petId=${petId}`;
+    
+    navigate(newUrl);
+  };
+  
+  const handleLoginClick = () => {
+    navigate('/login');
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
+  if (isMobile) {
+    return (
+      <>
+        <CreatePetProfileModal
+          open={isCreateProfileOpen}
+          onOpenChange={setIsCreateProfileOpen}
+        />
+        <OwnerProfileModal
+          open={isOwnerProfileOpen}
+          onOpenChange={setIsOwnerProfileOpen}
+        />
+      </>
+    );
+  }
 
-  const handleCreateProfile = () => {
-    setIsCreateProfileOpen(true);
-  };
-
-  const sidebarLinks = [
-    { icon: <Home className="h-5 w-5 mr-3" />, label: "Feed", path: "/", section: "feed" },
-    { icon: <User className="h-5 w-5 mr-3" />, label: "My Profile", path: "/profile", section: "owner-profile" },
-    { icon: <PawPrint className="h-5 w-5 mr-3" />, label: "My Pet", path: "/pet", section: "profile" },
-    { icon: <Mail className="h-5 w-5 mr-3" />, label: "Messages", path: "/messages", section: "messages" },
-    { icon: <Bell className="h-5 w-5 mr-3" />, label: "Notifications", path: "/notifications", section: "notifications" }
-  ];
-
-  const isActiveLink = (section: string) => {
-    return activeSection === section;
-  };
-
-  const renderSidebarContent = () => (
-    <>
-      <div className="flex flex-col h-full justify-between pb-4">
-        <div className="space-y-6">
-          <div className="px-3 py-2">
-            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-              PetPal
-            </h2>
-            
-            {user && petProfiles.length > 0 && (
-              <div className="mb-4">
-                <Select 
-                  value={selectedPetId || ''}
-                  onValueChange={handlePetChange}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a pet" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {petProfiles.map((pet) => (
-                      <SelectItem key={pet.id} value={pet.id}>
-                        <div className="flex items-center">
-                          <div className="h-6 w-6 rounded-full overflow-hidden bg-muted mr-2">
-                            {pet.profilePicture && (
-                              <img 
-                                src={pet.profilePicture} 
-                                alt={pet.name}
-                                className="h-full w-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <span>{pet.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                    <div className="p-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full flex items-center justify-center"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleCreateProfile();
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add New Pet
-                      </Button>
-                    </div>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            
-            <div className="space-y-1">
-              {sidebarLinks.map((link) => {
-                let finalPath = link.path;
-                
-                // Special case for the pet profile
-                if (link.section === 'profile' && selectedPetId) {
-                  finalPath = `${link.path}/${selectedPetId}`;
-                }
-
-                return (
-                  <Button
-                    key={link.path}
-                    variant={isActiveLink(link.section) ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => {
-                      onSectionChange(link.section);
-                      setSidebarOpen(false);
-                    }}
-                  >
-                    {link.icon}
-                    {link.label}
-                  </Button>
-                );
-              })}
-            </div>
+  if (isLoading) {
+    return (
+      <div className="fixed w-64 h-screen py-6 pr-4">
+        <div className="flex items-center mb-8 animate-gentle-wave">
+          <div className="w-10 h-10 bg-petpal-blue rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+              <path d="M8 12.5c1-1.3 2.5-2 4-2s3 .7 4 2"></path>
+              <path d="M6 8.5c.5-.5 1.5-1 2.5-1s2 .5 2.5 1"></path>
+              <path d="M13 7.5c.5-.5 1.5-1 2.5-1s2 .5 2.5 1"></path>
+              <path d="M9 11.5c-1.5-1-2.5-3-2.5-3.5-.4.4-1 .5-1.5.5-1 0-2-.5-2.5-1-.6-.5-.6-3 1-3 0 0 1.2-.5 1.8.5C6 5 6 6 5.5 6.5c1 .5 2 1.5 3 2.5"></path>
+              <path d="M19 11.5c1.5-1 2.5-3 2.5-3.5.4.4 1 .5 1.5.5 1 0 2-.5 2.5-1 .6-.5.6-3-1-3 0 0-1.2-.5-1.8.5C22 5 22 6 22.5 6.5c-1 .5-2 1.5-3 2.5"></path>
+              <path d="M9 13.5c-1-.8-2-1.4-3-1.5-.6-.1-1.3 0-1.5.5-.4.7 0 1.1.5 1.5.5.2 1 .5 1.5.5s1-.2 1.5-.5C8.5 13.7 9 13.5 9 13.5z"></path>
+              <path d="M15 13.5c1-.8 2-1.4 3-1.5.6-.1 1.3 0 1.5.5.4.7 0 1.1-.5 1.5-.5.2-1 .5-1.5.5s-1-.2-1.5-.5c-.5-.3-1-.5-1-.5z"></path>
+              <path d="M12 20c-1 0-2-.8-2-1.5 0-.5.5-1 1-1.5.8-.7 2-1.5 4-1.5s3.2.8 4 1.5c.5.5 1 1 1 1.5 0 .7-1 1.5-2 1.5"></path>
+            </svg>
           </div>
+          <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
         </div>
-
-        <div className="px-3 py-2">
-          {user ? (
-            <>
-              <div className="mb-4">
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    onSectionChange('settings');
-                    setSidebarOpen(false);
-                  }}
-                >
-                  <Settings className="h-5 w-5 mr-3" />
-                  Settings
-                </Button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Avatar className="h-9 w-9 mr-2">
-                    <div className="bg-muted h-full w-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </Avatar>
-                  <div className="truncate">
-                    <p className="text-sm font-medium">{user.email?.split('@')[0]}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="space-y-2">
-              <Button className="w-full" asChild>
-                <Link to="/login">Sign In</Link>
-              </Button>
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/register">Sign Up</Link>
-              </Button>
-            </div>
-          )}
-        </div>
+        <nav className="space-y-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-base"
+          >
+            <Home className="h-5 w-5" />
+            <span className="ml-2">Feed</span>
+          </Button>
+        </nav>
       </div>
-    </>
-  );
+    );
+  }
 
   return (
     <>
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-background p-2 shadow-sm">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">PetPal</h1>
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      <div className="fixed w-64 h-screen py-6 pr-4">
+        <div className="flex items-center mb-8 animate-gentle-wave">
+          <div className="w-10 h-10 bg-petpal-blue rounded-full flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+              <path d="M8 12.5c1-1.3 2.5-2 4-2s3 .7 4 2"></path>
+              <path d="M6 8.5c.5-.5 1.5-1 2.5-1s2 .5 2.5 1"></path>
+              <path d="M13 7.5c.5-.5 1.5-1 2.5-1s2 .5 2.5 1"></path>
+              <path d="M9 11.5c-1.5-1-2.5-3-2.5-3.5-.4.4-1 .5-1.5.5-1 0-2-.5-2.5-1-.6-.5-.6-3 1-3 0 0 1.2-.5 1.8.5C6 5 6 6 5.5 6.5c1 .5 2 1.5 3 2.5"></path>
+              <path d="M19 11.5c1.5-1 2.5-3 2.5-3.5.4.4 1 .5 1.5.5 1 0 2-.5 2.5-1 .6-.5.6-3-1-3 0 0-1.2-.5-1.8.5C22 5 22 6 22.5 6.5c-1 .5-2 1.5-3 2.5"></path>
+              <path d="M9 13.5c-1-.8-2-1.4-3-1.5-.6-.1-1.3 0-1.5.5-.4.7 0 1.1.5 1.5.5.2 1 .5 1.5.5s1-.2 1.5-.5C8.5 13.7 9 13.5 9 13.5z"></path>
+              <path d="M15 13.5c1-.8 2-1.4 3-1.5.6-.1 1.3 0 1.5.5.4.7 0 1.1-.5 1.5-.5.2-1 .5-1.5.5s-1-.2-1.5-.5c-.5-.3-1-.5-1-.5z"></path>
+              <path d="M12 20c-1 0-2-.8-2-1.5 0-.5.5-1 1-1.5.8-.7 2-1.5 4-1.5s3.2.8 4 1.5c.5.5 1 1 1 1.5 0 .7-1 1.5-2 1.5"></path>
+            </svg>
+          </div>
+          <h1 className="ml-2 text-2xl font-bold text-petpal-blue">PetPal AI</h1>
+        </div>
+        
+        {user && selectedPet && userPets.length > 0 && (
+          <div className="mb-4 p-3 bg-accent rounded-lg flex items-center">
+            <Avatar className="h-10 w-10 mr-3">
+              <img src={selectedPet.profilePicture} alt={selectedPet.name} className="object-cover" />
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium">{selectedPet.name}</p>
+              <p className="text-xs text-muted-foreground">Active Profile</p>
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-auto"
+                >
+                  <PawPrint className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {userPets.map((pet) => (
+                  <DropdownMenuItem key={pet.id} onClick={() => handleSelectPet(pet.id)}>
+                    <Avatar className="h-6 w-6 mr-2">
+                      <img src={pet.profilePicture} alt={pet.name} className="object-cover" />
+                    </Avatar>
+                    {pet.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        
+        <nav className="space-y-2">
+          {navItems.map((item) => {
+            if (!user && item.requiresAuth) {
+              return (
+                <Button 
+                  key={item.section}
+                  onClick={handleLoginClick}
+                  variant="ghost"
+                  className="w-full justify-start text-base"
+                >
+                  {item.icon}
+                  <span className="ml-2">{item.name}</span>
+                </Button>
+              );
+            }
+            
+            const isActive = item.section === activeSection;
+            
+            return (
+              <Button
+                key={item.section}
+                variant={isActive ? "default" : "ghost"}
+                className={`w-full justify-start text-base ${
+                  isActive ? 'bg-petpal-blue hover:bg-petpal-blue/90' : ''
+                }`}
+                onClick={() => onSectionChange(item.section)}
+              >
+                {item.icon}
+                <span className="ml-2">{item.name}</span>
               </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              {renderSidebarContent()}
-            </SheetContent>
-          </Sheet>
-        </div>
+            );
+          })}
+        </nav>
+        
+        {user && (
+          <div className="absolute bottom-8 right-4 left-0 pr-4 space-y-2">
+            <Button 
+              className="w-full bg-petpal-pink hover:bg-petpal-pink/90 animate-gentle-wave"
+              onClick={() => setIsCreateProfileOpen(true)}
+            >
+              Create Pet Profile
+            </Button>
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={() => {
+                setIsOwnerProfileOpen(true);
+                onSectionChange('owner-profile');
+              }}
+            >
+              Owner Profile
+            </Button>
+          </div>
+        )}
+        
+        {!user && (
+          <div className="absolute bottom-8 right-4 left-0 pr-4">
+            <Button 
+              className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
+              onClick={handleLoginClick}
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Sign In
+            </Button>
+          </div>
+        )}
       </div>
-      
-      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className="flex flex-col flex-grow border-r bg-background">
-          {renderSidebarContent()}
-        </div>
-      </div>
-      
-      <CreatePetProfileModal 
-        open={isCreateProfileOpen} 
+      <CreatePetProfileModal
+        open={isCreateProfileOpen}
         onOpenChange={setIsCreateProfileOpen}
-        onSuccess={() => {
-          const fetchPetProfiles = async () => {
-            if (!user) return;
-            
-            const { data, error } = await supabase
-              .from('pet_profiles')
-              .select('*')
-              .eq('owner_id', user.id)
-              .order('created_at', { ascending: false });
-              
-            if (error) {
-              console.error('Error fetching pet profiles:', error);
-              return;
-            }
-            
-            if (data && data.length > 0) {
-              const formattedProfiles: PetProfile[] = data.map(pet => ({
-                id: pet.id,
-                ownerId: pet.owner_id,
-                name: pet.name,
-                species: pet.species,
-                breed: pet.breed,
-                age: pet.age,
-                personality: pet.personality || [],
-                bio: pet.bio || '',
-                profilePicture: pet.profile_picture || '',
-                createdAt: pet.created_at,
-                followers: pet.followers || 0,
-                following: pet.following || 0,
-                handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
-              }));
-              
-              setPetProfiles(formattedProfiles);
-              setSelectedPetId(formattedProfiles[0].id);
-            }
-          };
-          
-          fetchPetProfiles();
-        }}
+      />
+      <OwnerProfileModal
+        open={isOwnerProfileOpen}
+        onOpenChange={setIsOwnerProfileOpen}
       />
     </>
   );

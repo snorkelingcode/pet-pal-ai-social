@@ -5,7 +5,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import RightSidebar from './RightSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
+type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
 
 interface LayoutProps {
   children: React.ReactNode;

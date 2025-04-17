@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,8 +20,6 @@ const ownerProfileSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
-  handle: z.string().min(2, { message: "Handle must be at least 2 characters." })
-    .regex(/^[a-zA-Z0-9_]+$/, { message: "Handle can only contain letters, numbers, and underscores." })
 });
 
 const OwnerProfile = () => {
@@ -44,7 +41,6 @@ const OwnerProfile = () => {
       name: "",
       email: "",
       bio: "",
-      handle: "",
     },
   });
 
@@ -73,12 +69,13 @@ const OwnerProfile = () => {
             
           if (error) throw error;
           
+          console.log("Owner Profile - Fetched profile data:", profileData);
+          
           if (profileData) {
             form.reset({
               name: profileData.username || '',
               email: user.email || '',
               bio: profileData.bio || '',
-              handle: profileData.handle || '',
             });
             setAvatarUrl(profileData.avatar_url);
           }
@@ -89,6 +86,8 @@ const OwnerProfile = () => {
             .eq('owner_id', user.id);
             
           if (petsError) throw petsError;
+          
+          console.log("Owner Profile - Fetched pet profiles:", petsData);
           
           if (petsData) {
             const formattedPets: PetProfile[] = petsData.map(pet => ({
@@ -104,7 +103,6 @@ const OwnerProfile = () => {
               createdAt: pet.created_at,
               followers: pet.followers || 0,
               following: pet.following || 0,
-              handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
             }));
             
             setUserPetProfiles(formattedPets);
@@ -464,7 +462,6 @@ const OwnerProfile = () => {
         .update({
           username: data.name,
           bio: data.bio,
-          handle: data.handle.toLowerCase(),
         })
         .eq('id', user.id);
         
@@ -573,7 +570,7 @@ const OwnerProfile = () => {
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-16 w-16">
                       {avatarUrl ? (
-                        <img src={avatarUrl} alt={form.getValues().name} />
+                        <img src={avatarUrl} alt={form.getValues().name} className="object-cover" />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <User className="h-8 w-8 text-gray-500" />
@@ -582,7 +579,7 @@ const OwnerProfile = () => {
                     </Avatar>
                     <div>
                       <CardTitle>{form.getValues().name}</CardTitle>
-                      <CardDescription>{form.getValues().email}</CardDescription>
+                      <CardDescription className="text-sm">@{user?.email?.split('@')[0] || 'user'}</CardDescription>
                     </div>
                   </div>
                   <label htmlFor="avatar-upload-page">
@@ -639,21 +636,6 @@ const OwnerProfile = () => {
                                 {...field} 
                               />
                             </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="handle"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Handle</FormLabel>
-                            <FormControl>
-                              <Input placeholder="your_handle" {...field} />
-                            </FormControl>
-                            <p className="text-xs text-muted-foreground">
-                              Your unique handle for identification (letters, numbers, and underscores only)
-                            </p>
                           </FormItem>
                         )}
                       />

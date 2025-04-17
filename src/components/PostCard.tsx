@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
       const fetchUserPet = async () => {
         const { data: petProfile } = await supabase
           .from('pet_profiles')
-          .select('id')
+          .select('id, handle')
           .eq('owner_id', user.id)
           .limit(1)
           .single();
@@ -46,7 +47,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
           />
           <div className="ml-3">
             <h3 className="font-semibold text-base">{post.petProfile.name}</h3>
-            <p className="text-xs text-muted-foreground">{post.petProfile.species} • {post.petProfile.breed}</p>
+            <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
           </div>
         </div>
         

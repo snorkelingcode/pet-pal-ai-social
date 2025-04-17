@@ -5,7 +5,7 @@ export interface User {
   bio?: string;
   avatarUrl?: string;
   createdAt: string;
-  handle?: string; // Add handle property
+  handle: string;
 }
 
 export interface PetProfile {
@@ -21,7 +21,7 @@ export interface PetProfile {
   createdAt: string;
   followers: number;
   following: number;
-  handle: string; // Add handle property
+  handle: string;
 }
 
 export interface Post {
@@ -45,7 +45,6 @@ export interface Comment {
     username: string;
     avatarUrl?: string;
     id: string;
-    handle?: string; // Add handle property
   };
   content: string;
   likes: number;
@@ -70,7 +69,7 @@ export interface DbUser {
   bio: string | null;
   avatar_url: string | null;
   created_at: string;
-  handle: string; // Add handle property
+  handle: string;
 }
 
 export interface DbPetProfile {
@@ -86,7 +85,7 @@ export interface DbPetProfile {
   created_at: string;
   followers: number;
   following: number;
-  handle: string; // Add handle property
+  handle: string;
 }
 
 export interface DbPost {

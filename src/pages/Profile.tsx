@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { PetProfile, Post } from '@/types';
+import { PetProfile, Post, Comment } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import AIPostScheduler from '@/components/AIPostScheduler';
 import CreatePetProfileModal from '@/components/CreatePetProfileModal';
@@ -26,6 +26,7 @@ const Profile = () => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postComments, setPostComments] = useState<Record<string, Comment[]>>({});
   const [loadingPosts, setLoadingPosts] = useState(false);
   
   const effectivePetId = paramPetId || queryPetId;
@@ -80,7 +81,7 @@ const Profile = () => {
           createdAt: petData.created_at,
           followers: petData.followers || 0,
           following: petData.following || 0,
-          handle: petData.handle || petData.name.toLowerCase().replace(/\s+/g, '')
+          handle: petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '')
         };
         
         setFollowCount({
@@ -126,56 +127,122 @@ const Profile = () => {
   const fetchPetPosts = async (petId: string) => {
     setLoadingPosts(true);
     try {
-      const { data, error } = await supabase
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*, pet_profiles(*)')
         .eq('pet_id', petId)
         .order('created_at', { ascending: false });
+      
+      if (postsError) throw postsError;
 
-      if (error) {
-        throw error;
-      }
+      const transformedPosts: Post[] = postsData.map(post => ({
+        id: post.id,
+        petId: post.pet_id,
+        content: post.content,
+        image: post.image,
+        likes: post.likes,
+        comments: post.comments,
+        createdAt: post.created_at,
+        petProfile: {
+          id: post.pet_profiles.id,
+          name: post.pet_profiles.name,
+          species: post.pet_profiles.species,
+          breed: post.pet_profiles.breed,
+          profilePicture: post.pet_profiles.profile_picture,
+          bio: post.pet_profiles.bio,
+          personality: post.pet_profiles.personality,
+          age: post.pet_profiles.age,
+          ownerId: post.pet_profiles.owner_id,
+          createdAt: post.pet_profiles.created_at,
+          followers: post.pet_profiles.followers,
+          following: post.pet_profiles.following,
+          handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+        }
+      }));
 
-      if (data) {
-        const formattedPosts: Post[] = data.map(post => ({
-          id: post.id,
-          petId: post.pet_id,
-          content: post.content,
-          image: post.image,
-          likes: post.likes,
-          comments: post.comments,
-          createdAt: post.created_at,
-          petProfile: {
-            id: post.pet_profiles.id,
-            name: post.pet_profiles.name,
-            species: post.pet_profiles.species,
-            breed: post.pet_profiles.breed,
-            profilePicture: post.pet_profiles.profile_picture || undefined,
-            bio: post.pet_profiles.bio || '',
-            personality: post.pet_profiles.personality || [],
-            age: post.pet_profiles.age,
-            ownerId: post.pet_profiles.owner_id,
-            createdAt: post.pet_profiles.created_at,
-            followers: post.pet_profiles.followers || 0,
-            following: post.pet_profiles.following || 0,
-            handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/\s+/g, '')
-          }
-        }));
-        
-        setPosts(formattedPosts);
+      setPosts(transformedPosts);
+
+      const commentsMapping: Record<string, Comment[]> = {};
+      
+      for (const post of transformedPosts) {
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select(`
+            id,
+            post_id,
+            pet_id,
+            content,
+            likes,
+            created_at,
+            pet_profiles:pet_id (*),
+            profiles:user_id (*)
+          `)
+          .eq('post_id', post.id)
+          .order('created_at', { ascending: true });
+          
+        if (commentsError) {
+          console.error(`Error fetching comments for post ${post.id}:`, commentsError);
+          continue;
+        }
+
+        if (commentsData) {
+          const formattedComments = commentsData.map(comment => {
+            let userProfile;
+            if (comment.profiles) {
+              userProfile = {
+                id: comment.profiles.id || '',
+                username: comment.profiles.username || 'Anonymous',
+                avatarUrl: comment.profiles.avatar_url
+              };
+            }
+            
+            return {
+              id: comment.id,
+              postId: comment.post_id,
+              content: comment.content,
+              createdAt: comment.created_at,
+              likes: comment.likes,
+              petId: comment.pet_id || undefined,
+              userId: comment.profiles?.id || undefined,
+              petProfile: comment.pet_profiles ? {
+                id: comment.pet_profiles.id,
+                name: comment.pet_profiles.name,
+                species: comment.pet_profiles.species,
+                breed: comment.pet_profiles.breed,
+                profilePicture: comment.pet_profiles.profile_picture || undefined,
+                age: comment.pet_profiles.age,
+                personality: comment.pet_profiles.personality,
+                bio: comment.pet_profiles.bio,
+                ownerId: comment.pet_profiles.owner_id,
+                createdAt: comment.pet_profiles.created_at,
+                followers: comment.pet_profiles.followers,
+                following: comment.pet_profiles.following,
+                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+              } : undefined,
+              userProfile: userProfile
+            };
+          });
+          
+          commentsMapping[post.id] = formattedComments;
+        } else {
+          commentsMapping[post.id] = [];
+        }
       }
+      
+      setPostComments(commentsMapping);
+      
     } catch (error) {
       console.error("Error fetching pet posts:", error);
       toast({
         title: "Error",
-        description: "Failed to load posts",
+        description: "Failed to load pet posts",
         variant: "destructive"
       });
     } finally {
       setLoadingPosts(false);
     }
   };
-
+  
   const handleFollowToggle = async () => {
     if (!user) {
       toast({
@@ -229,7 +296,7 @@ const Profile = () => {
       });
     }
   };
-
+  
   const handleEditProfile = () => {
     setIsEditProfileOpen(true);
   };
@@ -280,7 +347,7 @@ const Profile = () => {
     <>
       <HeaderCard 
         title={petProfile.name} 
-        subtitle={`${petProfile.species} • ${petProfile.breed} • ${petProfile.age} years old`}
+        subtitle={`@${petProfile.handle} • ${petProfile.species} • ${petProfile.breed} • ${petProfile.age} years old`}
       />
       
       <div className="w-full mb-6">
@@ -299,7 +366,7 @@ const Profile = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">{petProfile.name}</h2>
-                <p className="text-muted-foreground">{petProfile.species} • {petProfile.breed} • {petProfile.age} years old</p>
+                <p className="text-muted-foreground">@{petProfile.handle} • {petProfile.species} • {petProfile.breed} • {petProfile.age} years old</p>
               </div>
               
               <div className="flex items-center gap-4 mt-4 md:mt-0">
@@ -373,7 +440,7 @@ const Profile = () => {
                       <PostCard 
                         key={post.id} 
                         post={post} 
-                        comments={[]} 
+                        comments={postComments[post.id] || []} 
                         isReadOnly={!user}
                       />
                     ))}

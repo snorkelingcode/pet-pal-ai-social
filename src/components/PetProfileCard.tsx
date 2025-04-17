@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
@@ -22,14 +21,12 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Check if the current user is the owner of this pet profile
   const isOwner = user && petProfile.ownerId === user.id;
 
   const handleEditProfile = () => {
     setIsEditProfileOpen(true);
   };
 
-  // Handle view profile navigation
   const handleViewProfile = () => {
     navigate(`/pet/${petProfile.id}`);
   };
@@ -50,7 +47,7 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
               <div className="ml-3">
                 <h3 className="font-semibold">{petProfile.name}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {petProfile.breed} {petProfile.species} • {petProfile.age} years old
+                  @{petProfile.handle} • {petProfile.breed} {petProfile.species} • {petProfile.age} years old
                 </p>
               </div>
             </div>
@@ -98,7 +95,7 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
         <CardContent className="pt-10">
           <h2 className="text-2xl font-bold mb-1">{petProfile.name}</h2>
           <p className="text-sm text-muted-foreground mb-3">
-            {petProfile.breed} {petProfile.species} • {petProfile.age} years old
+            @{petProfile.handle} • {petProfile.breed} {petProfile.species} • {petProfile.age} years old
           </p>
           
           <div className="flex gap-4 mb-3 text-sm">
@@ -123,7 +120,6 @@ const PetProfileCard = ({ petProfile, compact = false, showViewButton = false }:
         </CardContent>
       </Card>
 
-      {/* Edit Pet Profile Modal */}
       <CreatePetProfileModal
         open={isEditProfileOpen}
         onOpenChange={setIsEditProfileOpen}

@@ -99,6 +99,44 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     },
   });
   
+  // Get comments for the post
+  const { data: comments = [], isLoading: isLoadingComments } = useQuery({
+    queryKey: ['comments', postId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          id, 
+          content, 
+          created_at,
+          user_id,
+          pet_id,
+          likes,
+          profiles:user_id (
+            id,
+            username,
+            avatar_url
+          ),
+          pet_profiles:pet_id (
+            id,
+            name,
+            species,
+            breed,
+            profile_picture
+          )
+        `)
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+        
+      if (error) {
+        console.error("Error fetching comments:", error);
+        return [];
+      }
+      
+      return data || [];
+    }
+  });
+  
   // Add comment
   const addComment = useMutation({
     mutationFn: async (content: string) => {
@@ -109,7 +147,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         post_id: postId,
         content: content,
         user_id: user.id,
-        // If petId exists, use it; otherwise set an empty string which will be converted to NULL
+        // If petId exists, use it; otherwise set to null
         pet_id: petId || null
       };
       
@@ -127,6 +165,13 @@ export const usePostInteractions = (postId: string, petId?: string) => {
             id,
             username,
             avatar_url
+          ),
+          pet_profiles:pet_id (
+            id,
+            name,
+            species,
+            breed,
+            profile_picture
           )
         `)
         .single();
@@ -154,6 +199,13 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           id: commentResponse.profiles.id,
           username: commentResponse.profiles.username,
           avatarUrl: commentResponse.profiles.avatar_url || undefined
+        } : undefined,
+        petProfile: commentResponse.pet_profiles ? {
+          id: commentResponse.pet_profiles.id,
+          name: commentResponse.pet_profiles.name,
+          species: commentResponse.pet_profiles.species,
+          breed: commentResponse.pet_profiles.breed,
+          profilePicture: commentResponse.pet_profiles.profile_picture || undefined
         } : undefined
       };
     },
@@ -179,6 +231,8 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     hasLiked,
     isCheckingLike,
     toggleLike,
+    comments,
+    isLoadingComments,
     addComment,
     isSubmittingComment: addComment.isPending
   };

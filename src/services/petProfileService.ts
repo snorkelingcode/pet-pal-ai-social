@@ -2,39 +2,6 @@
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
-// Helper function to convert a name to a basic handle (lowercase, no spaces)
-const nameToBasicHandle = (name: string): string => {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
-};
-
-// Generate a unique handle for a pet profile
-const generateUniqueHandle = async (baseName: string): Promise<string> => {
-  try {
-    // Convert name to a basic handle format
-    const baseHandle = nameToBasicHandle(baseName);
-    
-    // Check if the handle is already taken
-    const { data, error } = await supabase
-      .from('pet_profiles')
-      .select('id')
-      .eq('handle', baseHandle)
-      .single();
-    
-    // If handle is available, return it
-    if (error && error.code === 'PGRST116') {
-      return baseHandle;
-    }
-    
-    // If handle is taken, add a random number suffix
-    const suffix = Math.floor(Math.random() * 10000).toString();
-    return `${baseHandle}${suffix}`;
-  } catch (error) {
-    console.error('Error generating unique handle:', error);
-    // Fallback to a timestamp-based handle in case of error
-    return `pet${Date.now().toString().substring(7)}`;
-  }
-};
-
 export const petProfileService = {
   // Get all pet profiles for a user
   getUserPetProfiles: async (userId: string): Promise<PetProfile[]> => {
@@ -46,21 +13,7 @@ export const petProfileService = {
         
       if (error) throw error;
       
-      return (dbPetProfiles as any[]).map(pet => ({
-        id: pet.id,
-        ownerId: pet.owner_id,
-        name: pet.name,
-        species: pet.species,
-        breed: pet.breed,
-        age: pet.age,
-        personality: pet.personality || [],
-        bio: pet.bio || '',
-        profilePicture: pet.profile_picture,
-        createdAt: pet.created_at,
-        followers: pet.followers || 0,
-        following: pet.following || 0,
-        handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
-      }));
+      return (dbPetProfiles as DbPetProfile[]).map(mapDbPetProfileToPetProfile);
     } catch (error) {
       console.error('Error fetching user pet profiles:', error);
       throw error;
@@ -93,13 +46,13 @@ export const petProfileService = {
   
   // Create a new pet profile
   createPetProfile: async (
-    profileData: Omit<PetProfile, 'id' | 'createdAt' | 'followers' | 'following' | 'handle'>
+    profileData: Omit<PetProfile, 'id' | 'createdAt' | 'followers' | 'following'>
   ): Promise<PetProfile> => {
     try {
       console.log("Creating pet profile with data:", profileData);
       
-      // Generate a unique handle for the pet
-      const handle = await generateUniqueHandle(profileData.name);
+      // Generate a handle if not provided
+      const handle = profileData.handle || profileData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
       
       // Convert from frontend structure to database structure
       const dbPetProfile: Omit<DbPetProfile, 'id' | 'created_at' | 'followers' | 'following'> = {
@@ -152,12 +105,6 @@ export const petProfileService = {
       if (profileData.bio !== undefined) updates.bio = profileData.bio;
       if (profileData.profilePicture !== undefined) updates.profile_picture = profileData.profilePicture;
       if (profileData.handle !== undefined) updates.handle = profileData.handle;
-      
-      // If name changes but handle doesn't, update the handle too
-      if (profileData.name !== undefined && profileData.handle === undefined) {
-        const newHandle = await generateUniqueHandle(profileData.name);
-        updates.handle = newHandle;
-      }
       
       const { data, error } = await supabase
         .from('pet_profiles')
