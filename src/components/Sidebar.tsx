@@ -31,7 +31,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
   
   const [userPets, setUserPets] = useState<PetProfile[]>([]);
   const [loadingPets, setLoadingPets] = useState(false);
-  
+
   const selectedPet = selectedPetId 
     ? userPets.find(pet => pet.id === selectedPetId) 
     : userPets.length > 0 ? userPets[0] : null;
@@ -113,7 +113,8 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,
-          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          profile_url: pet.profile_url || `/pet/${pet.handle}`
         }));
         
         setUserPets(petProfiles);
@@ -133,12 +134,17 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
   }, [user]);
 
   const handleSelectPet = (petId: string) => {
-    const url = window.location.pathname + window.location.hash;
-    const newUrl = url.includes('?') 
-      ? url.replace(/petId=[^&]+/, `petId=${petId}`)
-      : `${url}${url.includes('?') ? '&' : '?'}petId=${petId}`;
-    
-    navigate(newUrl);
+    const pet = userPets.find(p => p.id === petId);
+    if (pet && pet.profile_url) {
+      navigate(pet.profile_url);
+    } else {
+      const url = window.location.pathname + window.location.hash;
+      const newUrl = url.includes('?') 
+        ? url.replace(/petId=[^&]+/, `petId=${petId}`)
+        : `${url}${url.includes('?') ? '&' : '?'}petId=${petId}`;
+      
+      navigate(newUrl);
+    }
   };
   
   const handleLoginClick = () => {

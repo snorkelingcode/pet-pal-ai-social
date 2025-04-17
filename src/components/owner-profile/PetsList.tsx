@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { User } from 'lucide-react';
 import { PetProfile } from '@/types';
 import PetProfileCard from '@/components/PetProfileCard';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 
 interface PetsListProps {
@@ -14,8 +14,6 @@ interface PetsListProps {
 }
 
 export const PetsList = ({ pets, onCreateProfile }: PetsListProps) => {
-  const [selectedPet, setSelectedPet] = useState<PetProfile | null>(null);
-  const [isPetProfileModalOpen, setIsPetProfileModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleViewProfile = (pet: PetProfile) => {

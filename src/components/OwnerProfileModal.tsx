@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -7,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { PetProfile } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,21 +29,9 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const [pets, setPets] = useState<PetProfile[]>([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  const ownerProfileSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-    email: z.string().email({ message: "Please enter a valid email address." }),
-    bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
-  });
-
-  const form = useForm<z.infer<typeof ownerProfileSchema>>({
-    resolver: zodResolver(ownerProfileSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      bio: "",
-    },
-  });
+  const [username, setUsername] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [userBio, setUserBio] = useState<string>("");
 
   useEffect(() => {
     const fetchUserPets = async () => {
@@ -60,11 +49,9 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
         if (profileError) throw profileError;
         
         if (profileData) {
-          form.reset({
-            name: profileData.username || '',
-            email: user.email || '',
-            bio: profileData.bio || '',
-          });
+          setUsername(profileData.username || '');
+          setUserEmail(user.email || '');
+          setUserBio(profileData.bio || '');
           setAvatarUrl(profileData.avatar_url);
         }
         
@@ -90,7 +77,8 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,
-          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          profile_url: pet.profile_url || `/pet/${pet.handle}`
         }));
         
         setPets(petProfiles);
@@ -121,13 +109,13 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={form.getValues().name} className="object-cover" />
+                <img src={avatarUrl} alt={username} className="object-cover" />
               ) : (
                 <User className="h-5 w-5 text-muted-foreground" />
               )}
             </Avatar>
             <div>
-              <DialogTitle>{form.getValues().name}</DialogTitle>
+              <DialogTitle>{username}</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
                 @{user?.email?.split('@')[0] || 'user'}
               </DialogDescription>
