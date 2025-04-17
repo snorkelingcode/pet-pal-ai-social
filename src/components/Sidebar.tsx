@@ -34,7 +34,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
-  const { user, signOut } = useAuth(); // Use signOut from AuthContext
+  const { user, signOut } = useAuth();
   const [petProfiles, setPetProfiles] = useState<PetProfile[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,11 +75,10 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
             createdAt: pet.created_at,
             followers: pet.followers || 0,
             following: pet.following || 0,
-            handle: pet.handle
+            handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
           }));
           
           setPetProfiles(formattedProfiles);
-          // Set the first pet as selected if none is currently selected
           if (!selectedPetId && formattedProfiles.length > 0) {
             setSelectedPetId(formattedProfiles[0].id);
           }
@@ -93,7 +92,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
 
     fetchPetProfiles();
 
-    // Listen for open-create-profile custom event
     const handleOpenCreateProfile = () => {
       setIsCreateProfileOpen(true);
     };
@@ -107,11 +105,11 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
 
   const handlePetChange = (petId: string) => {
     setSelectedPetId(petId);
-    setSidebarOpen(false); // Close mobile sidebar when switching pets
+    setSidebarOpen(false);
   };
 
   const handleLogout = async () => {
-    await signOut(); // Use signOut instead of logout
+    await signOut();
     navigate('/');
   };
 
@@ -190,7 +188,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
             
             <div className="space-y-1">
               {sidebarLinks.map((link) => {
-                // For pet profile link, add the selected pet ID if available
                 const finalPath = link.path === '/pet' && selectedPetId 
                   ? `${link.path}/${selectedPetId}`
                   : link.path === '/messages' && selectedPetId
@@ -296,7 +293,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
         open={isCreateProfileOpen} 
         onOpenChange={setIsCreateProfileOpen}
         onSuccess={() => {
-          // Refresh pet profiles
           const fetchPetProfiles = async () => {
             if (!user) return;
             
@@ -325,11 +321,10 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
                 createdAt: pet.created_at,
                 followers: pet.followers || 0,
                 following: pet.following || 0,
-                handle: pet.handle
+                handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
               }));
               
               setPetProfiles(formattedProfiles);
-              // Set the newly created pet as selected
               setSelectedPetId(formattedProfiles[0].id);
             }
           };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/avatar";
@@ -152,7 +151,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
             createdAt: pet.created_at,
             followers: pet.followers || 0,
             following: pet.following || 0,
-            handle: pet.handle
+            handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
           }));
           
           setUserPets(formattedPets);

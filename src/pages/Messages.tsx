@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,7 +51,7 @@ const Messages = () => {
           createdAt: pet.created_at,
           followers: pet.followers || 0,
           following: pet.following || 0,
-          handle: pet.handle
+          handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
         }));
         
         setPetProfiles(formattedProfiles);

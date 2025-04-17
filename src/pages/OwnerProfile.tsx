@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,7 +104,7 @@ const OwnerProfile = () => {
               createdAt: pet.created_at,
               followers: pet.followers || 0,
               following: pet.following || 0,
-              handle: pet.handle
+              handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
             }));
             
             setUserPetProfiles(formattedPets);

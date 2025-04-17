@@ -1,3 +1,4 @@
+
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -45,7 +46,21 @@ export const petProfileService = {
         
       if (error) throw error;
       
-      return (dbPetProfiles as DbPetProfile[]).map(mapDbPetProfileToPetProfile);
+      return (dbPetProfiles as any[]).map(pet => ({
+        id: pet.id,
+        ownerId: pet.owner_id,
+        name: pet.name,
+        species: pet.species,
+        breed: pet.breed,
+        age: pet.age,
+        personality: pet.personality || [],
+        bio: pet.bio || '',
+        profilePicture: pet.profile_picture,
+        createdAt: pet.created_at,
+        followers: pet.followers || 0,
+        following: pet.following || 0,
+        handle: pet.handle || pet.name.toLowerCase().replace(/\s+/g, '')
+      }));
     } catch (error) {
       console.error('Error fetching user pet profiles:', error);
       throw error;
