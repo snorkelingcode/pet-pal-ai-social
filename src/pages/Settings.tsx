@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -6,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Shield, Bell, UserCircle, PawPrint } from 'lucide-react';
 import { mapDbPetProfileData } from '@/utils/dataMappers';
+import { petProfileService } from '@/services/petProfileService';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -22,33 +23,56 @@ const Settings = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [petProfile, setPetProfile] = useState<PetProfile | null>(null);
+  const [userPets, setUserPets] = useState<PetProfile[]>([]);
   const petId = searchParams.get('petId');
 
+  // First fetch all user's pets
   useEffect(() => {
-    const fetchPetProfile = async () => {
-      if (!petId) {
-        toast({
-          title: "No Pet Selected",
-          description: "Please select a pet to customize their settings",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
+    const fetchUserPets = async () => {
+      if (!user) return;
 
       try {
         setLoading(true);
-        const { data: pet, error } = await supabase
-          .from('pet_profiles')
-          .select('*')
-          .eq('id', petId)
-          .single();
+        const petProfiles = await petProfileService.getUserPetProfiles(user.id);
+        setUserPets(petProfiles);
+        
+        // If we have pets but no petId is selected, pre-select the first one
+        if (petProfiles.length > 0 && !petId) {
+          navigate(`/settings?petId=${petProfiles[0].id}`, { replace: true });
+        }
+      } catch (error) {
+        console.error('Error fetching user pets:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your pet profiles",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        if (error) throw error;
+    fetchUserPets();
+  }, [user, navigate, petId]);
 
+  // Then fetch the specific pet profile once we have a petId
+  useEffect(() => {
+    const fetchPetProfile = async () => {
+      if (!petId) return;
+
+      try {
+        setLoading(true);
+        const pet = await petProfileService.getPetProfile(petId);
+        
         if (pet) {
-          const petProfile = mapDbPetProfileData(pet);
-          setPetProfile(petProfile);
+          setPetProfile(pet);
+        } else {
+          // If pet not found with this ID, show error
+          toast({
+            title: "Pet Not Found",
+            description: "The pet profile you're looking for doesn't exist",
+            variant: "destructive"
+          });
         }
       } catch (error) {
         console.error('Error fetching pet profile:', error);
@@ -99,19 +123,58 @@ const Settings = () => {
     );
   }
 
+  // If user has pets but none is selected or found
   if (!petProfile) {
     return (
       <>
         <HeaderCard title="Pet Settings" subtitle="No pet selected" />
         <div className="flex flex-col items-center justify-center h-[50vh]">
           <PawPrint className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-bold mb-2">No Pet Selected</h2>
-          <p className="text-muted-foreground text-center max-w-md mb-6">
-            Please select a pet to customize their settings
-          </p>
-          <Button onClick={() => navigate('/')}>
-            Go to Home
-          </Button>
+          <h2 className="text-xl font-bold mb-2">Select a Pet</h2>
+          {userPets.length > 0 ? (
+            <>
+              <p className="text-muted-foreground text-center max-w-md mb-6">
+                Please select one of your pets to customize their settings
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl">
+                {userPets.map(pet => (
+                  <Card 
+                    key={pet.id} 
+                    className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => navigate(`/settings?petId=${pet.id}`)}
+                  >
+                    <CardContent className="p-4 flex items-center space-x-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 overflow-hidden">
+                        {pet.profilePicture && (
+                          <img 
+                            src={pet.profilePicture} 
+                            alt={pet.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{pet.name}</h3>
+                        <p className="text-xs text-muted-foreground">{pet.species}, {pet.breed}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground text-center max-w-md mb-6">
+                You don't have any pet profiles yet. Create one to get started!
+              </p>
+              <Button onClick={() => {
+                const createProfileEvent = new CustomEvent('open-create-profile');
+                window.dispatchEvent(createProfileEvent);
+              }}>
+                Create Pet Profile
+              </Button>
+            </>
+          )}
         </div>
       </>
     );
