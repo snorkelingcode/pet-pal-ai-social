@@ -135,6 +135,11 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
     navigate('/login');
   };
 
+  const handleOwnerProfileClick = () => {
+    setIsOwnerProfileOpen(false);
+    onSectionChange('owner-profile');
+  };
+
   if (isMobile) {
     return (
       <>
@@ -278,10 +283,7 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
             </Button>
             <Button 
               className="w-full bg-petpal-blue hover:bg-petpal-blue/90"
-              onClick={() => {
-                setIsOwnerProfileOpen(true);
-                onSectionChange('owner-profile');
-              }}
+              onClick={handleOwnerProfileClick}
             >
               Owner Profile
             </Button>

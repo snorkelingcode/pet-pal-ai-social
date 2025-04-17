@@ -40,7 +40,7 @@ const Profile = () => {
       try {
         let petQuery = supabase
           .from('pet_profiles')
-          .select('*, ai_personas(*)')
+          .select('*, ai_personas(*)');
           
         if (effectivePetId) {
           petQuery = petQuery.eq('id', effectivePetId);
@@ -168,15 +168,9 @@ const Profile = () => {
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
-            id,
-            post_id,
-            pet_id,
-            user_id,
-            content,
-            likes,
-            created_at,
-            pet_profiles:pet_id (*),
-            profiles:user_id (*)
+            *,
+            pet_profiles(*),
+            profiles(*)
           `)
           .eq('post_id', post.id)
           .order('created_at', { ascending: true });
@@ -187,43 +181,36 @@ const Profile = () => {
         }
 
         if (commentsData) {
-          const formattedComments = commentsData.map(comment => {
-            let userProfile;
-            if (comment.profiles) {
-              userProfile = {
-                id: comment.profiles.id || '',
-                username: comment.profiles.username || 'Anonymous',
-                avatarUrl: comment.profiles.avatar_url,
-                handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
-              };
-            }
-            
-            return {
-              id: comment.id,
-              postId: comment.post_id,
-              content: comment.content,
-              createdAt: comment.created_at,
-              likes: comment.likes,
-              petId: comment.pet_id || undefined,
-              userId: comment.user_id || undefined,
-              petProfile: comment.pet_profiles ? {
-                id: comment.pet_profiles.id,
-                name: comment.pet_profiles.name,
-                species: comment.pet_profiles.species,
-                breed: comment.pet_profiles.breed,
-                profilePicture: comment.pet_profiles.profile_picture || undefined,
-                age: comment.pet_profiles.age,
-                personality: comment.pet_profiles.personality,
-                bio: comment.pet_profiles.bio,
-                ownerId: comment.pet_profiles.owner_id,
-                createdAt: comment.pet_profiles.created_at,
-                followers: comment.pet_profiles.followers,
-                following: comment.pet_profiles.following,
-                handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-              } : undefined,
-              userProfile: userProfile
-            };
-          });
+          const formattedComments = commentsData.map(comment => ({
+            id: comment.id,
+            postId: comment.post_id,
+            content: comment.content,
+            createdAt: comment.created_at,
+            likes: comment.likes,
+            petId: comment.pet_id || undefined,
+            userId: comment.user_id || undefined,
+            petProfile: comment.pet_profiles ? {
+              id: comment.pet_profiles.id,
+              name: comment.pet_profiles.name,
+              species: comment.pet_profiles.species,
+              breed: comment.pet_profiles.breed,
+              profilePicture: comment.pet_profiles.profile_picture || undefined,
+              age: comment.pet_profiles.age,
+              personality: comment.pet_profiles.personality,
+              bio: comment.pet_profiles.bio,
+              ownerId: comment.pet_profiles.owner_id,
+              createdAt: comment.pet_profiles.created_at,
+              followers: comment.pet_profiles.followers,
+              following: comment.pet_profiles.following,
+              handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+            } : undefined,
+            userProfile: comment.profiles ? {
+              id: comment.profiles.id,
+              username: comment.profiles.username || 'Anonymous',
+              avatarUrl: comment.profiles.avatar_url,
+              handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
+            } : undefined
+          }));
           
           commentsMapping[post.id] = formattedComments;
         } else {
