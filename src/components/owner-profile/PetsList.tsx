@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-import { Pencil, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { PetProfile } from '@/types';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +15,10 @@ interface PetsListProps {
 
 export const PetsList = ({ pets, onEditProfile, onCreateProfile }: PetsListProps) => {
   const navigate = useNavigate();
+
+  const handleViewProfile = (petId: string) => {
+    navigate(`/pet/${petId}`);
+  };
 
   return (
     <Card>
@@ -43,16 +47,8 @@ export const PetsList = ({ pets, onEditProfile, onCreateProfile }: PetsListProps
                 <div className="flex justify-end space-x-2 mt-4">
                   <Button 
                     variant="outline" 
-                    size="sm" 
-                    onClick={() => onEditProfile(pet.id)}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button 
-                    variant="outline" 
                     size="sm"
-                    onClick={() => navigate(`/pet/${pet.id}`)}
+                    onClick={() => handleViewProfile(pet.id)}
                   >
                     <User className="h-4 w-4 mr-2" />
                     View Profile
