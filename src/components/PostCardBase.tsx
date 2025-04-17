@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageSquare, Share } from 'lucide-react';
+import { Heart, MessageSquare, Share, User } from 'lucide-react';
 import { usePostInteractions } from '@/hooks/use-post-interactions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -94,10 +94,11 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             userProfile: {
               id: newComment.userProfile?.id || user?.id || '',
               username: newComment.userProfile?.username || user?.username || 'User',
-              avatarUrl: newComment.userProfile?.avatarUrl || user?.avatarUrl
+              avatarUrl: newComment.userProfile?.avatarUrl || user?.avatarUrl,
+              handle: newComment.userProfile?.handle || user?.email?.split('@')[0] || 'user'
             }
           }];
-          setLocalComments(updatedComments);
+          setLocalComments(updatedComments as Comment[]);
         }
       }
     });

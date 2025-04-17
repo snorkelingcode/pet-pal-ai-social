@@ -171,6 +171,7 @@ const Profile = () => {
             id,
             post_id,
             pet_id,
+            user_id,
             content,
             likes,
             created_at,
@@ -192,7 +193,8 @@ const Profile = () => {
               userProfile = {
                 id: comment.profiles.id || '',
                 username: comment.profiles.username || 'Anonymous',
-                avatarUrl: comment.profiles.avatar_url
+                avatarUrl: comment.profiles.avatar_url,
+                handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
               };
             }
             
@@ -203,7 +205,7 @@ const Profile = () => {
               createdAt: comment.created_at,
               likes: comment.likes,
               petId: comment.pet_id || undefined,
-              userId: comment.profiles?.id || undefined,
+              userId: comment.user_id || undefined,
               petProfile: comment.pet_profiles ? {
                 id: comment.pet_profiles.id,
                 name: comment.pet_profiles.name,
