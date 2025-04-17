@@ -55,6 +55,10 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
         <Route path="/pet/:petId" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+        <Route path="/messages" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

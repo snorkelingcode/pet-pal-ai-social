@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -118,18 +119,15 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
   };
 
   const sidebarLinks = [
-    { icon: <Home className="h-5 w-5 mr-3" />, label: "Feed", path: "/" },
-    { icon: <PawPrint className="h-5 w-5 mr-3" />, label: "My Pet", path: "/pet" },
-    { icon: <Mail className="h-5 w-5 mr-3" />, label: "Messages", path: "/messages" },
-    { icon: <Bell className="h-5 w-5 mr-3" />, label: "Notifications", path: "/notifications" },
-    { icon: <User className="h-5 w-5 mr-3" />, label: "My Profile", path: "/profile" }
+    { icon: <Home className="h-5 w-5 mr-3" />, label: "Feed", path: "/", section: "feed" },
+    { icon: <User className="h-5 w-5 mr-3" />, label: "My Profile", path: "/profile", section: "owner-profile" },
+    { icon: <PawPrint className="h-5 w-5 mr-3" />, label: "My Pet", path: "/pet", section: "profile" },
+    { icon: <Mail className="h-5 w-5 mr-3" />, label: "Messages", path: "/messages", section: "messages" },
+    { icon: <Bell className="h-5 w-5 mr-3" />, label: "Notifications", path: "/notifications", section: "notifications" }
   ];
 
-  const isActiveLink = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(path);
+  const isActiveLink = (section: string) => {
+    return activeSection === section;
   };
 
   const renderSidebarContent = () => (
@@ -188,24 +186,25 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
             
             <div className="space-y-1">
               {sidebarLinks.map((link) => {
-                const finalPath = link.path === '/pet' && selectedPetId 
-                  ? `${link.path}/${selectedPetId}`
-                  : link.path === '/messages' && selectedPetId
-                  ? `${link.path}?petId=${selectedPetId}`
-                  : link.path;
+                let finalPath = link.path;
+                
+                // Special case for the pet profile
+                if (link.section === 'profile' && selectedPetId) {
+                  finalPath = `${link.path}/${selectedPetId}`;
+                }
 
                 return (
                   <Button
                     key={link.path}
-                    variant={isActiveLink(link.path) ? "secondary" : "ghost"}
+                    variant={isActiveLink(link.section) ? "secondary" : "ghost"}
                     className="w-full justify-start"
-                    asChild
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => {
+                      onSectionChange(link.section);
+                      setSidebarOpen(false);
+                    }}
                   >
-                    <Link to={finalPath}>
-                      {link.icon}
-                      {link.label}
-                    </Link>
+                    {link.icon}
+                    {link.label}
                   </Button>
                 );
               })}
@@ -220,13 +219,13 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start"
-                  asChild
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => {
+                    onSectionChange('settings');
+                    setSidebarOpen(false);
+                  }}
                 >
-                  <Link to="/settings">
-                    <Settings className="h-5 w-5 mr-3" />
-                    Settings
-                  </Link>
+                  <Settings className="h-5 w-5 mr-3" />
+                  Settings
                 </Button>
               </div>
               <div className="flex items-center justify-between">

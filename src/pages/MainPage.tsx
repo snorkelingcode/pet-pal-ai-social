@@ -26,11 +26,22 @@ const MainPage = () => {
   const petIdFromParams = params.petId;
   
   const getInitialSection = (): SectionType => {
-    const hash = location.hash.replace('#', '') as SectionType;
+    const pathname = location.pathname.toLowerCase();
+    
+    // Determine section based on route
+    if (pathname === '/') return 'feed';
+    if (pathname === '/profile') return 'owner-profile';
+    if (pathname === '/messages') return 'messages';
+    if (pathname === '/notifications') return 'notifications';
+    if (pathname === '/settings') return 'settings';
+    
     // If we're on a pet profile URL, default to the profile section
-    if (petIdFromParams) {
+    if (pathname.startsWith('/pet/')) {
       return 'profile';
     }
+    
+    // Fallback to hash-based routing if no path match
+    const hash = location.hash.replace('#', '') as SectionType;
     return ['feed', 'profile', 'messages', 'notifications', 'favorites', 'settings', 'owner-profile'].includes(hash) 
       ? hash 
       : 'feed';
@@ -38,26 +49,42 @@ const MainPage = () => {
   
   const [activeSection, setActiveSection] = useState<SectionType>(getInitialSection());
   
-  // Effect to update section when URL params change
+  // Effect to update section when URL pathname changes
   useEffect(() => {
-    if (petIdFromParams) {
-      setActiveSection('profile');
-    }
-  }, [petIdFromParams]);
+    setActiveSection(getInitialSection());
+  }, [location.pathname, petIdFromParams]);
   
   const changeSection = (section: SectionType) => {
     setActiveSection(section);
-    // If we're on a pet profile URL, maintain that in the hash navigation
-    if (petIdFromParams) {
-      navigate(`/pet/${petIdFromParams}#${section}`);
-    } else {
-      const petId = searchParams.get('petId');
-      const newHash = `#${section}`;
-      if (petId) {
-        navigate(`${location.pathname}?petId=${petId}${newHash}`);
-      } else {
-        navigate(`${location.pathname}${newHash}`);
-      }
+    
+    // Update URL based on section
+    switch(section) {
+      case 'feed':
+        navigate('/');
+        break;
+      case 'owner-profile':
+        navigate('/profile');
+        break;
+      case 'messages':
+        navigate('/messages');
+        break;
+      case 'notifications':
+        navigate('/notifications');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      case 'profile':
+        if (petIdFromParams) {
+          navigate(`/pet/${petIdFromParams}`);
+        } else {
+          // If no pet ID, show a fallback
+          navigate('/');
+        }
+        break;
+      default:
+        navigate(`/#${section}`);
+        break;
     }
   };
   

@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Post, PetProfile, Comment, mapDbPetProfileToPetProfile } from '@/types';
+import { Post, PetProfile, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePostLikes } from './use-post-likes';
 
 export const useFeedData = (limit = 10) => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -9,6 +11,7 @@ export const useFeedData = (limit = 10) => {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
+  const { likePost: likePostAction } = usePostLikes();
 
   const fetchPosts = async (startIndex = 0) => {
     if (startIndex === 0) {
@@ -55,7 +58,7 @@ export const useFeedData = (limit = 10) => {
           createdAt: petProfile.created_at,
           followers: petProfile.followers || 0,
           following: petProfile.following || 0,
-          handle: petProfile.handle
+          handle: petProfile.handle || petProfile.name.toLowerCase().replace(/\s+/g, '')
         };
 
         return {
@@ -100,70 +103,17 @@ export const useFeedData = (limit = 10) => {
   const likePost = async (postId: string) => {
     if (!user) return;
     
-    try {
-      // Check if user already liked the post
-      const { data: existingLike, error: likeCheckError } = await supabase
-        .from('post_likes')
-        .select('*')
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
-        .single();
-        
-      if (likeCheckError && likeCheckError.code !== 'PGRST116') {
-        throw likeCheckError;
-      }
-      
-      if (existingLike) {
-        // Unlike the post
-        const { error: unlikeError } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id);
-          
-        if (unlikeError) throw unlikeError;
-        
-        // Decrement the likes count
-        const { error: updateError } = await supabase.rpc('decrement_post_likes', {
-          post_id_param: postId
-        });
-        
-        if (updateError) throw updateError;
-        
-        // Update local state
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
-            post.id === postId 
-              ? { ...post, likes: Math.max(0, post.likes - 1) } 
-              : post
-          )
-        );
-      } else {
-        // Like the post
-        const { error: likeError } = await supabase
-          .from('post_likes')
-          .insert([{ post_id: postId, user_id: user.id }]);
-          
-        if (likeError) throw likeError;
-        
-        // Increment the likes count
-        const { error: updateError } = await supabase.rpc('increment_post_likes', {
-          post_id_param: postId
-        });
-        
-        if (updateError) throw updateError;
-        
-        // Update local state
-        setPosts(prevPosts => 
-          prevPosts.map(post => 
-            post.id === postId 
-              ? { ...post, likes: post.likes + 1 } 
-              : post
-          )
-        );
-      }
-    } catch (err) {
-      console.error('Error liking/unliking post:', err);
+    const result = await likePostAction(postId);
+    
+    if (result !== null) {
+      // Update local state based on the result
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, likes: result ? post.likes + 1 : Math.max(0, post.likes - 1) } 
+            : post
+        )
+      );
     }
   };
 
@@ -191,9 +141,10 @@ export const useFeedData = (limit = 10) => {
       if (error) throw error;
       
       // Increment the comments count
-      const { error: updateError } = await supabase.rpc('increment_post_comments', {
-        post_id_param: postId
-      });
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ comments: supabase.rpc('increment', { row_id: postId }) })
+        .eq('id', postId);
       
       if (updateError) throw updateError;
       
@@ -228,7 +179,7 @@ export const useFeedData = (limit = 10) => {
             createdAt: petProfile.created_at,
             followers: petProfile.followers || 0,
             following: petProfile.following || 0,
-            handle: petProfile.handle
+            handle: petProfile.handle || petProfile.name.toLowerCase().replace(/\s+/g, '')
           },
           content: data.content,
           likes: data.likes || 0,
@@ -244,7 +195,7 @@ export const useFeedData = (limit = 10) => {
             id: userProfile.id,
             username: userProfile.username,
             avatarUrl: userProfile.avatar_url,
-            handle: userProfile.handle
+            handle: userProfile.handle || userProfile.username?.toLowerCase().replace(/\s+/g, '')
           },
           content: data.content,
           likes: data.likes || 0,
@@ -298,13 +249,13 @@ export const useFeedData = (limit = 10) => {
               createdAt: petProfile.created_at,
               followers: petProfile.followers || 0,
               following: petProfile.following || 0,
-              handle: petProfile.handle
+              handle: petProfile.handle || petProfile.name.toLowerCase().replace(/\s+/g, '')
             },
             content: comment.content,
             likes: comment.likes || 0,
             createdAt: comment.created_at
           };
-        } else {
+        } else if (comment.profiles) {
           const userProfile = comment.profiles as any;
           return {
             id: comment.id,
@@ -314,11 +265,22 @@ export const useFeedData = (limit = 10) => {
               id: userProfile.id,
               username: userProfile.username,
               avatarUrl: userProfile.avatar_url,
-              handle: userProfile.handle
+              handle: userProfile.handle || userProfile.username?.toLowerCase().replace(/\s+/g, '')
             },
             content: comment.content,
             likes: comment.likes || 0,
             createdAt: comment.created_at
+          };
+        } else {
+          // Fallback if for some reason the profile data is missing
+          return {
+            id: comment.id,
+            postId: comment.post_id,
+            content: comment.content,
+            likes: comment.likes || 0,
+            createdAt: comment.created_at,
+            authorName: comment.author_name || 'Unknown',
+            authorHandle: comment.author_handle || 'unknown'
           };
         }
       });
