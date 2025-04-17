@@ -10,7 +10,7 @@ import { Comment } from '@/types';
 
 const Index = () => {
   const { user } = useAuth();
-  const { posts, loading } = usePostFeed();
+  const { posts, loading, refreshFeed } = usePostFeed();
   const isMobile = useIsMobile();
   const [comments, setComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState<string>("for-you");
@@ -19,6 +19,11 @@ const Index = () => {
   useEffect(() => {
     setComments([]);
   }, []);
+
+  // Refresh the feed when the component mounts or when user auth state changes
+  useEffect(() => {
+    refreshFeed();
+  }, [user]);
   
   return (
     <>

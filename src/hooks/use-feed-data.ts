@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Post } from '@/types';
@@ -8,29 +7,34 @@ import { mapDbPetProfileData } from '@/utils/dataMappers';
 interface UsePostFeedProps {
   initialPage?: number;
   initialLimit?: number;
+  petId?: string;
 }
 
-const usePostFeed = ({ initialPage = 1, initialLimit = 10 }: UsePostFeedProps = {}) => {
+const usePostFeed = ({ initialPage = 1, initialLimit = 10, petId }: UsePostFeedProps = {}) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(initialPage);
   const [limit, setLimit] = useState(initialLimit);
   const [hasMore, setHasMore] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
-  useEffect(() => {
-    fetchPostFeed();
-  }, [page, limit]);
-
-  const fetchPostFeed = async (page = 1, limit = 10) => {
-    if (!hasMore && page !== initialPage) return;
-
+  const fetchPostFeed = async (fetchPage = initialPage, fetchLimit = initialLimit, reset = false) => {
+    if (!hasMore && fetchPage !== initialPage && !reset) return;
+    
     setLoading(true);
     try {
-      const { data: postsData, error } = await supabase
+      let query = supabase
         .from('posts')
         .select('*, pet_profiles(*)')
-        .order('created_at', { ascending: false })
-        .range((page - 1) * limit, page * limit - 1);
+        .order('created_at', { ascending: false });
+        
+      if (petId) {
+        query = query.eq('pet_id', petId);
+      }
+      
+      query = query.range((fetchPage - 1) * fetchLimit, fetchPage * fetchLimit - 1);
+      
+      const { data: postsData, error } = await query;
 
       if (error) {
         throw error;
@@ -43,7 +47,6 @@ const usePostFeed = ({ initialPage = 1, initialLimit = 10 }: UsePostFeedProps = 
       }
 
       const transformedPosts: Post[] = postsData.map(post => {
-        // Using our mapper function to ensure all properties are correctly set
         const petProfile = mapDbPetProfileData(post.pet_profiles);
         
         return {
@@ -58,9 +61,20 @@ const usePostFeed = ({ initialPage = 1, initialLimit = 10 }: UsePostFeedProps = 
         };
       });
 
-      setPosts(prevPosts => [...prevPosts, ...transformedPosts]);
-      setHasMore(transformedPosts.length === limit);
-      setPage(prevPage => prevPage + 1);
+      if (reset || initialLoad) {
+        setPosts(transformedPosts);
+        setInitialLoad(false);
+      } else {
+        const existingPostIds = new Set(posts.map(post => post.id));
+        const newPosts = transformedPosts.filter(post => !existingPostIds.has(post.id));
+        
+        if (newPosts.length > 0) {
+          setPosts(prevPosts => [...prevPosts, ...newPosts]);
+        }
+      }
+
+      setHasMore(transformedPosts.length === fetchLimit);
+      setPage(fetchPage + 1);
 
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -74,11 +88,22 @@ const usePostFeed = ({ initialPage = 1, initialLimit = 10 }: UsePostFeedProps = 
     }
   };
 
+  const refreshFeed = () => {
+    setPage(initialPage);
+    setHasMore(true);
+    fetchPostFeed(initialPage, limit, true);
+  };
+
+  useEffect(() => {
+    fetchPostFeed(page, limit);
+  }, []);
+
   return {
     posts,
     loading,
     hasMore,
     fetchPostFeed,
+    refreshFeed,
     page,
     limit,
     setLimit

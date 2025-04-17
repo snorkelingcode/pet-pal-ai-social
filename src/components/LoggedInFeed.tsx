@@ -27,7 +27,7 @@ const LoggedInFeed = ({ posts, comments, activeTab, onTabChange }: LoggedInFeedP
           {forYouPosts.length > 0 ? (
             forYouPosts.map((post) => (
               <PostCard 
-                key={post.id} 
+                key={`for-you-${post.id}`}
                 post={post} 
                 comments={comments.filter(comment => comment.postId === post.id)}
               />
@@ -46,7 +46,7 @@ const LoggedInFeed = ({ posts, comments, activeTab, onTabChange }: LoggedInFeedP
           {followingPosts.length > 0 ? (
             followingPosts.map((post) => (
               <PostCard 
-                key={post.id} 
+                key={`following-${post.id}`}
                 post={post} 
                 comments={comments.filter(comment => comment.postId === post.id)}
               />

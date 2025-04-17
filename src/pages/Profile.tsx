@@ -162,22 +162,21 @@ const Profile = () => {
               petProfile = mapDbPetProfileData(comment.pet_profiles);
             }
             
-            const userProfile = (() => {
-              if (!comment.profiles || typeof comment.profiles !== 'object' || 'error' in comment.profiles) {
-                return undefined;
-              }
+            let userProfile = undefined;
+            if (comment.profiles && 
+                typeof comment.profiles === 'object' && 
+                !('error' in comment.profiles) && 
+                comment.profiles !== null) {
               
               const profileData = comment.profiles;
-              if (!profileData) return undefined;
-              
-              return {
-                id: profileData.id || '',
-                username: profileData.username || 'Anonymous',
-                avatarUrl: profileData.avatar_url,
-                handle: profileData.handle || 
-                  (profileData.username ? profileData.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'user')
+              userProfile = {
+                id: profileData?.id || '',
+                username: profileData?.username || 'Anonymous',
+                avatarUrl: profileData?.avatar_url,
+                handle: profileData?.handle || 
+                  (profileData?.username ? profileData.username.toLowerCase().replace(/[^a-z0-9]/g, '') : 'user')
               };
-            })();
+            }
             
             formattedComments.push({
               id: comment.id,
@@ -186,7 +185,7 @@ const Profile = () => {
               createdAt: comment.created_at,
               likes: comment.likes,
               petId: comment.pet_id || undefined,
-              userId: userProfile?.id,
+              userId: userProfile?.id || comment.user_id,
               authorName: userProfile?.username || comment.author_name || 'Anonymous',
               authorHandle: userProfile?.handle || comment.author_handle || 'user',
               petProfile,
