@@ -1,4 +1,3 @@
-
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -55,7 +54,7 @@ export const petProfileService = {
       const handle = profileData.handle || profileData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
       
       // Convert from frontend structure to database structure
-      const dbPetProfile: Omit<DbPetProfile, 'id' | 'created_at' | 'followers' | 'following'> = {
+      const dbPetProfile = {
         owner_id: profileData.ownerId,
         name: profileData.name,
         species: profileData.species,
@@ -65,6 +64,7 @@ export const petProfileService = {
         bio: profileData.bio,
         profile_picture: profileData.profilePicture,
         handle: handle,
+        profile_url: `/pet/${handle}`
       };
       
       const { data, error } = await supabase
@@ -78,11 +78,24 @@ export const petProfileService = {
         throw error;
       }
       
-      console.log("Pet profile created successfully:", data);
-      
       if (!data) throw new Error('No data returned from pet profile creation');
       
-      return mapDbPetProfileToPetProfile(data as DbPetProfile);
+      return {
+        id: data.id,
+        ownerId: data.owner_id,
+        name: data.name,
+        species: data.species,
+        breed: data.breed,
+        age: data.age,
+        personality: data.personality || [],
+        bio: data.bio || '',
+        profilePicture: data.profile_picture || '',
+        createdAt: data.created_at,
+        followers: data.followers || 0,
+        following: data.following || 0,
+        handle: data.handle,
+        profile_url: data.profile_url
+      };
     } catch (error) {
       console.error('Error creating pet profile:', error);
       throw error;

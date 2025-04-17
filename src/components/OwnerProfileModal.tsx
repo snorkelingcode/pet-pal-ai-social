@@ -31,25 +31,10 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
   const { user } = useAuth();
   const [pets, setPets] = useState<PetProfile[]>([]);
   const [loadingPets, setLoadingPets] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  const ownerProfileSchema = z.object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-    email: z.string().email({ message: "Please enter a valid email address." }),
-    bio: z.string().max(300, { message: "Bio must be less than 300 characters." }).optional(),
-  });
-
-  const form = useForm<z.infer<typeof ownerProfileSchema>>({
-    resolver: zodResolver(ownerProfileSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      bio: "",
-    },
-  });
+  const [userData, setUserData] = useState<{ username: string; bio: string; email: string } | null>(null);
 
   useEffect(() => {
-    const fetchUserPets = async () => {
+    const fetchUserData = async () => {
       if (!user) return;
       
       try {
@@ -64,46 +49,48 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
         if (profileError) throw profileError;
         
         if (profileData) {
-          form.reset({
-            name: profileData.username || '',
+          setUserData({
+            username: profileData.username || '',
             email: user.email || '',
             bio: profileData.bio || '',
           });
-          setAvatarUrl(profileData.avatar_url);
         }
         
-        const { data, error } = await supabase
+        const { data: petsData, error: petsError } = await supabase
           .from('pet_profiles')
           .select('*')
           .eq('owner_id', user.id);
           
-        if (error) {
-          throw error;
+        if (petsError) throw petsError;
+
+        if (petsData) {
+          const formattedPets = petsData.map(pet => {
+            const handle = pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return {
+              id: pet.id,
+              ownerId: pet.owner_id,
+              name: pet.name,
+              species: pet.species,
+              breed: pet.breed,
+              age: pet.age,
+              personality: pet.personality || [],
+              bio: pet.bio || '',
+              profilePicture: pet.profile_picture || '',
+              createdAt: pet.created_at,
+              followers: pet.followers || 0,
+              following: pet.following || 0,
+              handle: handle,
+              profile_url: `/pet/${handle}`
+            };
+          });
+          
+          setPets(formattedPets);
         }
-        
-        const petProfiles: PetProfile[] = data.map(pet => ({
-          id: pet.id,
-          ownerId: pet.owner_id,
-          name: pet.name,
-          species: pet.species,
-          breed: pet.breed,
-          age: pet.age,
-          personality: pet.personality || [],
-          bio: pet.bio || '',
-          profilePicture: pet.profile_picture || '',
-          createdAt: pet.created_at,
-          followers: pet.followers || 0,
-          following: pet.following || 0,
-          handle: pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, ''),
-          profile_url: `/pet/${pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`
-        }));
-        
-        setPets(petProfiles);
       } catch (error) {
-        console.error('Error fetching user pets:', error);
+        console.error('Error fetching user data:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load your pet profiles',
+          description: 'Failed to load profile data',
           variant: 'destructive'
         });
       } finally {
@@ -111,7 +98,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
       }
     };
 
-    fetchUserPets();
+    fetchUserData();
   }, [user]);
 
   return (
@@ -120,20 +107,21 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={form.getValues().name} className="object-cover" />
-              ) : (
-                <User className="h-5 w-5 text-muted-foreground" />
-              )}
+              <User className="h-5 w-5 text-muted-foreground" />
             </Avatar>
             <div>
-              <DialogTitle>{form.getValues().name}</DialogTitle>
+              <DialogTitle>{userData?.username || 'User'}</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                @{user?.email?.split('@')[0] || 'user'}
+                {userData?.email}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
+
+        {userData?.bio && (
+          <p className="text-sm text-muted-foreground mb-4">{userData.bio}</p>
+        )}
+
         <Card>
           <CardContent className="grid gap-4">
             {loadingPets ? (

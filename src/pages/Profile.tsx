@@ -313,7 +313,7 @@ const Profile = () => {
   };
   
   const handleEditProfile = () => {
-    setIsEditProfileOpen(true);
+    navigate(`/settings?petId=${petProfile.id}`);
   };
 
   if (loading) {

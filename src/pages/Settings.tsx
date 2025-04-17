@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,42 +10,123 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Settings as SettingsIcon, Bell, Shield, Palette, LogOut } from 'lucide-react';
+import { PetProfile } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
+import { Shield, Bell, UserCircle, PawPrint } from 'lucide-react';
 
 const Settings = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(true);
+  const [petProfile, setPetProfile] = useState<PetProfile | null>(null);
+  const petId = searchParams.get('petId');
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
+  useEffect(() => {
+    const fetchPetProfile = async () => {
+      if (!petId) {
+        toast({
+          title: "No Pet Selected",
+          description: "Please select a pet to customize their settings",
+          variant: "destructive"
+        });
+        navigate('/');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const { data: pet, error } = await supabase
+          .from('pet_profiles')
+          .select('*')
+          .eq('id', petId)
+          .single();
+
+        if (error) throw error;
+
+        if (pet) {
+          const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          setPetProfile({
+            id: pet.id,
+            ownerId: pet.owner_id,
+            name: pet.name,
+            species: pet.species,
+            breed: pet.breed,
+            age: pet.age,
+            personality: pet.personality || [],
+            bio: pet.bio || '',
+            profilePicture: pet.profile_picture || '',
+            createdAt: pet.created_at,
+            followers: pet.followers || 0,
+            following: pet.following || 0,
+            handle: handle,
+            profile_url: `/pet/${handle}`
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching pet profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load pet profile",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPetProfile();
+  }, [petId]);
 
   if (!user) {
     return (
       <>
         <HeaderCard 
-          title="Settings" 
-          subtitle="Sign in to access your account settings"
+          title="Pet Settings" 
+          subtitle="Sign in to access pet settings"
         />
         <div className="flex flex-col items-center justify-center h-[50vh]">
-          <SettingsIcon className="h-16 w-16 text-muted-foreground mb-4" />
+          <UserCircle className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-bold mb-2">Sign in required</h2>
           <p className="text-muted-foreground text-center max-w-md mb-6">
-            Please sign in to access and manage your account settings
+            Please sign in to access and manage your pet's settings
           </p>
-          <div className="flex gap-4">
-            <Link to="/login">
-              <Button className="bg-petpal-blue hover:bg-petpal-blue/90">
-                Log In
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button className="bg-petpal-pink hover:bg-petpal-pink/90">
-                Sign Up
-              </Button>
-            </Link>
-          </div>
+          <Button onClick={() => navigate('/login')}>
+            Sign In
+          </Button>
+        </div>
+      </>
+    );
+  }
+
+  if (loading) {
+    return (
+      <>
+        <HeaderCard title="Pet Settings" subtitle="Loading..." />
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 bg-muted rounded" />
+          <div className="h-32 bg-muted rounded" />
+          <div className="h-12 bg-muted rounded" />
+        </div>
+      </>
+    );
+  }
+
+  if (!petProfile) {
+    return (
+      <>
+        <HeaderCard title="Pet Settings" subtitle="No pet selected" />
+        <div className="flex flex-col items-center justify-center h-[50vh]">
+          <PawPrint className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold mb-2">No Pet Selected</h2>
+          <p className="text-muted-foreground text-center max-w-md mb-6">
+            Please select a pet to customize their settings
+          </p>
+          <Button onClick={() => navigate('/')}>
+            Go to Home
+          </Button>
         </div>
       </>
     );
@@ -51,115 +134,92 @@ const Settings = () => {
 
   return (
     <>
-      <HeaderCard title="Settings" subtitle="Manage your account and app preferences" />
+      <HeaderCard 
+        title={`${petProfile.name}'s Settings`} 
+        subtitle={`Customize ${petProfile.name}'s preferences and profile settings`}
+      />
       
-      <Tabs defaultValue="account" className="w-full">
+      <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="account">
-            <SettingsIcon className="h-4 w-4 mr-2" />
-            Account
-          </TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="h-4 w-4 mr-2" />
-            Notifications
-          </TabsTrigger>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="account" className="mt-6">
+        <TabsContent value="profile" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Account Settings</CardTitle>
-              <CardDescription>Manage your account preferences</CardDescription>
+              <CardTitle>Profile Settings</CardTitle>
+              <CardDescription>Manage your pet's profile information</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <Label htmlFor="username" className="text-right">
-                  Username
+                <Label htmlFor="petname" className="text-right">
+                  Pet Name
                 </Label>
-                <Input id="username" defaultValue={user.email?.split('@')[0] || "N/A"} className="col-span-2" disabled />
+                <Input id="petname" value={petProfile.name} className="col-span-2" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <Label htmlFor="email" className="text-right">
-                  Email
+                <Label htmlFor="species" className="text-right">
+                  Species
                 </Label>
-                <Input id="email" defaultValue={user.email || "N/A"} className="col-span-2" disabled />
+                <Input id="species" value={petProfile.species} className="col-span-2" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <Label htmlFor="theme" className="text-right">
-                  Theme
+                <Label htmlFor="breed" className="text-right">
+                  Breed
                 </Label>
-                <Select defaultValue="system">
-                  <SelectTrigger id="theme" className="col-span-2">
-                    <SelectValue placeholder="Select theme" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input id="breed" value={petProfile.breed} className="col-span-2" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                <Label htmlFor="language" className="text-right">
-                  Language
+                <Label htmlFor="age" className="text-right">
+                  Age
                 </Label>
-                <Select defaultValue="en">
-                  <SelectTrigger id="language" className="col-span-2">
-                    <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input id="age" type="number" value={petProfile.age} className="col-span-2" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <Label htmlFor="handle" className="text-right">
+                  Handle
+                </Label>
+                <div className="col-span-2 flex items-center gap-2">
+                  <span className="text-muted-foreground">@</span>
+                  <Input id="handle" value={petProfile.handle} />
+                </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="mt-4">
             <CardHeader>
               <CardTitle>Privacy Settings</CardTitle>
-              <CardDescription>Manage your privacy preferences</CardDescription>
+              <CardDescription>Control your pet's privacy preferences</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
                   <h2 className="text-sm font-semibold">Profile Visibility</h2>
-                  <p className="text-sm text-muted-foreground">Control who can see your profile</p>
+                  <p className="text-sm text-muted-foreground">Control who can see your pet's profile</p>
                 </div>
-                <Switch id="profile-visibility" />
+                <Switch />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
-                  <h2 className="text-sm font-semibold">Message Privacy</h2>
-                  <p className="text-sm text-muted-foreground">Control who can send you direct messages</p>
+                  <h2 className="text-sm font-semibold">Allow Direct Messages</h2>
+                  <p className="text-sm text-muted-foreground">Let other pets send messages to {petProfile.name}</p>
                 </div>
-                <Switch id="message-privacy" />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <h2 className="text-sm font-semibold">Data Sharing</h2>
-                  <p className="text-sm text-muted-foreground">Allow us to share your data with third-party services</p>
-                </div>
-                <Switch id="data-sharing" />
+                <Switch />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="mt-4">
             <CardHeader>
               <CardTitle>Danger Zone</CardTitle>
-              <CardDescription>Here you can manage critical account settings</CardDescription>
+              <CardDescription>Critical settings for your pet's profile</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button variant="destructive" className="w-full">
                 <Shield className="h-4 w-4 mr-2" />
-                Delete Account
-              </Button>
-              <Button variant="destructive" className="w-full" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                Delete Pet Profile
               </Button>
             </CardContent>
           </Card>
@@ -169,29 +229,29 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Manage your notification settings</CardDescription>
+              <CardDescription>Manage notification settings for {petProfile.name}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
-                  <h2 className="text-sm font-semibold">Email Notifications</h2>
-                  <p className="text-sm text-muted-foreground">Receive updates and important announcements via email</p>
+                  <h2 className="text-sm font-semibold">New Followers</h2>
+                  <p className="text-sm text-muted-foreground">Get notified when someone follows {petProfile.name}</p>
                 </div>
-                <Switch id="email-notifications" />
+                <Switch />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
-                  <h2 className="text-sm font-semibold">Push Notifications</h2>
-                  <p className="text-sm text-muted-foreground">Get real-time updates on your mobile device</p>
+                  <h2 className="text-sm font-semibold">Post Interactions</h2>
+                  <p className="text-sm text-muted-foreground">Get notified about likes and comments on {petProfile.name}'s posts</p>
                 </div>
-                <Switch id="push-notifications" />
+                <Switch />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
-                  <h2 className="text-sm font-semibold">In-App Notifications</h2>
-                  <p className="text-sm text-muted-foreground">See notifications directly within the app</p>
+                  <h2 className="text-sm font-semibold">Direct Messages</h2>
+                  <p className="text-sm text-muted-foreground">Get notified about new messages</p>
                 </div>
-                <Switch id="in-app-notifications" />
+                <Switch />
               </div>
             </CardContent>
           </Card>
