@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -164,19 +163,15 @@ const Profile = () => {
               petProfile = mapDbPetProfileData(comment.pet_profiles);
             }
             
-            if (comment.user_id && comment.profiles) {
-              try {
-                const profileData = comment.profiles;
-                if (profileData && typeof profileData === 'object' && !('error' in profileData)) {
-                  userProfile = {
-                    id: profileData.id || '',
-                    username: profileData.username || 'Anonymous',
-                    avatarUrl: profileData.avatar_url,
-                    handle: profileData.handle || profileData.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
-                  };
-                }
-              } catch (err) {
-                console.error("Error processing user profile for comment:", err);
+            if (comment.profiles && typeof comment.profiles === 'object' && !('error' in comment.profiles)) {
+              const profileData = comment.profiles;
+              if (profileData) {
+                userProfile = {
+                  id: profileData.id || '',
+                  username: profileData.username || 'Anonymous',
+                  avatarUrl: profileData.avatar_url,
+                  handle: profileData.handle || profileData.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
+                };
               }
             }
             
@@ -187,9 +182,9 @@ const Profile = () => {
               createdAt: comment.created_at,
               likes: comment.likes,
               petId: comment.pet_id || undefined,
-              userId: comment.user_id || undefined,
-              authorName: comment.author_name || undefined,
-              authorHandle: comment.author_handle || undefined,
+              userId: comment.profiles?.id || undefined,
+              authorName: userProfile?.username || comment.author_name || 'Anonymous',
+              authorHandle: userProfile?.handle || comment.author_handle || 'user',
               petProfile,
               userProfile
             });

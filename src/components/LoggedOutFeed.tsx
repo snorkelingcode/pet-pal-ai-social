@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import PostCard from './PostCard';
 import { Post, Comment } from '@/types';
 
-interface LoggedOutFeedProps {
+export interface LoggedOutFeedProps {
   posts: Post[];
   comments: Comment[];
   isMobile: boolean;
@@ -21,7 +21,7 @@ const LoggedOutFeed = ({ posts, comments, isMobile }: LoggedOutFeedProps) => {
           </p>
         </div>
         
-        {posts.length > 0 ? (
+        {posts && posts.length > 0 ? (
           posts.map((post) => (
             <PostCard 
               key={post.id} 
