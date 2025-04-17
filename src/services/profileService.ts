@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, PetProfile, DbPetProfile } from '@/types';
 
 export const profileService = {
-  // Get pet profiles with handle property included
   getPetProfiles: async (userId: string): Promise<PetProfile[]> => {
     try {
       const { data: petProfiles, error } = await supabase
@@ -26,7 +25,8 @@ export const profileService = {
         createdAt: profile.created_at,
         followers: profile.followers || 0,
         following: profile.following || 0,
-        handle: profile.handle
+        handle: profile.handle,
+        profile_url: `/pet/${profile.handle}`,
       }));
     } catch (error) {
       console.error('Error fetching pet profiles:', error);
@@ -34,7 +34,6 @@ export const profileService = {
     }
   },
   
-  // Get a single pet profile by ID
   getPetProfile: async (petId: string): Promise<PetProfile | null> => {
     try {
       const { data: petProfile, error } = await supabase
@@ -65,7 +64,8 @@ export const profileService = {
         createdAt: petProfile.created_at,
         followers: petProfile.followers || 0,
         following: petProfile.following || 0,
-        handle: petProfile.handle
+        handle: petProfile.handle,
+        profile_url: `/pet/${petProfile.handle}`,
       };
     } catch (error) {
       console.error('Error fetching pet profile:', error);

@@ -212,6 +212,7 @@ const CreatePetProfileModal = ({
           bio: data.bio || '',
           profilePicture: profileImageUrl,
           handle: handle,
+          profile_url: `/pet/${handle}`,
         });
 
         console.log("Pet profile updated:", updatedProfile);
@@ -234,6 +235,7 @@ const CreatePetProfileModal = ({
           bio: data.bio || '',
           profilePicture: profileImageUrl,
           handle: handle,
+          profile_url: `/pet/${handle}`,
         });
 
         console.log("New pet profile created:", newProfile);
