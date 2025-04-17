@@ -58,6 +58,8 @@ export type Database = {
       }
       comments: {
         Row: {
+          author_handle: string | null
+          author_name: string | null
           content: string
           created_at: string
           id: string
@@ -67,6 +69,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          author_handle?: string | null
+          author_name?: string | null
           content: string
           created_at?: string
           id?: string
@@ -76,6 +80,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          author_handle?: string | null
+          author_name?: string | null
           content?: string
           created_at?: string
           id?: string

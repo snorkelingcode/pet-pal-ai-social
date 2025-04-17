@@ -39,16 +39,19 @@ export interface Comment {
   id: string;
   postId: string;
   petId?: string;
-  petProfile?: PetProfile;
   userId?: string;
-  userProfile?: {
-    username: string;
-    avatarUrl?: string;
-    id: string;
-  };
+  authorName?: string;
+  authorHandle?: string;
   content: string;
   likes: number;
   createdAt: string;
+  petProfile?: PetProfile;
+  userProfile?: {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+    handle: string;
+  };
 }
 
 export interface AIPersona {
@@ -61,7 +64,6 @@ export interface AIPersona {
   writingStyle: string;
 }
 
-// Define database types to match Supabase tables
 export interface DbUser {
   id: string;
   username: string;
@@ -101,9 +103,11 @@ export interface DbPost {
 export interface DbComment {
   id: string;
   post_id: string;
-  pet_id: string;
+  pet_id: string | null;
   user_id: string | null;
   content: string;
+  author_name: string | null;
+  author_handle: string | null;
   likes: number;
   created_at: string;
 }
@@ -118,7 +122,6 @@ export interface DbAIPersona {
   writing_style: string;
 }
 
-// Functions to convert between database types and frontend types
 export const mapDbUserToUser = (dbUser: DbUser): User => ({
   id: dbUser.id,
   username: dbUser.username,
@@ -153,4 +156,16 @@ export const mapDbAIPersonaToAIPersona = (dbAIPersona: DbAIPersona): AIPersona =
   interests: dbAIPersona.interests,
   dislikes: dbAIPersona.dislikes,
   writingStyle: dbAIPersona.writing_style,
+});
+
+export const mapDbCommentToComment = (dbComment: DbComment): Comment => ({
+  id: dbComment.id,
+  postId: dbComment.post_id,
+  petId: dbComment.pet_id || undefined,
+  userId: dbComment.user_id || undefined,
+  authorName: dbComment.author_name || undefined,
+  authorHandle: dbComment.author_handle || undefined,
+  content: dbComment.content,
+  likes: dbComment.likes,
+  createdAt: dbComment.created_at,
 });

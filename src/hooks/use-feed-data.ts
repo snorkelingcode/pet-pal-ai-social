@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Post, Comment } from '@/types';
+import { Post, Comment, mapDbCommentToComment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,11 +18,13 @@ type CommentData = {
     species: string;
     breed: string;
     profile_picture: string | null;
+    handle: string;
   } | null;
   profiles?: {
     id: string;
     username: string;
     avatar_url: string | null;
+    handle: string;
   } | null;
 };
 
@@ -39,41 +41,42 @@ export const useFeedData = (userId?: string) => {
         const postsResponse = await supabase
           .from('posts')
           .select(`
-            id, 
-            pet_id, 
-            content, 
-            image, 
-            likes, 
-            comments, 
+            id,
+            pet_id,
+            content,
+            image,
+            likes,
+            comments,
             created_at,
             pet_profiles:pet_id (
-              id, 
-              name, 
-              species, 
-              breed, 
-              age, 
+              id,
+              name,
+              species,
+              breed,
+              age,
               personality,
               bio,
               profile_picture,
               followers,
-              following
+              following,
+              handle
             )
           `)
           .order('created_at', { ascending: false });
-          
+
         if (postsResponse.error) {
           throw postsResponse.error;
         }
-        
+
         if (!postsResponse.data || postsResponse.data.length === 0) {
           setPosts([]);
           setComments([]);
           setLoadingData(false);
           return;
         }
-        
+
         const postIds = postsResponse.data.map(post => post.id);
-        
+
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select(`
@@ -89,16 +92,18 @@ export const useFeedData = (userId?: string) => {
               name,
               species,
               breed,
-              profile_picture
+              profile_picture,
+              handle
             ),
             profiles:user_id (
               id,
               username,
-              avatar_url
+              avatar_url,
+              handle
             )
           `)
           .in('post_id', postIds);
-          
+
         if (commentsError) {
           console.error("Error fetching comments:", commentsError);
           toast({
@@ -106,23 +111,23 @@ export const useFeedData = (userId?: string) => {
             description: "Could not load comments. Some features may be limited.",
             variant: "destructive",
           });
-          
+
           const formattedPosts = mapPostsData(postsResponse.data);
           setPosts(formattedPosts);
           setComments([]);
           setLoadingData(false);
           return;
         }
-        
+
         const formattedPosts = mapPostsData(postsResponse.data);
         const formattedComments: Comment[] = [];
-        
+
         if (commentsData) {
           const typedCommentsData = commentsData as unknown as CommentData[];
-          
+
           typedCommentsData.forEach(comment => {
             if (!comment) return;
-            
+
             const formattedComment: Comment = {
               id: comment.id,
               postId: comment.post_id,
@@ -149,13 +154,14 @@ export const useFeedData = (userId?: string) => {
               userProfile: comment.user_id && comment.profiles ? {
                 id: comment.profiles.id,
                 username: comment.profiles.username,
-                avatarUrl: comment.profiles.avatar_url || undefined
+                avatarUrl: comment.profiles.avatar_url || undefined,
+                handle: comment.profiles.handle
               } : undefined
             };
             formattedComments.push(formattedComment);
           });
         }
-        
+
         setPosts(formattedPosts);
         setComments(formattedComments);
       } catch (error) {
@@ -171,7 +177,7 @@ export const useFeedData = (userId?: string) => {
         setLoadingData(false);
       }
     };
-    
+
     fetchData();
 
     const postsChannel = supabase
