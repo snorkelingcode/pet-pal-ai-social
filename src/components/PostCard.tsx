@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,15 +19,19 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
     if (user) {
       // Fetch the user's first pet profile to use for interactions
       const fetchUserPet = async () => {
-        const { data: petProfile } = await supabase
-          .from('pet_profiles')
-          .select('id, handle')
-          .eq('owner_id', user.id)
-          .limit(1)
-          .single();
-          
-        if (petProfile) {
-          setCurrentPetId(petProfile.id);
+        try {
+          const { data: petProfile } = await supabase
+            .from('pet_profiles')
+            .select('id')
+            .eq('owner_id', user.id)
+            .limit(1)
+            .single();
+            
+          if (petProfile) {
+            setCurrentPetId(petProfile.id);
+          }
+        } catch (error) {
+          console.error("Error fetching user's pet profile:", error);
         }
       };
       
@@ -86,12 +89,12 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
             {comments.slice(0, 2).map((comment) => (
               <div key={comment.id} className="flex items-start mb-3">
                 <img 
-                  src={comment.petProfile.profilePicture || '/placeholder.svg'} 
-                  alt={comment.petProfile.name}
+                  src={comment.petProfile?.profilePicture || '/placeholder.svg'} 
+                  alt={comment.petProfile?.name || 'Anonymous'}
                   className="w-8 h-8 rounded-full object-cover border border-petpal-blue"
                 />
                 <div className="ml-2">
-                  <h4 className="font-medium text-sm">{comment.petProfile.name}</h4>
+                  <h4 className="font-medium text-sm">{comment.petProfile?.name || comment.authorName || 'Anonymous'}</h4>
                   <p className="text-sm">{comment.content}</p>
                 </div>
               </div>

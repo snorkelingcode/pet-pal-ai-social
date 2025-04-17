@@ -68,6 +68,8 @@ const Profile = () => {
           return;
         }
         
+        const handle = petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
         const profile: PetProfile = {
           id: petData.id,
           ownerId: petData.owner_id,
@@ -81,7 +83,8 @@ const Profile = () => {
           createdAt: petData.created_at,
           followers: petData.followers || 0,
           following: petData.following || 0,
-          handle: petData.handle || petData.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          handle: handle,
+          profile_url: `/pet/${handle}`
         };
         
         setPetProfile(profile);
@@ -130,30 +133,35 @@ const Profile = () => {
       
       if (postsError) throw postsError;
 
-      const transformedPosts: Post[] = postsData.map(post => ({
-        id: post.id,
-        petId: post.pet_id,
-        content: post.content,
-        image: post.image,
-        likes: post.likes,
-        comments: post.comments,
-        createdAt: post.created_at,
-        petProfile: {
-          id: post.pet_profiles.id,
-          name: post.pet_profiles.name,
-          species: post.pet_profiles.species,
-          breed: post.pet_profiles.breed,
-          profilePicture: post.pet_profiles.profile_picture,
-          bio: post.pet_profiles.bio,
-          personality: post.pet_profiles.personality,
-          age: post.pet_profiles.age,
-          ownerId: post.pet_profiles.owner_id,
-          createdAt: post.pet_profiles.created_at,
-          followers: post.pet_profiles.followers,
-          following: post.pet_profiles.following,
-          handle: post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-        }
-      }));
+      const transformedPosts: Post[] = postsData.map(post => {
+        const handle = post.pet_profiles.handle || post.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        return {
+          id: post.id,
+          petId: post.pet_id,
+          content: post.content,
+          image: post.image,
+          likes: post.likes,
+          comments: post.comments,
+          createdAt: post.created_at,
+          petProfile: {
+            id: post.pet_profiles.id,
+            name: post.pet_profiles.name,
+            species: post.pet_profiles.species,
+            breed: post.pet_profiles.breed,
+            profilePicture: post.pet_profiles.profile_picture,
+            bio: post.pet_profiles.bio || '',
+            personality: post.pet_profiles.personality || [],
+            age: post.pet_profiles.age,
+            ownerId: post.pet_profiles.owner_id,
+            createdAt: post.pet_profiles.created_at,
+            followers: post.pet_profiles.followers || 0,
+            following: post.pet_profiles.following || 0,
+            handle: handle,
+            profile_url: `/pet/${handle}`
+          }
+        };
+      });
 
       setPosts(transformedPosts);
 
@@ -176,36 +184,59 @@ const Profile = () => {
         }
 
         if (commentsData) {
-          const formattedComments = commentsData.map(comment => ({
-            id: comment.id,
-            postId: comment.post_id,
-            content: comment.content,
-            createdAt: comment.created_at,
-            likes: comment.likes,
-            petId: comment.pet_id || undefined,
-            userId: comment.user_id || undefined,
-            petProfile: comment.pet_profiles ? {
-              id: comment.pet_profiles.id,
-              name: comment.pet_profiles.name,
-              species: comment.pet_profiles.species,
-              breed: comment.pet_profiles.breed,
-              profilePicture: comment.pet_profiles.profile_picture || undefined,
-              age: comment.pet_profiles.age,
-              personality: comment.pet_profiles.personality,
-              bio: comment.pet_profiles.bio,
-              ownerId: comment.pet_profiles.owner_id,
-              createdAt: comment.pet_profiles.created_at,
-              followers: comment.pet_profiles.followers,
-              following: comment.pet_profiles.following,
-              handle: comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
-            } : undefined,
-            userProfile: comment.profiles ? {
-              id: comment.profiles.id,
-              username: comment.profiles.username || 'Anonymous',
-              avatarUrl: comment.profiles.avatar_url,
-              handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
-            } : undefined
-          }));
+          const formattedComments: Comment[] = [];
+          
+          for (const comment of commentsData) {
+            let petProfile = undefined;
+            let userProfile = undefined;
+            
+            if (comment.pet_id && comment.pet_profiles) {
+              const handle = comment.pet_profiles.handle || comment.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+              petProfile = {
+                id: comment.pet_profiles.id,
+                name: comment.pet_profiles.name,
+                species: comment.pet_profiles.species,
+                breed: comment.pet_profiles.breed,
+                profilePicture: comment.pet_profiles.profile_picture || undefined,
+                age: comment.pet_profiles.age,
+                personality: comment.pet_profiles.personality || [],
+                bio: comment.pet_profiles.bio || '',
+                ownerId: comment.pet_profiles.owner_id,
+                createdAt: comment.pet_profiles.created_at,
+                followers: comment.pet_profiles.followers || 0,
+                following: comment.pet_profiles.following || 0,
+                handle: handle,
+                profile_url: `/pet/${handle}`
+              };
+            }
+            
+            if (comment.user_id && comment.profiles) {
+              try {
+                userProfile = {
+                  id: comment.profiles.id,
+                  username: comment.profiles.username || 'Anonymous',
+                  avatarUrl: comment.profiles.avatar_url,
+                  handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
+                };
+              } catch (err) {
+                console.error("Error processing user profile for comment:", err);
+              }
+            }
+            
+            formattedComments.push({
+              id: comment.id,
+              postId: comment.post_id,
+              content: comment.content,
+              createdAt: comment.created_at,
+              likes: comment.likes,
+              petId: comment.pet_id || undefined,
+              userId: comment.user_id || undefined,
+              authorName: comment.author_name,
+              authorHandle: comment.author_handle,
+              petProfile,
+              userProfile
+            });
+          }
           
           commentsMapping[post.id] = formattedComments;
         } else {
