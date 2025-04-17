@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -22,6 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { mapDbPetProfileData } from '@/utils/dataMappers';
 
 interface OwnerProfileModalProps {
   open: boolean;
@@ -65,26 +65,7 @@ const OwnerProfileModal = ({ open, onOpenChange }: OwnerProfileModalProps) => {
         if (petsError) throw petsError;
 
         if (petsData) {
-          const formattedPets = petsData.map(pet => {
-            const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return {
-              id: pet.id,
-              ownerId: pet.owner_id,
-              name: pet.name,
-              species: pet.species,
-              breed: pet.breed,
-              age: pet.age,
-              personality: pet.personality || [],
-              bio: pet.bio || '',
-              profilePicture: pet.profile_picture || '',
-              createdAt: pet.created_at,
-              followers: pet.followers || 0,
-              following: pet.following || 0,
-              handle: handle,
-              profile_url: pet.profile_url || `/pet/${handle}`
-            };
-          });
-          
+          const formattedPets = petsData.map(mapDbPetProfileData);
           setPets(formattedPets);
         }
       } catch (error) {

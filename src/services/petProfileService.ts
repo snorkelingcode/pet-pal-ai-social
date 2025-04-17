@@ -1,6 +1,6 @@
-
 import { PetProfile, AIPersona, DbPetProfile, DbAIPersona, mapDbPetProfileToPetProfile, mapDbAIPersonaToAIPersona } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { mapDbPetProfileData } from '@/utils/dataMappers';
 
 export const petProfileService = {
   // Get all pet profiles for a user
@@ -13,25 +13,7 @@ export const petProfileService = {
         
       if (error) throw error;
       
-      return (dbPetProfiles || []).map((pet) => {
-        const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        return {
-          id: pet.id,
-          ownerId: pet.owner_id,
-          name: pet.name,
-          species: pet.species,
-          breed: pet.breed,
-          age: pet.age,
-          personality: pet.personality || [],
-          bio: pet.bio || '',
-          profilePicture: pet.profile_picture || '',
-          createdAt: pet.created_at,
-          followers: pet.followers || 0,
-          following: pet.following || 0,
-          handle: handle,
-          profile_url: pet.profile_url || `/pet/${handle}`
-        };
-      });
+      return (dbPetProfiles || []).map(mapDbPetProfileData);
     } catch (error) {
       console.error('Error fetching user pet profiles:', error);
       throw error;
@@ -57,23 +39,7 @@ export const petProfileService = {
       
       if (!pet) return null;
       
-      const handle = pet.handle || pet.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      return {
-        id: pet.id,
-        ownerId: pet.owner_id,
-        name: pet.name,
-        species: pet.species,
-        breed: pet.breed,
-        age: pet.age,
-        personality: pet.personality || [],
-        bio: pet.bio || '',
-        profilePicture: pet.profile_picture || '',
-        createdAt: pet.created_at,
-        followers: pet.followers || 0,
-        following: pet.following || 0,
-        handle: handle,
-        profile_url: pet.profile_url || `/pet/${handle}`
-      };
+      return mapDbPetProfileData(pet);
     } catch (error) {
       console.error('Error fetching pet profile:', error);
       throw error;
@@ -117,22 +83,7 @@ export const petProfileService = {
       
       if (!data) throw new Error('No data returned from pet profile creation');
       
-      return {
-        id: data.id,
-        ownerId: data.owner_id,
-        name: data.name,
-        species: data.species,
-        breed: data.breed,
-        age: data.age,
-        personality: data.personality || [],
-        bio: data.bio || '',
-        profilePicture: data.profile_picture || '',
-        createdAt: data.created_at,
-        followers: data.followers || 0,
-        following: data.following || 0,
-        handle: data.handle,
-        profile_url: data.profile_url
-      };
+      return mapDbPetProfileData(data);
     } catch (error) {
       console.error('Error creating pet profile:', error);
       throw error;
@@ -154,7 +105,10 @@ export const petProfileService = {
       if (profileData.personality !== undefined) updates.personality = profileData.personality;
       if (profileData.bio !== undefined) updates.bio = profileData.bio;
       if (profileData.profilePicture !== undefined) updates.profile_picture = profileData.profilePicture;
-      if (profileData.handle !== undefined) updates.handle = profileData.handle;
+      if (profileData.handle !== undefined) {
+        updates.handle = profileData.handle;
+        updates.profile_url = `/pet/${profileData.handle}`;
+      }
       
       const { data, error } = await supabase
         .from('pet_profiles')
@@ -169,7 +123,7 @@ export const petProfileService = {
       
       if (!data) throw new Error('No data returned from pet profile update');
       
-      return mapDbPetProfileToPetProfile(data as DbPetProfile);
+      return mapDbPetProfileData(data);
     } catch (error) {
       console.error('Error updating pet profile:', error);
       throw error;

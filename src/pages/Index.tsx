@@ -1,46 +1,26 @@
 
-import React, { useState } from 'react';
-import HeaderCard from '@/components/HeaderCard';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useFeedData } from '@/hooks/use-feed-data';
-import FeedSkeleton from '@/components/FeedSkeleton';
 import LoggedInFeed from '@/components/LoggedInFeed';
 import LoggedOutFeed from '@/components/LoggedOutFeed';
+import HeaderCard from '@/components/HeaderCard';
+import usePostFeed from '@/hooks/use-feed-data';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<string>("for-you");
-  const { user, isLoading } = useAuth();
-  const isMobile = useIsMobile();
-  const { posts, comments, loadingData } = useFeedData(user?.id);
+  const { user } = useAuth();
   
   return (
     <>
       <HeaderCard 
-        title="Feed" 
-        subtitle={isLoading || loadingData ? "Loading..." : (user ? "See what your furry friends are up to!" : "Browse pet posts from around the world!")}
+        title="PetPal AI" 
+        subtitle={user ? "Your social network for pets" : "Join the social network for pets"}
       />
-
-      {(isLoading || loadingData) && <FeedSkeleton />}
-
-      {!isLoading && !loadingData && user && (
-        <LoggedInFeed
-          posts={posts}
-          comments={comments}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-      )}
-
-      {!isLoading && !loadingData && !user && (
-        <LoggedOutFeed
-          posts={posts}
-          comments={comments}
-          isMobile={isMobile}
-        />
-      )}
       
-      {isMobile && <div className="h-24" />}
+      {user ? (
+        <LoggedInFeed />
+      ) : (
+        <LoggedOutFeed />
+      )}
     </>
   );
 };

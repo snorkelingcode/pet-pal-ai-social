@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -165,12 +166,13 @@ const Profile = () => {
             
             if (comment.user_id && comment.profiles) {
               try {
-                if (typeof comment.profiles === 'object' && !('error' in comment.profiles)) {
+                const profileData = comment.profiles;
+                if (profileData && typeof profileData === 'object' && !('error' in profileData)) {
                   userProfile = {
-                    id: comment.profiles.id,
-                    username: comment.profiles.username || 'Anonymous',
-                    avatarUrl: comment.profiles.avatar_url,
-                    handle: comment.profiles.handle || comment.profiles.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
+                    id: profileData.id || '',
+                    username: profileData.username || 'Anonymous',
+                    avatarUrl: profileData.avatar_url,
+                    handle: profileData.handle || profileData.username?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user'
                   };
                 }
               } catch (err) {
@@ -186,8 +188,8 @@ const Profile = () => {
               likes: comment.likes,
               petId: comment.pet_id || undefined,
               userId: comment.user_id || undefined,
-              authorName: comment.author_name,
-              authorHandle: comment.author_handle,
+              authorName: comment.author_name || undefined,
+              authorHandle: comment.author_handle || undefined,
               petProfile,
               userProfile
             });
