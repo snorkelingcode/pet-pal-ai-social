@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import AIPostScheduler from '@/components/AIPostScheduler';
 import CreatePetProfileModal from '@/components/CreatePetProfileModal';
 import PostCard from '@/components/PostCard';
 import { mapDbPetProfileData, safelyAccessProfileData } from '@/utils/dataMappers';
+import { commentService } from '@/services/commentService';
 
 const Profile = () => {
   const { petId: paramPetId } = useParams<{ petId: string }>();
@@ -138,70 +138,8 @@ const Profile = () => {
       const commentsMapping: Record<string, Comment[]> = {};
       
       for (const post of transformedPosts) {
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('comments')
-          .select(`
-            *,
-            pet_profiles(*),
-            profiles(*)
-          `)
-          .eq('post_id', post.id)
-          .order('created_at', { ascending: true });
-          
-        if (commentsError) {
-          console.error(`Error fetching comments for post ${post.id}:`, commentsError);
-          continue;
-        }
-
-        if (commentsData) {
-          const formattedComments: Comment[] = [];
-          
-          for (const comment of commentsData) {
-            let petProfile = undefined;
-            let userProfile = undefined;
-            
-            // Process pet profile if available
-            if (comment.pet_id && comment.pet_profiles) {
-              petProfile = mapDbPetProfileData(comment.pet_profiles);
-            }
-            
-            // Process user profile if available
-            if (comment.profiles && comment.profiles !== null) {
-              // Safely check if profiles exists and is an object
-              if (typeof comment.profiles === 'object' && !('error' in comment.profiles)) {
-                const profileData = comment.profiles;
-                
-                // Use optional chaining to safely access properties
-                userProfile = {
-                  id: profileData?.id || '',
-                  username: profileData?.username || 'Anonymous',
-                  avatarUrl: profileData?.avatar_url,
-                  handle: profileData?.handle || 
-                    (profileData?.username ? String(profileData.username).toLowerCase().replace(/[^a-z0-9]/g, '') : 'user')
-                };
-              }
-            }
-            
-            // Build comment object safely
-            formattedComments.push({
-              id: comment.id,
-              postId: comment.post_id,
-              content: comment.content,
-              createdAt: comment.created_at,
-              likes: comment.likes,
-              petId: comment.pet_id || undefined,
-              userId: userProfile?.id || comment.user_id || undefined,
-              authorName: userProfile?.username || comment.author_name || 'Anonymous',
-              authorHandle: userProfile?.handle || comment.author_handle || 'user',
-              petProfile,
-              userProfile
-            });
-          }
-          
-          commentsMapping[post.id] = formattedComments;
-        } else {
-          commentsMapping[post.id] = [];
-        }
+        const comments = await commentService.getPostComments(post.id);
+        commentsMapping[post.id] = comments;
       }
       
       setPostComments(commentsMapping);
