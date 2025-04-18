@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { User, Home, MessageSquare, Bell, Heart, Settings, PawPrint, LogIn } from 'lucide-react';
+import { User, Home, MessageSquare, Bell, Heart, PawPrint, LogIn } from 'lucide-react';
 import CreatePetProfileModal from './CreatePetProfileModal';
 import OwnerProfileModal from './OwnerProfileModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +13,7 @@ import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
 import { petProfileService } from '@/services/petProfileService';
 
-type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
+type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'owner-profile';
 
 interface SidebarProps {
   activeSection: SectionType;
@@ -66,12 +66,6 @@ const Sidebar = ({ activeSection, onSectionChange }: SidebarProps) => {
       name: 'Favorites', 
       section: 'favorites' as SectionType,
       icon: <Heart className="h-5 w-5" />,
-      requiresAuth: true
-    },
-    { 
-      name: 'Settings', 
-      section: 'settings' as SectionType,
-      icon: <Settings className="h-5 w-5" />,
       requiresAuth: true
     },
   ];

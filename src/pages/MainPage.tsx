@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Index from './Index';
@@ -6,11 +5,10 @@ import Profile from './Profile';
 import Messages from './Messages';
 import Notifications from './Notifications';
 import Favorites from './Favorites';
-import Settings from './Settings';
 import OwnerProfile from './OwnerProfile';
 import { useLocation, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 
-type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'settings' | 'owner-profile';
+type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'owner-profile';
 
 export const MainPageContext = React.createContext<{
   activeSection: SectionType;
@@ -31,7 +29,7 @@ const MainPage = () => {
     if (petIdFromParams) {
       return 'profile';
     }
-    return ['feed', 'profile', 'messages', 'notifications', 'favorites', 'settings', 'owner-profile'].includes(hash) 
+    return ['feed', 'profile', 'messages', 'notifications', 'favorites', 'owner-profile'].includes(hash) 
       ? hash 
       : 'feed';
   };
@@ -73,8 +71,6 @@ const MainPage = () => {
         return <Notifications />;
       case 'favorites':
         return <Favorites />;
-      case 'settings':
-        return <Settings />;
       case 'owner-profile':
         return <OwnerProfile />;
       default:
