@@ -2,6 +2,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { Database } from '@/types/supabase';
+
+type CommentLikesTable = Database['public']['Tables']['comment_likes']['Row'];
 
 export const useCommentLikes = (commentId: string, petId?: string) => {
   const queryClient = useQueryClient();
@@ -11,15 +14,14 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
     queryFn: async () => {
       if (!petId) return false;
       
-      // Using generic query to bypass type checking
       const { data, error } = await supabase
         .from('comment_likes')
-        .select('id')
+        .select('*')
         .eq('comment_id', commentId)
         .eq('pet_id', petId)
-        .single();
+        .maybeSingle();
         
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error("Error checking comment like status:", error);
         return false;
       }
@@ -34,7 +36,6 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
       if (!petId) throw new Error("Must be logged in with a pet profile to like comments");
       
       if (hasLiked) {
-        // Using generic query to bypass type checking
         const { error } = await supabase
           .from('comment_likes')
           .delete()
@@ -44,13 +45,12 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
         if (error) throw error;
         return false;
       } else {
-        // Using generic query to bypass type checking
         const { error } = await supabase
           .from('comment_likes')
           .insert({
             comment_id: commentId,
             pet_id: petId
-          });
+          } as CommentLikesTable);
           
         if (error) {
           if (error.code === '23505') {

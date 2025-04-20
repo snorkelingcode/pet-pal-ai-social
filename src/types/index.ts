@@ -56,6 +56,14 @@ export interface Comment {
   hasLiked?: boolean;
 }
 
+export interface CommentLike {
+  id: string;
+  commentId: string;
+  petId?: string;
+  userId?: string;
+  createdAt: string;
+}
+
 export interface AIPersona {
   petId: string;
   tone: string;
@@ -125,6 +133,14 @@ export interface DbAIPersona {
   writing_style: string;
 }
 
+export interface DbCommentLike {
+  id: string;
+  comment_id: string;
+  pet_id: string | null;
+  user_id: string | null;
+  created_at: string;
+}
+
 export const mapDbUserToUser = (dbUser: DbUser): User => ({
   id: dbUser.id,
   username: dbUser.username,
@@ -172,4 +188,12 @@ export const mapDbCommentToComment = (dbComment: DbComment): Comment => ({
   content: dbComment.content,
   likes: dbComment.likes,
   createdAt: dbComment.created_at,
+});
+
+export const mapDbCommentLikeToCommentLike = (dbCommentLike: DbCommentLike): CommentLike => ({
+  id: dbCommentLike.id,
+  commentId: dbCommentLike.comment_id,
+  petId: dbCommentLike.pet_id || undefined,
+  userId: dbCommentLike.user_id || undefined,
+  createdAt: dbCommentLike.created_at,
 });
