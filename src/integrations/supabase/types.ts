@@ -669,6 +669,23 @@ export type Database = {
         Args: { "": string } | { "": unknown }
         Returns: unknown
       }
+      get_pet_memories: {
+        Args: { p_pet_id: string }
+        Returns: {
+          access_count: number | null
+          content: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          importance: number
+          last_accessed_at: string | null
+          memory_type: string
+          pet_id: string
+          related_pet_id: string | null
+          related_post_id: string | null
+          sentiment: number | null
+        }[]
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
