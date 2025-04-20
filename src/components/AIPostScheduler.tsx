@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,13 +7,55 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { petAIService } from '@/services/petAIService';
+import { petMemoryService } from '@/services/petMemoryService';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle } from 'lucide-react';
+import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle, Users, Brain } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
 import { useScheduledPosts } from '@/hooks/useScheduledPosts';
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const ScheduledPostItem = ({ post }: { post: any }) => {
+  return (
+    <div key={post.id} className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted">
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">
+            {new Date(post.scheduled_for).toLocaleString()}
+          </span>
+          <Badge 
+            variant={
+              post.status === 'completed' ? 'success' :
+              post.status === 'failed' ? 'destructive' :
+              post.status === 'processing' ? 'warning' :
+              'outline'
+            }
+            className="text-xs"
+          >
+            {post.status}
+          </Badge>
+        </div>
+        {post.posts && (
+          <p className="text-xs text-muted-foreground mt-1 truncate max-w-[300px]">
+            {post.posts.content}
+          </p>
+        )}
+      </div>
+      {post.posts && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.location.href = `/post/${post.posts.id}`}
+        >
+          View Post
+        </Button>
+      )}
+    </div>
+  );
+};
 
 interface AIPostSchedulerProps {
   petProfile: PetProfile;
@@ -28,21 +70,32 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [postingTime, setPostingTime] = useState("random");
   const [voiceExample, setVoiceExample] = useState("");
   const [samplePost, setSamplePost] = useState("");
+  const [petMemories, setPetMemories] = useState<any[]>([]);
+  const [petRelationships, setPetRelationships] = useState<any[]>([]);
+  const [useMemories, setUseMemories] = useState(true);
   const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
+
+  useEffect(() => {
+    if (open && petProfile.id) {
+      const fetchPetData = async () => {
+        const memories = await petMemoryService.getAllMemories(petProfile.id);
+        const relationships = await petMemoryService.getPetRelationships(petProfile.id);
+        setPetMemories(memories);
+        setPetRelationships(relationships);
+      };
+      
+      fetchPetData();
+    }
+  }, [open, petProfile.id]);
 
   const storeMemory = useCallback(async (content: string, type: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
-        body: {
-          action: 'store_memory',
-          petId: petProfile.id,
-          content,
-          type,
-        },
-      });
-
-      if (error) throw error;
-      return data;
+      const memory = await petMemoryService.storeMemory(
+        petProfile.id,
+        content,
+        type,
+      );
+      return memory;
     } catch (error) {
       console.error('Error storing memory:', error);
       return null;
@@ -51,21 +104,15 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
 
   const getRelevantMemories = useCallback(async (context: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
-        body: {
-          action: 'retrieve_relevant_memories',
-          petId: petProfile.id,
-          content: context,
-        },
-      });
-
-      if (error) throw error;
-      return data.memories;
+      if (!useMemories) return [];
+      
+      const memories = await petMemoryService.getRelevantMemories(petProfile.id, context);
+      return memories;
     } catch (error) {
       console.error('Error retrieving memories:', error);
       return [];
     }
-  }, [petProfile.id]);
+  }, [petProfile.id, useMemories]);
 
   const generateSamplePost = async () => {
     setLoading(true);
@@ -77,7 +124,8 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         petProfile.id, 
         null, // content
         null, // imageBase64
-        voiceExample // voiceExample
+        voiceExample, // voiceExample
+        relevantMemories
       );
       
       if (content) {
@@ -119,6 +167,12 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           title: "Posts Scheduled",
           description: `${postCount} posts have been scheduled for ${petProfile.name} using your voice example and pet's memories`,
         });
+        
+        await storeMemory(
+          `Scheduled ${postCount} ${frequency} posts with${includeImages ? '' : 'out'} images using voice example: "${voiceExample}"`,
+          'scheduling_event'
+        );
+        
         setOpen(false);
       }
     } catch (error) {
@@ -134,6 +188,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   };
 
   const isVoiceExampleProvided = voiceExample.trim().length > 0;
+  const hasPetMemories = petMemories.length > 0;
 
   return (
     <>
@@ -156,42 +211,22 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           <DialogHeader>
             <DialogTitle>Schedule AI Posts for {petProfile.name}</DialogTitle>
             <DialogDescription>
-              Let your pet create witty one-liners limited to 140 characters
+              Create personalized posts based on your pet's personality and memories
             </DialogDescription>
           </DialogHeader>
 
           {scheduledPosts && scheduledPosts.length > 0 && (
             <Card className="mb-4">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Scheduled Posts</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calendar size={16} />
+                  Scheduled Posts
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-1 max-h-40 overflow-y-auto">
                   {scheduledPosts.map((post) => (
-                    <div key={post.id} className="flex items-center justify-between text-sm">
-                      <div>
-                        <span>
-                          {new Date(post.scheduled_for).toLocaleString()}
-                        </span>
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                          post.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          post.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          post.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-muted'
-                        }`}>
-                          {post.status}
-                        </span>
-                      </div>
-                      {post.posts && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.location.href = `/post/${post.posts.id}`}
-                        >
-                          View Post
-                        </Button>
-                      )}
-                    </div>
+                    <ScheduledPostItem key={post.id} post={post} />
                   ))}
                 </div>
               </CardContent>
@@ -199,6 +234,100 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           )}
 
           <div className="grid gap-4 py-4">
+            {hasPetMemories && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Brain size={16} />
+                    Pet Memory System
+                  </CardTitle>
+                  <CardDescription>
+                    Your pet has {petMemories.length} memories that influence their personality
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch 
+                      id="use-memories" 
+                      checked={useMemories}
+                      onCheckedChange={setUseMemories}
+                    />
+                    <Label htmlFor="use-memories">
+                      Use pet memory system for more personalized posts
+                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">
+                      Top memories by importance:
+                    </Label>
+                    <div className="space-y-1">
+                      {petMemories
+                        .sort((a, b) => b.importance - a.importance)
+                        .slice(0, 3)
+                        .map(memory => (
+                          <div key={memory.id} className="text-xs bg-muted p-2 rounded">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">{memory.memoryType}</span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant={memory.sentiment > 0 ? "success" : memory.sentiment < 0 ? "destructive" : "outline"} className="text-[10px]">
+                                      Importance: {memory.importance}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Importance level determines how much this memory influences your pet's behavior</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <p className="truncate mt-1">{memory.content}</p>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {petRelationships.length > 0 && (
+                    <div className="mt-4">
+                      <Label className="text-sm text-muted-foreground">
+                        Pet relationships:
+                      </Label>
+                      <div className="flex gap-2 mt-1">
+                        {petRelationships.slice(0, 3).map(relationship => (
+                          <div key={relationship.id} className="flex flex-col items-center">
+                            <div className="relative">
+                              <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
+                                {relationship.related_pet?.profile_picture ? (
+                                  <img 
+                                    src={relationship.related_pet.profile_picture} 
+                                    alt={relationship.related_pet.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Users className="w-4 h-4 absolute inset-0 m-auto" />
+                                )}
+                              </div>
+                              <Badge 
+                                variant={
+                                  relationship.sentiment > 0.3 ? "success" :
+                                  relationship.sentiment < -0.3 ? "destructive" :
+                                  "outline"
+                                } 
+                                className="absolute -bottom-1 -right-1 text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+                                {relationship.familiarity}
+                              </Badge>
+                            </div>
+                            <span className="text-xs mt-1">{relationship.related_pet?.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -253,7 +382,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                     onClick={generateSamplePost} 
                     disabled={loading || !isVoiceExampleProvided}
                   >
-                    Generate Sample Post
+                    {loading ? "Generating..." : "Generate Sample Post"}
                   </Button>
                 </div>
               </CardContent>
