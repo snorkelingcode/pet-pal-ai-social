@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -14,8 +13,6 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Sentiment analysis function using simple keyword matching
-// For production, consider using a more sophisticated NLP service
 function analyzeSentiment(content: string): number {
   const positiveWords = ['happy', 'love', 'good', 'great', 'excellent', 'awesome', 'wonderful', 'best', 'fun', 'enjoy', 'like', 'friend'];
   const negativeWords = ['sad', 'hate', 'bad', 'terrible', 'awful', 'worst', 'dislike', 'angry', 'upset', 'annoyed', 'scared', 'worried'];
@@ -42,7 +39,6 @@ function analyzeSentiment(content: string): number {
   return score === 0 ? 0 : Math.max(-1, Math.min(1, score / 5));
 }
 
-// Calculate memory importance based on content, sentiment and relationships
 function calculateImportance(content: string, sentiment: number, relatedId?: string): number {
   let importance = 5; // Default midpoint importance (range 1-10)
   
@@ -247,6 +243,22 @@ serve(async (req) => {
               importance: newImportance
             })
             .eq('id', memory.id);
+        }
+        
+        return new Response(
+          JSON.stringify({ success: true, memories }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'get_all_memories': {
+        const { data: memories, error } = await supabase
+          .rpc('get_pet_memories', { p_pet_id: petId })
+          .select('*');
+
+        if (error) {
+          console.error("Error fetching memories:", error);
+          throw error;
         }
         
         return new Response(

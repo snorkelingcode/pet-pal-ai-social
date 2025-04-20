@@ -102,15 +102,18 @@ export const petMemoryService = {
   // Get all memories for a pet
   getAllMemories: async (petId: string): Promise<PetMemory[]> => {
     try {
-      const { data, error } = await supabase
-        .from('pet_memories')
-        .select('*')
-        .eq('pet_id', petId)
-        .order('importance', { ascending: false });
-        
+      // Use the edge function to get memories instead of direct database access
+      // This avoids type errors since pet_memories is not in the generated types
+      const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
+        body: {
+          action: 'get_all_memories',
+          petId,
+        },
+      });
+      
       if (error) throw error;
       
-      return (data || []).map(mapDbMemoryToPetMemory);
+      return (data?.memories || []).map(mapDbMemoryToPetMemory);
     } catch (error) {
       console.error('Error fetching all memories:', error);
       toast({

@@ -28,9 +28,9 @@ const ScheduledPostItem = ({ post }: { post: any }) => {
           </span>
           <Badge 
             variant={
-              post.status === 'completed' ? 'success' :
+              post.status === 'completed' ? 'default' :
               post.status === 'failed' ? 'destructive' :
-              post.status === 'processing' ? 'warning' :
+              post.status === 'processing' ? 'secondary' :
               'outline'
             }
             className="text-xs"
@@ -272,7 +272,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Badge variant={memory.sentiment > 0 ? "success" : memory.sentiment < 0 ? "destructive" : "outline"} className="text-[10px]">
+                                    <Badge variant={memory.sentiment > 0 ? "default" : memory.sentiment < 0 ? "destructive" : "outline"} className="text-[10px]">
                                       Importance: {memory.importance}
                                     </Badge>
                                   </TooltipTrigger>
@@ -310,7 +310,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                               </div>
                               <Badge 
                                 variant={
-                                  relationship.sentiment > 0.3 ? "success" :
+                                  relationship.sentiment > 0.3 ? "default" :
                                   relationship.sentiment < -0.3 ? "destructive" :
                                   "outline"
                                 } 
