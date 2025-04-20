@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HeaderCard from '@/components/HeaderCard';
 import { Button } from "@/components/ui/button";
@@ -211,7 +212,7 @@ const Profile = () => {
   };
   
   const handleEditProfile = () => {
-    navigate(`/settings?petId=${petProfile.id}`);
+    setIsEditProfileOpen(true);
   };
 
   if (loading) {

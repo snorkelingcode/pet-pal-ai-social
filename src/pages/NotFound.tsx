@@ -21,9 +21,14 @@ const NotFound = () => {
         </div>
         <h1 className="text-4xl font-bold mb-2">Oops! Page Not Found</h1>
         <p className="text-xl text-muted-foreground mb-6">Looks like this page ran away to chase a squirrel!</p>
-        <Button asChild className="bg-petpal-blue hover:bg-petpal-blue/90">
-          <Link to="/">Go Back Home</Link>
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button asChild className="bg-petpal-blue hover:bg-petpal-blue/90">
+            <Link to="/">Go Back Home</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/#profile">View My Pet Profiles</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
