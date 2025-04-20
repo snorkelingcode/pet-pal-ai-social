@@ -82,12 +82,10 @@ export const petAIService = {
     useRelationshipContext: boolean = true
   ): Promise<string | null> => {
     try {
-      // Get relevant memories if using relationship context
       let relevantMemories = [];
       let relationshipData = null;
       
       if (useRelationshipContext) {
-        // Fetch relationship data to add context to the message
         const { data: relationships, error: relationshipError } = await supabase.functions.invoke(
           'pet-ai-learning', 
           {
@@ -104,7 +102,6 @@ export const petAIService = {
           );
         }
         
-        // Fetch memories related to the target pet
         const { data: memoryResult, error: memoryError } = await supabase.functions.invoke(
           'pet-ai-learning',
           {
@@ -135,7 +132,6 @@ export const petAIService = {
 
       if (error) throw error;
       
-      // Store this interaction as a memory
       if (data.content) {
         await supabase.functions.invoke('pet-ai-learning', {
           body: {
@@ -233,7 +229,6 @@ export const petAIService = {
         
       if (error) throw error;
       
-      // Store this post as a memory for the pet
       await supabase.functions.invoke('pet-ai-learning', {
         body: {
           action: 'store_memory',
@@ -289,11 +284,9 @@ export const petAIService = {
         every2Minutes = false,
       } = options || {};
 
-      // If every 2 minutes is requested, override everything else:
       if (every2Minutes) {
         const now = new Date();
         const scheduledPosts = [];
-        // Let's schedule one post for every 2 minutes for the next 10 posts
         for (let i = 0; i < 10; i++) {
           const scheduledDate = new Date(now.getTime() + i * 2 * 60 * 1000);
           scheduledPosts.push({
@@ -306,7 +299,7 @@ export const petAIService = {
           });
         }
 
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('scheduled_posts')
           .insert(scheduledPosts);
 
@@ -327,14 +320,14 @@ export const petAIService = {
         voiceExample,
         memories
       );
+      
       if (!initialPost) {
         throw new Error('Failed to create initial post');
       }
       
       const now = new Date();
       const scheduledPosts = [];
-      const firstDayPosts = Math.max(0, numberOfPosts - 1); // Subtract 1 for the initial post
-      // Schedule remaining posts for the first day
+      const firstDayPosts = Math.max(0, numberOfPosts - 1);
       for (let i = 0; i < firstDayPosts; i++) {
         let scheduledDate = new Date(now);
         if (postingTime === 'morning') {
@@ -355,13 +348,11 @@ export const petAIService = {
           status: 'pending'
         });
       }
-      // Schedule posts for subsequent days
       for (let i = 1; i < 7; i++) {
         for (let j = 0; j < numberOfPosts; j++) {
           let scheduledDate = new Date(now);
           scheduledDate.setDate(scheduledDate.getDate() + i);
           if (frequency === 'daily') {
-            // Keep the date as is
           } else if (frequency === 'weekly') {
             scheduledDate.setDate(scheduledDate.getDate() + (i * 7));
           } else {
@@ -414,7 +405,6 @@ export const petAIService = {
     postAuthorPetId: string
   ): Promise<string | null> => {
     try {
-      // First, let's get memories related to this post or its author
       const { data: memoriesResult, error: memoriesError } = await supabase.functions.invoke(
         'pet-ai-learning',
         {
@@ -428,7 +418,6 @@ export const petAIService = {
       
       const relevantMemories = memoriesError ? [] : (memoriesResult?.memories || []);
       
-      // Get relationship data with the post author
       const { data: relationshipResult, error: relationshipError } = await supabase.functions.invoke(
         'pet-ai-learning',
         {
@@ -444,7 +433,6 @@ export const petAIService = {
         : (relationshipResult?.relationships || [])
             .find((r: any) => r.related_pet_id === postAuthorPetId);
       
-      // Call the AI agent to generate a comment response
       const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
         body: {
           action: 'generate_post_comment',
@@ -459,7 +447,6 @@ export const petAIService = {
       
       if (error) throw error;
       
-      // Store this interaction as a memory
       if (data.content) {
         await supabase.functions.invoke('pet-ai-learning', {
           body: {
