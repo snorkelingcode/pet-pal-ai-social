@@ -127,6 +127,14 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     return name.charAt(0).toUpperCase();
   };
 
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="w-full max-w-[600px] p-4 mb-4 bg-card rounded-lg shadow-sm border relative">
       <div className="flex items-start mb-3">
@@ -224,9 +232,11 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                 <h4 className="font-medium text-sm">
                   {comment.petProfile ? comment.petProfile.name : comment.userProfile?.username}
                 </h4>
-                <p className="text-xs text-muted-foreground mb-1">
-                  @{comment.petProfile ? comment.petProfile.handle : comment.userProfile?.username?.toLowerCase()}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <span>@{comment.petProfile ? comment.petProfile.handle : comment.userProfile?.username?.toLowerCase()}</span>
+                  <span>•</span>
+                  <span>{formatDate(comment.createdAt)}</span>
+                </div>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto">
@@ -235,7 +245,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                   <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto ml-3">
                     <MessageCircleReply className="h-4 w-4" />
                   </Button>
-                  <span className="ml-auto">{new Date(comment.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
