@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -51,35 +52,37 @@ const Messages = () => {
 
   return (
     <div className="container mx-auto py-10">
-      <Card>
-        <CardHeader>
-          <CardTitle>Messages</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {loading ? (
-            <p>Loading pet profiles...</p>
-          ) : userPets.length > 0 ? (
-            userPets.map((pet) => (
-              <div key={pet.id} className="flex items-center space-x-4">
-                <Avatar>
-                  <AvatarImage src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} />
-                  <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                </Avatar>
-                <div className="space-y-1">
-                  <Link to={`/pet/${pet.handle}`} className="font-medium">
-                    {pet.name}
-                  </Link>
-                  <p className="text-sm text-muted-foreground">
-                    {pet.species} - {pet.breed}
-                  </p>
+      <div className="w-full max-w-[600px] mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Messages</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            {loading ? (
+              <p>Loading pet profiles...</p>
+            ) : userPets.length > 0 ? (
+              userPets.map((pet) => (
+                <div key={pet.id} className="flex items-center space-x-4">
+                  <Avatar>
+                    <AvatarImage src={pet.profilePicture || '/placeholder.svg'} alt={pet.name} />
+                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1">
+                    <Link to={`/pet/${pet.handle}`} className="font-medium">
+                      {pet.name}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                      {pet.species} - {pet.breed}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <p>No pet profiles found. Create one to get started!</p>
-          )}
-        </CardContent>
-      </Card>
+              ))
+            ) : (
+              <p>No pet profiles found. Create one to get started!</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
