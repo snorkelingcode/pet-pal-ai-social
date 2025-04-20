@@ -76,6 +76,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [petRelationships, setPetRelationships] = useState<any[]>([]);
   const [useMemories, setUseMemories] = useState(true);
   const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
+  const [serviceError, setServiceError] = useState(false);
 
   useEffect(() => {
     if (open && petProfile.id) {
@@ -87,6 +88,8 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       };
       
       fetchPetData();
+      // Reset service error when opening the modal
+      setServiceError(false);
     }
   }, [open, petProfile.id]);
 
@@ -135,10 +138,18 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         await storeMemory(content, 'generated_post');
       }
     } catch (error) {
-      console.error("Error generating sample post:", error);
+      console.error("Error generating AI post:", error);
+      
+      // Check if this is a service availability issue
+      if (error.message?.includes("non-2xx status code") || 
+          error.message?.includes("service") || 
+          error.name === "FunctionsHttpError") {
+        setServiceError(true);
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to generate sample post",
+        description: "AI service is currently unavailable. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -179,9 +190,17 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       }
     } catch (error) {
       console.error("Error scheduling posts:", error);
+      
+      // Check if this is a service availability issue
+      if (error.message?.includes("non-2xx status code") || 
+          error.message?.includes("service") || 
+          error.name === "FunctionsHttpError") {
+        setServiceError(true);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to schedule posts",
+        description: "AI service is currently unavailable. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -209,262 +228,273 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-full max-w-2xl p-0 gap-0">
-          <ScrollArea className="max-h-[80vh]">
-            <div className="p-6">
-              <DialogHeader>
-                <DialogTitle>Schedule AI Posts for {petProfile.name}</DialogTitle>
-                <DialogDescription>
-                  Create personalized posts based on your pet's personality and memories
-                </DialogDescription>
-              </DialogHeader>
+        <DialogContent className="w-full max-w-2xl p-0 gap-0 h-auto max-h-[90vh] overflow-hidden">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Schedule AI Posts for {petProfile.name}</DialogTitle>
+            <DialogDescription>
+              Create personalized posts based on your pet's personality and memories
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-8rem)] overflow-y-auto">
+            <div className="space-y-4 py-4">
+              {serviceError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    The AI service is currently unavailable. This could be due to high demand or maintenance.
+                    Please try again later.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-              <div className="space-y-4 py-4">
-                {scheduledPosts && scheduledPosts.length > 0 && (
-                  <Card className="mb-4">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Calendar size={16} />
-                        Scheduled Posts
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="h-40">
-                        <div className="space-y-1">
-                          {scheduledPosts.map((post) => (
-                            <ScheduledPostItem key={post.id} post={post} />
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {hasPetMemories && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Brain size={16} />
-                        Pet Memory System
-                      </CardTitle>
-                      <CardDescription>
-                        Your pet has {petMemories.length} memories that influence their personality
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <Switch 
-                          id="use-memories" 
-                          checked={useMemories}
-                          onCheckedChange={setUseMemories}
-                        />
-                        <Label htmlFor="use-memories">
-                          Use pet memory system for more personalized posts
-                        </Label>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">
-                          Top memories by importance:
-                        </Label>
-                        <ScrollArea className="h-32">
-                          <div className="space-y-1">
-                            {petMemories
-                              .sort((a, b) => b.importance - a.importance)
-                              .slice(0, 3)
-                              .map(memory => (
-                                <div key={memory.id} className="text-xs bg-muted p-2 rounded">
-                                  <div className="flex justify-between items-center">
-                                    <span className="font-medium">{memory.memoryType}</span>
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger>
-                                          <Badge variant={memory.sentiment > 0 ? "default" : memory.sentiment < 0 ? "destructive" : "outline"} className="text-[10px]">
-                                            Importance: {memory.importance}
-                                          </Badge>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Importance level determines how much this memory influences your pet's behavior</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                  <p className="truncate mt-1">{memory.content}</p>
-                                </div>
-                              ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-
-                      {petRelationships.length > 0 && (
-                        <div>
-                          <Label className="text-sm text-muted-foreground">
-                            Pet relationships:
-                          </Label>
-                          <div className="flex gap-2 mt-1 flex-wrap">
-                            {petRelationships.slice(0, 3).map(relationship => (
-                              <div key={relationship.id} className="flex flex-col items-center">
-                                <div className="relative">
-                                  <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
-                                    {relationship.related_pet?.profile_picture ? (
-                                      <img 
-                                        src={relationship.related_pet.profile_picture} 
-                                        alt={relationship.related_pet.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <Users className="w-4 h-4 absolute inset-0 m-auto" />
-                                    )}
-                                  </div>
-                                  <Badge 
-                                    variant={
-                                      relationship.sentiment > 0.3 ? "default" :
-                                      relationship.sentiment < -0.3 ? "destructive" :
-                                      "outline"
-                                    } 
-                                    className="absolute -bottom-1 -right-1 text-[10px] w-4 h-4 p-0 flex items-center justify-center">
-                                    {relationship.familiarity}
-                                  </Badge>
-                                </div>
-                                <span className="text-xs mt-1">{relationship.related_pet?.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <MessageCircle size={16} />
-                      Voice & Context Example
-                    </CardTitle>
-                    <CardDescription>
-                      This is the most important part - provide a sample that will set the context and voice
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Textarea 
-                        id="voice-example"
-                        placeholder="Example: 'Rito has been getting in lots of trouble lately and so has MoMo. Their legal fees are more expensive than our house!'"
-                        value={voiceExample}
-                        onChange={(e) => {
-                          if (e.target.value.length <= 140) {
-                            setVoiceExample(e.target.value);
-                            setSamplePost("");
-                          }
-                        }}
-                        className="min-h-[100px] resize-none"
-                        maxLength={140}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {140 - voiceExample.length} characters remaining. Write a post that captures your pet's voice and establishes specific context.
-                      </p>
-                    </div>
-
-                    {!isVoiceExampleProvided && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          A voice example is strongly recommended. Without it, generated posts will be generic.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {samplePost && (
-                      <Alert className="bg-muted">
-                        <AlertDescription>
-                          <strong>Sample post:</strong> {samplePost}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    <div className="flex justify-end">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={generateSamplePost} 
-                        disabled={loading || !isVoiceExampleProvided}
-                      >
-                        {loading ? "Generating..." : "Generate Sample Post"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
+              {scheduledPosts && scheduledPosts.length > 0 && (
+                <Card className="mb-4">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Calendar size={16} />
-                      Posting Schedule
+                      Scheduled Posts
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Number of posts to schedule: {postCount}</Label>
-                      <Slider 
-                        value={[postCount]} 
-                        min={1} 
-                        max={10} 
-                        step={1} 
-                        onValueChange={values => setPostCount(values[0])} 
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="frequency">Posting frequency</Label>
-                      <Select value={frequency} onValueChange={setFrequency}>
-                        <SelectTrigger id="frequency">
-                          <SelectValue placeholder="Select frequency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="random">Random</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="time">Best time to post</Label>
-                      <Select value={postingTime} onValueChange={setPostingTime}>
-                        <SelectTrigger id="time">
-                          <SelectValue placeholder="Select time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="morning">Morning (8 AM - 12 PM)</SelectItem>
-                          <SelectItem value="afternoon">Afternoon (12 PM - 5 PM)</SelectItem>
-                          <SelectItem value="evening">Evening (5 PM - 10 PM)</SelectItem>
-                          <SelectItem value="random">Random Times</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Switch 
-                        id="include-images" 
-                        checked={includeImages}
-                        onCheckedChange={setIncludeImages}
-                      />
-                      <Label htmlFor="include-images" className="flex items-center gap-2">
-                        <ImageIcon size={16} />
-                        Include images in posts
-                      </Label>
-                    </div>
+                  <CardContent>
+                    <ScrollArea className="h-40">
+                      <div className="space-y-1">
+                        {scheduledPosts.map((post) => (
+                          <ScheduledPostItem key={post.id} post={post} />
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </CardContent>
                 </Card>
-              </div>
+              )}
 
-              <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6">
-                <Button onClick={scheduleAIPosts} disabled={loading || !isVoiceExampleProvided}>
-                  {loading ? "Processing..." : "Schedule Posts"}
-                </Button>
-              </DialogFooter>
+              {hasPetMemories && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Brain size={16} />
+                      Pet Memory System
+                    </CardTitle>
+                    <CardDescription>
+                      Your pet has {petMemories.length} memories that influence their personality
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch 
+                        id="use-memories" 
+                        checked={useMemories}
+                        onCheckedChange={setUseMemories}
+                      />
+                      <Label htmlFor="use-memories">
+                        Use pet memory system for more personalized posts
+                      </Label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">
+                        Top memories by importance:
+                      </Label>
+                      <ScrollArea className="h-32">
+                        <div className="space-y-1">
+                          {petMemories
+                            .sort((a, b) => b.importance - a.importance)
+                            .slice(0, 3)
+                            .map(memory => (
+                              <div key={memory.id} className="text-xs bg-muted p-2 rounded">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-medium">{memory.memoryType}</span>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge variant={memory.sentiment > 0 ? "default" : memory.sentiment < 0 ? "destructive" : "outline"} className="text-[10px]">
+                                          Importance: {memory.importance}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Importance level determines how much this memory influences your pet's behavior</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                                <p className="truncate mt-1">{memory.content}</p>
+                              </div>
+                            ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+
+                    {petRelationships.length > 0 && (
+                      <div>
+                        <Label className="text-sm text-muted-foreground">
+                          Pet relationships:
+                        </Label>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          {petRelationships.slice(0, 3).map(relationship => (
+                            <div key={relationship.id} className="flex flex-col items-center">
+                              <div className="relative">
+                                <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
+                                  {relationship.related_pet?.profile_picture ? (
+                                    <img 
+                                      src={relationship.related_pet.profile_picture} 
+                                      alt={relationship.related_pet.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <Users className="w-4 h-4 absolute inset-0 m-auto" />
+                                  )}
+                                </div>
+                                <Badge 
+                                  variant={
+                                    relationship.sentiment > 0.3 ? "default" :
+                                    relationship.sentiment < -0.3 ? "destructive" :
+                                    "outline"
+                                  } 
+                                  className="absolute -bottom-1 -right-1 text-[10px] w-4 h-4 p-0 flex items-center justify-center">
+                                  {relationship.familiarity}
+                                </Badge>
+                              </div>
+                              <span className="text-xs mt-1">{relationship.related_pet?.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MessageCircle size={16} />
+                    Voice & Context Example
+                  </CardTitle>
+                  <CardDescription>
+                    This is the most important part - provide a sample that will set the context and voice
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Textarea 
+                      id="voice-example"
+                      placeholder="Example: 'Rito has been getting in lots of trouble lately and so has MoMo. Their legal fees are more expensive than our house!'"
+                      value={voiceExample}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 140) {
+                          setVoiceExample(e.target.value);
+                          setSamplePost("");
+                        }
+                      }}
+                      className="min-h-[100px] resize-none"
+                      maxLength={140}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {140 - voiceExample.length} characters remaining. Write a post that captures your pet's voice and establishes specific context.
+                    </p>
+                  </div>
+
+                  {!isVoiceExampleProvided && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        A voice example is strongly recommended. Without it, generated posts will be generic.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {samplePost && (
+                    <Alert className="bg-muted">
+                      <AlertDescription>
+                        <strong>Sample post:</strong> {samplePost}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={generateSamplePost} 
+                      disabled={loading || !isVoiceExampleProvided || serviceError}
+                    >
+                      {loading ? "Generating..." : "Generate Sample Post"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar size={16} />
+                    Posting Schedule
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Number of posts to schedule: {postCount}</Label>
+                    <Slider 
+                      value={[postCount]} 
+                      min={1} 
+                      max={10} 
+                      step={1} 
+                      onValueChange={values => setPostCount(values[0])} 
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="frequency">Posting frequency</Label>
+                    <Select value={frequency} onValueChange={setFrequency}>
+                      <SelectTrigger id="frequency">
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="random">Random</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Best time to post</Label>
+                    <Select value={postingTime} onValueChange={setPostingTime}>
+                      <SelectTrigger id="time">
+                        <SelectValue placeholder="Select time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="morning">Morning (8 AM - 12 PM)</SelectItem>
+                        <SelectItem value="afternoon">Afternoon (12 PM - 5 PM)</SelectItem>
+                        <SelectItem value="evening">Evening (5 PM - 10 PM)</SelectItem>
+                        <SelectItem value="random">Random Times</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="include-images" 
+                      checked={includeImages}
+                      onCheckedChange={setIncludeImages}
+                    />
+                    <Label htmlFor="include-images" className="flex items-center gap-2">
+                      <ImageIcon size={16} />
+                      Include images in posts
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6">
+              <Button 
+                onClick={scheduleAIPosts} 
+                disabled={loading || !isVoiceExampleProvided || serviceError}
+              >
+                {loading ? "Processing..." : "Schedule Posts"}
+              </Button>
+            </DialogFooter>
           </ScrollArea>
         </DialogContent>
       </Dialog>

@@ -8,37 +8,120 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://syvxflddmryziujvzlxk.supabase.co";
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkServiceAvailability(serviceName: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .rpc('is_ai_service_available', { service_name: serviceName });
+  try {
+    // Use a more specific and safer query to avoid ambiguity
+    const { data, error } = await supabase
+      .from('ai_service_status')
+      .select('is_available, failure_count, last_failure, reset_after')
+      .eq('service_name', serviceName)
+      .single();
+      
+    if (error) {
+      console.error('Error checking service availability:', error);
+      return true; // Default to available if there's an error checking
+    }
     
-  if (error) {
-    console.error('Error checking service availability:', error);
-    return false;
+    if (!data) {
+      return true;
+    }
+    
+    // If service is marked as unavailable but the reset time has passed, make it available
+    if (!data.is_available && data.last_failure && data.reset_after) {
+      const resetTime = new Date(data.last_failure);
+      const resetInterval = parsePgInterval(data.reset_after);
+      resetTime.setMinutes(resetTime.getMinutes() + resetInterval.minutes);
+      
+      if (new Date() > resetTime) {
+        // Time to reset the service
+        await supabase
+          .from('ai_service_status')
+          .update({ 
+            is_available: true, 
+            failure_count: 0 
+          })
+          .eq('service_name', serviceName);
+          
+        return true;
+      }
+    }
+    
+    return data.is_available;
+  } catch (error) {
+    console.error('Error in checkServiceAvailability:', error);
+    return true; // Default to available if there's an error
   }
-  
-  return data || false;
+}
+
+// Helper function to parse PostgreSQL interval type
+function parsePgInterval(pgInterval: string): { minutes: number } {
+  // Simple parser that extracts minutes from a format like "00:10:00"
+  try {
+    const parts = pgInterval.split(':');
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    
+    return {
+      minutes: (hours * 60) + minutes
+    };
+  } catch (e) {
+    console.error('Error parsing interval:', e);
+    return { minutes: 10 }; // Default to 10 minutes
+  }
 }
 
 async function recordSuccess(serviceName: string) {
-  const { error } = await supabase
-    .rpc('record_ai_service_success', { service_name: serviceName });
-  
-  if (error) {
-    console.error('Error recording success:', error);
+  try {
+    const { error } = await supabase
+      .from('ai_service_status')
+      .update({ 
+        last_success: new Date().toISOString(),
+        is_available: true 
+      })
+      .eq('service_name', serviceName);
+    
+    if (error) {
+      console.error('Error recording success:', error);
+    }
+  } catch (error) {
+    console.error('Error in recordSuccess:', error);
   }
 }
 
 async function recordFailure(serviceName: string) {
-  const { error } = await supabase
-    .rpc('record_ai_service_failure', { service_name: serviceName });
-  
-  if (error) {
-    console.error('Error recording failure:', error);
+  try {
+    // Get current failure count
+    const { data, error } = await supabase
+      .from('ai_service_status')
+      .select('failure_count, reset_after')
+      .eq('service_name', serviceName)
+      .single();
+      
+    if (error) {
+      console.error('Error getting failure count:', error);
+      return;
+    }
+    
+    // Determine new failure count and availability
+    const newFailureCount = (data?.failure_count || 0) + 1;
+    const isAvailable = newFailureCount < 5; // Disable after 5 consecutive failures
+    
+    // Update the service status
+    await supabase
+      .from('ai_service_status')
+      .update({
+        failure_count: newFailureCount,
+        last_failure: new Date().toISOString(),
+        is_available: isAvailable
+      })
+      .eq('service_name', serviceName);
+    
+  } catch (error) {
+    console.error('Error in recordFailure:', error);
   }
 }
 
@@ -52,10 +135,23 @@ serve(async (req) => {
     // Check if the service is available
     const isAvailable = await checkServiceAvailability('pet-ai-agent');
     if (!isAvailable) {
-      throw new Error("Service is currently unavailable due to too many failures");
+      return new Response(JSON.stringify({
+        error: "AI service is temporarily unavailable due to technical issues. Please try again later."
+      }), { 
+        status: 503, // Service Unavailable
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const { action, petId, imageBase64, content, targetPetId, voiceExample, relevantMemories, postId, postContent, authorPetId, relationshipData } = await req.json();
+    // Extract the request data
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      throw new Error("Invalid JSON request: " + error.message);
+    }
+
+    const { action, petId, imageBase64, content, targetPetId, voiceExample, relevantMemories, postId, postContent, authorPetId, relationshipData } = requestData;
     
     if (!petId) {
       throw new Error("No pet ID provided");
