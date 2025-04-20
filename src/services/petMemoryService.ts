@@ -17,6 +17,39 @@ export interface PetMemory {
   similarity?: number;
 }
 
+export interface PetRelationship {
+  id: string;
+  petId: string;
+  relatedPetId: string;
+  relationshipType: string;
+  familiarity: number;
+  sentiment: number;
+  lastInteractionAt: string;
+  interactionHistory?: Array<{
+    interactionType: string;
+    timestamp: string;
+    sentiment: number;
+    summary: string;
+  }>;
+  relatedPet?: {
+    id: string;
+    name: string;
+    species: string;
+    breed: string;
+    profilePicture?: string;
+    handle: string;
+  };
+}
+
+export interface PersonalityEvolution {
+  toneShifts: Record<string, number>;
+  emergingInterests: Record<string, number>;
+  fadingInterests: Record<string, number>;
+  emergingQuirks: Record<string, number>;
+  lastEvolution: string | null;
+  evolutionStage: number;
+}
+
 // Map database response to frontend model
 const mapDbMemoryToPetMemory = (dbMemory: any): PetMemory => ({
   id: dbMemory.id,
@@ -32,6 +65,47 @@ const mapDbMemoryToPetMemory = (dbMemory: any): PetMemory => ({
   relatedPostId: dbMemory.related_post_id,
   similarity: dbMemory.similarity,
 });
+
+const mapDbRelationshipToPetRelationship = (dbRelationship: any): PetRelationship => ({
+  id: dbRelationship.id,
+  petId: dbRelationship.pet_id,
+  relatedPetId: dbRelationship.related_pet_id,
+  relationshipType: dbRelationship.relationship_type,
+  familiarity: dbRelationship.familiarity,
+  sentiment: dbRelationship.sentiment || 0,
+  lastInteractionAt: dbRelationship.last_interaction_at,
+  interactionHistory: dbRelationship.interaction_history || [],
+  relatedPet: dbRelationship.related_pet ? {
+    id: dbRelationship.related_pet.id,
+    name: dbRelationship.related_pet.name,
+    species: dbRelationship.related_pet.species,
+    breed: dbRelationship.related_pet.breed,
+    profilePicture: dbRelationship.related_pet.profile_picture,
+    handle: dbRelationship.related_pet.handle,
+  } : undefined,
+});
+
+const mapDbPersonalityEvolution = (dbEvolution: any): PersonalityEvolution => {
+  if (!dbEvolution) {
+    return {
+      toneShifts: {},
+      emergingInterests: {},
+      fadingInterests: {},
+      emergingQuirks: {},
+      lastEvolution: null,
+      evolutionStage: 1
+    };
+  }
+  
+  return {
+    toneShifts: dbEvolution.tone_shifts || {},
+    emergingInterests: dbEvolution.emerging_interests || {},
+    fadingInterests: dbEvolution.fading_interests || {},
+    emergingQuirks: dbEvolution.emerging_quirks || {},
+    lastEvolution: dbEvolution.last_evolution || null,
+    evolutionStage: dbEvolution.evolution_stage || 1
+  };
+};
 
 export const petMemoryService = {
   // Store a new memory for a pet
@@ -102,8 +176,7 @@ export const petMemoryService = {
   // Get all memories for a pet
   getAllMemories: async (petId: string): Promise<PetMemory[]> => {
     try {
-      // Use the edge function to get memories instead of direct database access
-      // This avoids type errors since pet_memories is not in the generated types
+      // Use the edge function to get memories
       const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
         body: {
           action: 'get_all_memories',
@@ -126,7 +199,7 @@ export const petMemoryService = {
   },
   
   // Get pet relationships
-  getPetRelationships: async (petId: string): Promise<any[]> => {
+  getPetRelationships: async (petId: string): Promise<PetRelationship[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
         body: {
@@ -137,7 +210,7 @@ export const petMemoryService = {
 
       if (error) throw error;
       
-      return data?.relationships || [];
+      return (data?.relationships || []).map(mapDbRelationshipToPetRelationship);
     } catch (error) {
       console.error('Error fetching relationships:', error);
       toast({
@@ -146,6 +219,37 @@ export const petMemoryService = {
         variant: 'destructive',
       });
       return [];
+    }
+  },
+  
+  // Get personality evolution data
+  getPersonalityEvolution: async (petId: string): Promise<PersonalityEvolution> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('pet-ai-learning', {
+        body: {
+          action: 'get_personality_evolution',
+          petId,
+        },
+      });
+
+      if (error) throw error;
+      
+      return mapDbPersonalityEvolution(data?.evolution);
+    } catch (error) {
+      console.error('Error fetching personality evolution:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch personality evolution data',
+        variant: 'destructive',
+      });
+      return {
+        toneShifts: {},
+        emergingInterests: {},
+        fadingInterests: {},
+        emergingQuirks: {},
+        lastEvolution: null,
+        evolutionStage: 1
+      };
     }
   }
 };
