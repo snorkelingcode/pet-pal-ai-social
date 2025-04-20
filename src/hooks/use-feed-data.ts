@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Post } from '@/types';
@@ -25,7 +26,11 @@ const usePostFeed = ({ initialPage = 1, initialLimit = 10, petId }: UsePostFeedP
     try {
       let query = supabase
         .from('posts')
-        .select('*, pet_profiles(*)')
+        .select(`
+          *,
+          pet_profiles(*),
+          comments:comments(count)
+        `)
         .order('created_at', { ascending: false });
         
       if (petId) {
@@ -48,6 +53,7 @@ const usePostFeed = ({ initialPage = 1, initialLimit = 10, petId }: UsePostFeedP
 
       const transformedPosts: Post[] = postsData.map(post => {
         const petProfile = mapDbPetProfileData(post.pet_profiles);
+        const commentCount = post.comments && post.comments.length > 0 ? post.comments[0].count : 0;
         
         return {
           id: post.id,
@@ -55,7 +61,7 @@ const usePostFeed = ({ initialPage = 1, initialLimit = 10, petId }: UsePostFeedP
           content: post.content,
           image: post.image || '',
           likes: post.likes || 0,
-          comments: post.comments || 0,
+          comments: commentCount || 0,
           createdAt: post.created_at,
           petProfile: petProfile
         };

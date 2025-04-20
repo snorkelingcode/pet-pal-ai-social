@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import PostCardBase from './PostCardBase';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PostCardProps {
   post: Post;
@@ -14,6 +16,31 @@ interface PostCardProps {
 const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
   const { user } = useAuth();
   const [currentPetId, setCurrentPetId] = useState<string | undefined>();
+  const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    // Listen for comment changes on this post
+    const commentChannel = supabase
+      .channel(`post-comments-${post.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'comments',
+          filter: `post_id=eq.${post.id}`
+        }, 
+        (payload) => {
+          // When a comment changes, invalidate query cache to refresh data
+          queryClient.invalidateQueries({ queryKey: ['comments', post.id] });
+          queryClient.invalidateQueries({ queryKey: ['posts'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(commentChannel);
+    };
+  }, [post.id, queryClient]);
   
   useEffect(() => {
     if (user) {
@@ -40,6 +67,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
   }, [user]);
   
   if (!user && isReadOnly) {
+    // Display read-only post for non-authenticated users
     return (
       <div onClick={() => {}} className="w-full max-w-[600px] p-4 mb-4 bg-card rounded-lg shadow-sm border relative">
         <div className="flex items-start mb-3">
@@ -73,7 +101,7 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span>{post.comments}</span>
+            <span>{comments.length || post.comments}</span>
           </div>
           <Link 
             to="/login" 
