@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle } from 'l
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
+import { useScheduledPosts } from '@/hooks/useScheduledPosts';
 
 interface AIPostSchedulerProps {
   petProfile: PetProfile;
@@ -28,6 +28,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [postingTime, setPostingTime] = useState("random");
   const [voiceExample, setVoiceExample] = useState("");
   const [samplePost, setSamplePost] = useState("");
+  const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
 
   const storeMemory = useCallback(async (content: string, type: string) => {
     try {
@@ -72,7 +73,6 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
     try {
       const relevantMemories = await getRelevantMemories(voiceExample);
       
-      // Fix: Pass the correct number of arguments to the generatePost function
       const content = await petAIService.generatePost(
         petProfile.id, 
         null, // content
@@ -110,7 +110,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
           includeImages,
           voiceExample,
           contentTheme: 'specific-context',
-          memories: relevantMemories, // Now this property is defined in the type
+          memories: relevantMemories,
         }
       );
       
@@ -144,16 +144,59 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       >
         <Bot size={16} />
         Schedule AI Posts
+        {scheduledPosts?.length > 0 && (
+          <span className="ml-2 px-2 py-0.5 bg-muted rounded-full text-xs">
+            {scheduledPosts.length}
+          </span>
+        )}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-2xl h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Schedule AI Posts for {petProfile.name}</DialogTitle>
             <DialogDescription>
               Let your pet create witty one-liners limited to 140 characters
             </DialogDescription>
           </DialogHeader>
+
+          {scheduledPosts && scheduledPosts.length > 0 && (
+            <Card className="mb-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Scheduled Posts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {scheduledPosts.map((post) => (
+                    <div key={post.id} className="flex items-center justify-between text-sm">
+                      <div>
+                        <span>
+                          {new Date(post.scheduled_for).toLocaleString()}
+                        </span>
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                          post.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          post.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          post.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-muted'
+                        }`}>
+                          {post.status}
+                        </span>
+                      </div>
+                      {post.posts && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.location.href = `/post/${post.posts.id}`}
+                        >
+                          View Post
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid gap-4 py-4">
             <Card>

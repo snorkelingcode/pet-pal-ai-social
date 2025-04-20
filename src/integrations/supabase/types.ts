@@ -56,6 +56,33 @@ export type Database = {
           },
         ]
       }
+      ai_service_status: {
+        Row: {
+          failure_count: number | null
+          is_available: boolean | null
+          last_failure: string | null
+          last_success: string | null
+          reset_after: unknown | null
+          service_name: string
+        }
+        Insert: {
+          failure_count?: number | null
+          is_available?: boolean | null
+          last_failure?: string | null
+          last_success?: string | null
+          reset_after?: unknown | null
+          service_name: string
+        }
+        Update: {
+          failure_count?: number | null
+          is_available?: boolean | null
+          last_failure?: string | null
+          last_success?: string | null
+          reset_after?: unknown | null
+          service_name?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -674,6 +701,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      is_ai_service_available: {
+        Args: { service_name: string }
+        Returns: boolean
+      }
       ivfflat_bit_support: {
         Args: { "": unknown }
         Returns: unknown
@@ -706,6 +737,18 @@ export type Database = {
           content: string
           similarity: number
         }[]
+      }
+      process_scheduled_posts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      record_ai_service_failure: {
+        Args: { service_name: string }
+        Returns: undefined
+      }
+      record_ai_service_success: {
+        Args: { service_name: string }
+        Returns: undefined
       }
       sparsevec_out: {
         Args: { "": unknown }

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -8,10 +7,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Initialize Supabase client
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://syvxflddmryziujvzlxk.supabase.co";
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function checkServiceAvailability(serviceName: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .rpc('is_ai_service_available', { service_name: serviceName });
+    
+  if (error) {
+    console.error('Error checking service availability:', error);
+    return false;
+  }
+  
+  return data || false;
+}
+
+async function recordSuccess(serviceName: string) {
+  const { error } = await supabase
+    .rpc('record_ai_service_success', { service_name: serviceName });
+  
+  if (error) {
+    console.error('Error recording success:', error);
+  }
+}
+
+async function recordFailure(serviceName: string) {
+  const { error } = await supabase
+    .rpc('record_ai_service_failure', { service_name: serviceName });
+  
+  if (error) {
+    console.error('Error recording failure:', error);
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -20,19 +48,19 @@ serve(async (req) => {
   }
 
   try {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("OPENAI_API_KEY environment variable not set");
+    // Check if the service is available
+    const isAvailable = await checkServiceAvailability('pet-ai-agent');
+    if (!isAvailable) {
+      throw new Error("Service is currently unavailable due to too many failures");
     }
 
-    // Parse the request body
     const { action, petId, imageBase64, content, targetPetId, voiceExample, relevantMemories } = await req.json();
     
     if (!petId) {
       throw new Error("No pet ID provided");
     }
 
-    // Get pet profile and AI persona
+    // Get pet profile and AI persona with error handling
     const { data: petProfile, error: petError } = await supabase
       .from("pet_profiles")
       .select("*, ai_personas(*)")
@@ -49,30 +77,47 @@ serve(async (req) => {
     }
 
     // Determine which action to perform
+    let result;
     switch (action) {
       case "generate_post":
-        return await handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, content, voiceExample, relevantMemories);
+        result = await handleGeneratePost(petProfile, aiPersona, imageBase64, content, voiceExample, relevantMemories);
+        break;
       
       case "generate_message":
         if (!targetPetId) {
           throw new Error("No target pet ID provided for message generation");
         }
-        return await handleGenerateMessage(openaiApiKey, petProfile, aiPersona, targetPetId, content);
+        result = await handleGenerateMessage(petProfile, aiPersona, targetPetId, content);
+        break;
       
       case "generate_caption":
         if (!imageBase64) {
           throw new Error("No image provided for caption generation");
         }
-        return await handleGenerateCaption(openaiApiKey, petProfile, aiPersona, imageBase64);
+        result = await handleGenerateCaption(petProfile, aiPersona, imageBase64);
+        break;
       
       case "suggest_pets_to_follow":
-        return await handleSuggestPetsToFollow(petProfile);
+        result = await handleSuggestPetsToFollow(petProfile);
+        break;
       
       default:
         throw new Error(`Unknown action: ${action}`);
     }
+
+    // Record success if we get here
+    await recordSuccess('pet-ai-agent');
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200
+    });
+
   } catch (error) {
     console.error("Error in pet-ai-agent function:", error);
+    
+    // Record failure
+    await recordFailure('pet-ai-agent');
     
     return new Response(
       JSON.stringify({ 
@@ -87,7 +132,12 @@ serve(async (req) => {
 });
 
 // Generate a post based on pet personality
-async function handleGeneratePost(openaiApiKey, petProfile, aiPersona, imageBase64, providedContent, voiceExample, relevantMemories = []) {
+async function handleGeneratePost(petProfile, aiPersona, imageBase64, providedContent, voiceExample, relevantMemories = []) {
+  const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiApiKey) {
+    throw new Error("OPENAI_API_KEY environment variable not set");
+  }
+
   const randomSeed = Math.floor(Math.random() * 1000000).toString();
   const timestamp = new Date().toISOString();
   
@@ -210,14 +260,16 @@ YOU MUST VARIATE YOUR ENDINGS - NEVER fall into a pattern of ending posts the sa
     postContent = postContent.substring(0, 140);
   }
   
-  return new Response(
-    JSON.stringify({ content: postContent }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
+  return { content: postContent };
 }
 
 // Generate a direct message to another pet
-async function handleGenerateMessage(openaiApiKey, petProfile, aiPersona, targetPetId, providedContent) {
+async function handleGenerateMessage(petProfile, aiPersona, targetPetId, providedContent) {
+  const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiApiKey) {
+    throw new Error("OPENAI_API_KEY environment variable not set");
+  }
+
   // Get the target pet's profile
   const { data: targetPet, error: targetError } = await supabase
     .from("pet_profiles")
@@ -275,18 +327,18 @@ Write a short, friendly message that reflects your personality and would be appr
   const result = await response.json();
   const messageContent = result.choices[0].message.content;
   
-  return new Response(
-    JSON.stringify({
+  return {
       content: messageContent,
-    }),
-    { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
+    };
 }
 
 // Generate a caption for an image
-async function handleGenerateCaption(openaiApiKey, petProfile, aiPersona, imageBase64) {
+async function handleGenerateCaption(petProfile, aiPersona, imageBase64) {
+  const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiApiKey) {
+    throw new Error("OPENAI_API_KEY environment variable not set");
+  }
+
   if (!imageBase64) {
     throw new Error("No image provided");
   }
@@ -345,14 +397,9 @@ Generate a short, engaging caption for this image as if you were this pet postin
   const result = await response.json();
   const caption = result.choices[0].message.content;
   
-  return new Response(
-    JSON.stringify({
+  return {
       caption,
-    }),
-    { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
+    };
 }
 
 // Suggest pets to follow based on owner's connections
@@ -369,15 +416,10 @@ async function handleSuggestPetsToFollow(petProfile) {
   }
   
   if (!ownerFriends.length) {
-    return new Response(
-      JSON.stringify({
+    return {
         pets: [],
         message: "No friend connections found for this pet's owner"
-      }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+      };
   }
   
   const friendIds = ownerFriends.map(friend => friend.friend_id);
@@ -406,12 +448,7 @@ async function handleSuggestPetsToFollow(petProfile) {
   const followingIds = alreadyFollowing.map(follow => follow.following_id);
   const suggestedPets = friendPets.filter(pet => !followingIds.includes(pet.id));
   
-  return new Response(
-    JSON.stringify({
+  return {
       pets: suggestedPets,
-    }),
-    { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
+    };
 }
