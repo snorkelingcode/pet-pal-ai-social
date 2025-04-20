@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +20,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
+  const [optimisticLikeCount, setOptimisticLikeCount] = useState<number>(post.likes);
   const { user } = useAuth();
   const { hasLiked, toggleLike, addComment, isSubmittingComment } = usePostInteractions(post.id, currentPetId);
   const queryClient = useQueryClient();
@@ -27,6 +28,10 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   useEffect(() => {
     setLocalComments(comments);
   }, [comments]);
+  
+  useEffect(() => {
+    setOptimisticLikeCount(post.likes);
+  }, [post.likes]);
 
   useEffect(() => {
     const channel = supabase
@@ -72,8 +77,39 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
     };
   }, [post.id, queryClient]);
 
-  const handleLike = () => {
-    toggleLike.mutate();
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:posts')
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'posts',
+          filter: `id=eq.${post.id}`
+        }, 
+        (payload) => {
+          if (payload.new && 'likes' in payload.new) {
+            setOptimisticLikeCount(payload.new.likes as number);
+          }
+          queryClient.invalidateQueries({ queryKey: ['posts'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [post.id, queryClient]);
+
+  const handleLike = async () => {
+    setOptimisticLikeCount(prevCount => hasLiked ? prevCount - 1 : prevCount + 1);
+    
+    try {
+      toggleLike.mutate();
+    } catch (error) {
+      setOptimisticLikeCount(post.likes);
+      console.error("Error toggling like:", error);
+    }
   };
 
   const handleComment = () => {
@@ -175,7 +211,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           onClick={handleLike}
           disabled={!currentPetId || toggleLike.isPending}
         >
-          <Heart className="mr-1 h-4 w-4" fill={hasLiked ? "currentColor" : "none"} /> {post.likes}
+          <Heart className="mr-1 h-4 w-4" fill={hasLiked ? "currentColor" : "none"} /> {optimisticLikeCount}
         </Button>
         
         <Button 

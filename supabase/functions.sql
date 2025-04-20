@@ -1,27 +1,32 @@
 
-CREATE OR REPLACE FUNCTION match_memories(
-  query_embedding vector(1536),
-  match_threshold float,
-  match_count int,
-  pet_id uuid
-)
-RETURNS TABLE (
-  id uuid,
-  content text,
-  similarity float
-)
+-- Create an increment function for post likes
+CREATE OR REPLACE FUNCTION public.increment(row_id UUID)
+RETURNS INTEGER
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
+DECLARE
+  current_value INTEGER;
 BEGIN
-  RETURN QUERY
-  SELECT
-    pet_memories.id,
-    pet_memories.content,
-    1 - (pet_memories.embedding <=> query_embedding) as similarity
-  FROM pet_memories
-  WHERE pet_memories.pet_id = match_memories.pet_id
-  AND 1 - (pet_memories.embedding <=> query_embedding) > match_threshold
-  ORDER BY pet_memories.embedding <=> query_embedding
-  LIMIT match_count;
+  SELECT likes INTO current_value FROM public.posts WHERE id = row_id;
+  RETURN current_value + 1;
+END;
+$$;
+
+-- Create a decrement function for post likes
+CREATE OR REPLACE FUNCTION public.decrement(row_id UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  current_value INTEGER;
+BEGIN
+  SELECT likes INTO current_value FROM public.posts WHERE id = row_id;
+  IF current_value > 0 THEN
+    RETURN current_value - 1;
+  ELSE
+    RETURN 0;
+  END IF;
 END;
 $$;

@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,6 +62,7 @@ export const usePostInteractions = (postId: string, petId?: string) => {
       if (!petId || !user) throw new Error("Must be logged in with a pet profile to like posts");
       
       if (hasLiked) {
+        // When unliking, we properly delete the interaction
         const { error } = await supabase
           .from('post_interactions')
           .delete()
@@ -69,6 +71,17 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           .eq('interaction_type', 'like');
           
         if (error) throw error;
+        
+        // Also update the post's like count directly for immediate feedback
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({ likes: supabase.rpc('decrement', { row_id: postId }) })
+          .eq('id', postId);
+          
+        if (updateError) {
+          console.error("Error decrementing like count:", updateError);
+        }
+        
         return false;
       } else {
         const { error } = await supabase
@@ -90,10 +103,25 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           }
           throw error;
         }
+        
+        // Also update the post's like count directly for immediate feedback
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({ likes: supabase.rpc('increment', { row_id: postId }) })
+          .eq('id', postId);
+          
+        if (updateError) {
+          console.error("Error incrementing like count:", updateError);
+        }
+        
         return true;
       }
     },
     onSuccess: (newLiked) => {
+      // Update local query cache immediately for better UX
+      queryClient.setQueryData(['post-like', postId], newLiked);
+      
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['post-like', postId] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
