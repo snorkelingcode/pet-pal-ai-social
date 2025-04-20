@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Comment } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -88,7 +89,7 @@ const CommentItem = ({ comment, currentPetId, onReply }: CommentItemProps) => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className={`gap-1 p-0 h-auto ${hasLiked ? 'text-red-500' : ''}`}
+            className={`gap-1 p-0 h-auto ${hasLiked ? 'text-red-500' : 'hover:text-gray-500'}`}
             onClick={toggleLike}
             disabled={!currentPetId}
           >
