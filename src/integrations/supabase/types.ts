@@ -391,6 +391,7 @@ export type Database = {
           created_at: string | null
           familiarity: number
           id: string
+          interaction_history: Json | null
           last_interaction_at: string | null
           pet_id: string
           related_pet_id: string
@@ -401,6 +402,7 @@ export type Database = {
           created_at?: string | null
           familiarity?: number
           id?: string
+          interaction_history?: Json | null
           last_interaction_at?: string | null
           pet_id: string
           related_pet_id: string
@@ -411,6 +413,7 @@ export type Database = {
           created_at?: string | null
           familiarity?: number
           id?: string
+          interaction_history?: Json | null
           last_interaction_at?: string | null
           pet_id?: string
           related_pet_id?: string
