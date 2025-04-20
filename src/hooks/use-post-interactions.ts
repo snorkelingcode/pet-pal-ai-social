@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -97,7 +98,6 @@ export const usePostInteractions = (postId: string, petId?: string) => {
     },
     onSuccess: (newLiked) => {
       queryClient.setQueryData(['post-like', postId], newLiked);
-      
       queryClient.invalidateQueries({ queryKey: ['post-like', postId] });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
