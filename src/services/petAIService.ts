@@ -16,6 +16,7 @@ interface ScheduleOptions {
   voiceExample?: string;
   contentTheme?: string;
   memories?: any[]; // Added this property for the memories
+  every2Minutes?: boolean; // Added this property for the 2-minute scheduling
 }
 
 export const petAIService = {
@@ -275,7 +276,7 @@ export const petAIService = {
   scheduleAIPosts: async (
     petId: string, 
     numberOfPosts: number = 5,
-    options?: ScheduleOptions & { every2Minutes?: boolean }
+    options?: ScheduleOptions
   ): Promise<boolean> => {
     try {
       const { 
@@ -329,6 +330,7 @@ export const petAIService = {
       if (!initialPost) {
         throw new Error('Failed to create initial post');
       }
+      
       const now = new Date();
       const scheduledPosts = [];
       const firstDayPosts = Math.max(0, numberOfPosts - 1); // Subtract 1 for the initial post

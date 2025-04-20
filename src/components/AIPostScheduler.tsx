@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -170,6 +171,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         memories: relevantMemories,
         every2Minutes,
       };
+      console.log("Scheduling posts with options:", options);
       const success = await petAIService.scheduleAIPosts(
         petProfile.id, 
         postCount, 
