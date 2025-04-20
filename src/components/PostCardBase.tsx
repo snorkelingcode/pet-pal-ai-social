@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -62,7 +61,6 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           filter: `post_id=eq.${post.id}`
         }, 
         (payload) => {
-          // Immediately invalidate queries to refresh the UI
           queryClient.invalidateQueries({ queryKey: ['post-like', post.id] });
           queryClient.invalidateQueries({ queryKey: ['posts'] });
         }
@@ -92,6 +90,32 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             postId: post.id,
             userId: user?.id,
             content: commentText,
+            likes: 0,
+            createdAt: new Date().toISOString(),
+            userProfile: {
+              id: newComment.userProfile?.id || user?.id || '',
+              username: newComment.userProfile?.username || user?.username || 'User',
+              avatarUrl: newComment.userProfile?.avatarUrl || user?.avatarUrl,
+              handle: newComment.userProfile?.handle || user?.email?.split('@')[0] || 'user'
+            }
+          }];
+          setLocalComments(updatedComments as Comment[]);
+        }
+      }
+    });
+  };
+
+  const handleCommentReply = (content: string, parentCommentId: string) => {
+    if (!content.trim()) return;
+    
+    addComment.mutate(content, {
+      onSuccess: (newComment: any) => {
+        if (newComment) {
+          const updatedComments = [...localComments, {
+            id: newComment.id || `temp-${Date.now()}`,
+            postId: post.id,
+            userId: user?.id,
+            content: content,
             likes: 0,
             createdAt: new Date().toISOString(),
             userProfile: {
@@ -206,6 +230,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
               key={comment.id}
               comment={comment}
               currentPetId={currentPetId}
+              onReply={handleCommentReply}
             />
           ))}
         </div>

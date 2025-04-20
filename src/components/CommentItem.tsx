@@ -1,18 +1,23 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Comment } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircleReply } from 'lucide-react';
 import { useCommentLikes } from '@/hooks/use-comment-likes';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CommentItemProps {
   comment: Comment;
   currentPetId?: string;
+  onReply: (content: string, parentCommentId: string) => void;
 }
 
-const CommentItem = ({ comment, currentPetId }: CommentItemProps) => {
+const CommentItem = ({ comment, currentPetId, onReply }: CommentItemProps) => {
   const { hasLiked, toggleLike } = useCommentLikes(comment.id, currentPetId);
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const { user } = useAuth();
 
   const getDisplayName = () => {
     if (comment.petProfile) {
@@ -50,12 +55,19 @@ const CommentItem = ({ comment, currentPetId }: CommentItemProps) => {
     return name.charAt(0).toUpperCase();
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = () => {
+    return new Date(comment.createdAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleSubmitReply = () => {
+    if (!replyText.trim()) return;
+    onReply(replyText, comment.id);
+    setReplyText('');
+    setIsReplying(false);
   };
 
   return (
@@ -64,12 +76,12 @@ const CommentItem = ({ comment, currentPetId }: CommentItemProps) => {
         <AvatarImage src={getAvatarUrl() || '/placeholder.svg'} alt={getDisplayName()} />
         <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
       </Avatar>
-      <div className="ml-2">
+      <div className="ml-2 flex-1">
         <h4 className="font-medium text-sm">{getDisplayName()}</h4>
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
           <span>@{getHandle()}</span>
           <span>•</span>
-          <span>{formatDate(comment.createdAt)}</span>
+          <span>{formatDate()}</span>
         </div>
         <p className="text-sm">{comment.content}</p>
         <div className="flex items-center text-xs text-muted-foreground mt-1">
@@ -83,10 +95,45 @@ const CommentItem = ({ comment, currentPetId }: CommentItemProps) => {
             <Heart className="h-4 w-4" fill={hasLiked ? "currentColor" : "none"} />
             {comment.likes > 0 && <span>{comment.likes}</span>}
           </Button>
-          <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto ml-3">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-1 p-0 h-auto ml-3"
+            onClick={() => setIsReplying(!isReplying)}
+          >
             <MessageCircleReply className="h-4 w-4" />
+            Reply
           </Button>
         </div>
+
+        {isReplying && (
+          <div className="mt-2">
+            <Textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Write a reply..."
+              rows={2}
+              className="mb-2"
+              disabled={!user}
+            />
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsReplying(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                size="sm"
+                onClick={handleSubmitReply}
+                disabled={!replyText.trim() || !user}
+              >
+                Reply
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
