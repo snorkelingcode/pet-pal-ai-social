@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useScheduledPosts } from '@/hooks/useScheduledPosts';
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ScheduledPostItem = ({ post }: { post: any }) => {
   return (
@@ -77,6 +78,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [useMemories, setUseMemories] = useState(true);
   const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
   const [serviceError, setServiceError] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open && petProfile.id) {
@@ -228,16 +230,16 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-full max-w-2xl p-0 gap-0 h-auto max-h-[90vh] overflow-hidden">
-          <DialogHeader className="px-6 pt-6">
+        <DialogContent className="w-full p-0 gap-0 h-[90vh] max-h-[90vh] overflow-hidden sm:max-w-[95vw] md:max-w-2xl">
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6">
             <DialogTitle>Schedule AI Posts for {petProfile.name}</DialogTitle>
             <DialogDescription>
               Create personalized posts based on your pet's personality and memories
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-8rem)] overflow-y-auto">
-            <div className="space-y-4 py-4">
+          <ScrollArea className="px-4 sm:px-6 pb-4 sm:pb-6 h-full overflow-y-auto">
+            <div className="space-y-4 py-2 sm:py-4">
               {serviceError && (
                 <Alert variant="destructive" className="mb-4">
                   <AlertCircle className="h-4 w-4" />
@@ -487,10 +489,11 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
               </Card>
             </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6">
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6 pb-6">
               <Button 
                 onClick={scheduleAIPosts} 
                 disabled={loading || !isVoiceExampleProvided || serviceError}
+                className="w-full sm:w-auto"
               >
                 {loading ? "Processing..." : "Schedule Posts"}
               </Button>
