@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageSquare, Share, User } from 'lucide-react';
+import { Heart, MessageCircleReply, Share, User } from 'lucide-react';
 import { usePostInteractions } from '@/hooks/use-post-interactions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -168,7 +168,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           className="text-muted-foreground"
           onClick={() => setIsCommenting(!isCommenting)}
         >
-          <MessageSquare className="mr-1 h-4 w-4" /> {localComments.length}
+          <MessageCircleReply className="mr-1 h-4 w-4" /> {localComments.length}
         </Button>
         
         <Button variant="ghost" size="sm" className="text-muted-foreground">
@@ -229,8 +229,12 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                 </p>
                 <p className="text-sm">{comment.content}</p>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <button className="mr-3">Like</button>
-                  <button>Reply</button>
+                  <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto">
+                    <Heart className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto ml-3">
+                    <MessageCircleReply className="h-4 w-4" />
+                  </Button>
                   <span className="ml-auto">{new Date(comment.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
