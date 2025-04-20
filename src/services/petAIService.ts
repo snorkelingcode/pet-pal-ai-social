@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile, Post } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -276,7 +275,7 @@ export const petAIService = {
   scheduleAIPosts: async (
     petId: string, 
     numberOfPosts: number = 5,
-    options?: ScheduleOptions
+    options?: ScheduleOptions & { every2Minutes?: boolean }
   ): Promise<boolean> => {
     try {
       const { 
@@ -286,9 +285,40 @@ export const petAIService = {
         voiceExample = '',
         contentTheme = 'general',
         memories = [],
+        every2Minutes = false,
       } = options || {};
-      
-      // Create initial post immediately
+
+      // If every 2 minutes is requested, override everything else:
+      if (every2Minutes) {
+        const now = new Date();
+        const scheduledPosts = [];
+        // Let's schedule one post for every 2 minutes for the next 10 posts
+        for (let i = 0; i < 10; i++) {
+          const scheduledDate = new Date(now.getTime() + i * 2 * 60 * 1000);
+          scheduledPosts.push({
+            pet_id: petId,
+            scheduled_for: scheduledDate.toISOString(),
+            content_theme: contentTheme,
+            include_images: includeImages,
+            voice_example: voiceExample,
+            status: 'pending'
+          });
+        }
+
+        const { data, error } = await supabase
+          .from('scheduled_posts')
+          .insert(scheduledPosts);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Rapid Posts Scheduled',
+          description: `Your pet will post something random every 2 minutes for the next 20 minutes!`,
+        });
+
+        return true;
+      }
+
       const initialPost = await petAIService.createAIPost(
         petId,
         undefined,
@@ -296,21 +326,15 @@ export const petAIService = {
         voiceExample,
         memories
       );
-      
       if (!initialPost) {
         throw new Error('Failed to create initial post');
       }
-
       const now = new Date();
       const scheduledPosts = [];
-      
-      // Adjust the first day's post count
       const firstDayPosts = Math.max(0, numberOfPosts - 1); // Subtract 1 for the initial post
-      
       // Schedule remaining posts for the first day
       for (let i = 0; i < firstDayPosts; i++) {
         let scheduledDate = new Date(now);
-        
         if (postingTime === 'morning') {
           scheduledDate.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0);
         } else if (postingTime === 'afternoon') {
@@ -320,7 +344,6 @@ export const petAIService = {
         } else {
           scheduledDate.setHours(6 + Math.floor(Math.random() * 16), Math.floor(Math.random() * 60), 0);
         }
-        
         scheduledPosts.push({
           pet_id: petId,
           scheduled_for: scheduledDate.toISOString(),
@@ -330,13 +353,11 @@ export const petAIService = {
           status: 'pending'
         });
       }
-      
       // Schedule posts for subsequent days
       for (let i = 1; i < 7; i++) {
         for (let j = 0; j < numberOfPosts; j++) {
           let scheduledDate = new Date(now);
           scheduledDate.setDate(scheduledDate.getDate() + i);
-          
           if (frequency === 'daily') {
             // Keep the date as is
           } else if (frequency === 'weekly') {
@@ -345,7 +366,6 @@ export const petAIService = {
             const randomDays = Math.floor(Math.random() * 30) + 1;
             scheduledDate.setDate(scheduledDate.getDate() + randomDays);
           }
-          
           if (postingTime === 'morning') {
             scheduledDate.setHours(8 + Math.floor(Math.random() * 4), Math.floor(Math.random() * 60), 0);
           } else if (postingTime === 'afternoon') {
@@ -355,7 +375,6 @@ export const petAIService = {
           } else {
             scheduledDate.setHours(6 + Math.floor(Math.random() * 16), Math.floor(Math.random() * 60), 0);
           }
-          
           scheduledPosts.push({
             pet_id: petId,
             scheduled_for: scheduledDate.toISOString(),
@@ -366,18 +385,14 @@ export const petAIService = {
           });
         }
       }
-      
       const { data, error } = await supabase
         .from('scheduled_posts')
         .insert(scheduledPosts);
-      
       if (error) throw error;
-      
       toast({
         title: 'Posts Scheduled',
         description: `Initial post created and ${scheduledPosts.length} posts have been scheduled for ${frequency === 'daily' ? 'daily' : frequency === 'weekly' ? 'weekly' : 'random'} posting`,
       });
-      
       return true;
     } catch (error) {
       console.error('Error scheduling AI posts:', error);
@@ -390,7 +405,6 @@ export const petAIService = {
     }
   },
   
-  // New method to generate contextual responses to specific posts
   generatePostResponse: async (
     petId: string,
     postId: string,

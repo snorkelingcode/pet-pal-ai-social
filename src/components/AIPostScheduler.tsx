@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { petAIService } from '@/services/petAIService';
 import { petMemoryService } from '@/services/petMemoryService';
 import { PetProfile } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle, Users, Brain } from 'lucide-react';
+import { Bot, Calendar, Image as ImageIcon, MessageCircle, AlertCircle, Users, Brain, Timer } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +75,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [petMemories, setPetMemories] = useState<any[]>([]);
   const [petRelationships, setPetRelationships] = useState<any[]>([]);
   const [useMemories, setUseMemories] = useState(true);
+  const [every2Minutes, setEvery2Minutes] = useState(false);
   const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
   const [serviceError, setServiceError] = useState(false);
   const isMobile = useIsMobile();
@@ -90,7 +90,6 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
       };
       
       fetchPetData();
-      // Reset service error when opening the modal
       setServiceError(false);
     }
   }, [open, petProfile.id]);
@@ -142,7 +141,6 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
     } catch (error) {
       console.error("Error generating AI post:", error);
       
-      // Check if this is a service availability issue
       if (error.message?.includes("non-2xx status code") || 
           error.message?.includes("service") || 
           error.name === "FunctionsHttpError") {
@@ -163,37 +161,38 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
     setLoading(true);
     try {
       const relevantMemories = await getRelevantMemories(voiceExample);
-      
+      const options: any = {
+        frequency,
+        postingTime,
+        includeImages,
+        voiceExample,
+        contentTheme: 'specific-context',
+        memories: relevantMemories,
+        every2Minutes,
+      };
       const success = await petAIService.scheduleAIPosts(
         petProfile.id, 
         postCount, 
-        {
-          frequency,
-          postingTime,
-          includeImages,
-          voiceExample,
-          contentTheme: 'specific-context',
-          memories: relevantMemories,
-        }
+        options
       );
-      
       if (success) {
         toast({
           title: "Posts Scheduled",
-          description: `${postCount} posts have been scheduled for ${petProfile.name} using your voice example and pet's memories`,
+          description: every2Minutes
+            ? "Your pet will post something random every 2 minutes!"
+            : `${postCount} posts have been scheduled for ${petProfile.name} using your voice example and pet's memories`,
         });
-        
         await storeMemory(
-          `Scheduled ${postCount} ${frequency} posts with${includeImages ? '' : 'out'} images using voice example: "${voiceExample}"`,
+          every2Minutes
+            ? `Scheduled posts every 2 minutes with voice example: "${voiceExample}"`
+            : `Scheduled ${postCount} ${frequency} posts with${includeImages ? '' : 'out'} images using voice example: "${voiceExample}"`,
           'scheduling_event'
         );
-        
         setOpen(false);
       }
     } catch (error) {
       console.error("Error scheduling posts:", error);
       
-      // Check if this is a service availability issue
       if (error.message?.includes("non-2xx status code") || 
           error.message?.includes("service") || 
           error.name === "FunctionsHttpError") {
@@ -434,51 +433,73 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Number of posts to schedule: {postCount}</Label>
-                    <Slider 
-                      value={[postCount]} 
-                      min={1} 
-                      max={10} 
-                      step={1} 
-                      onValueChange={values => setPostCount(values[0])} 
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="every-2-minutes"
+                      checked={every2Minutes}
+                      onCheckedChange={setEvery2Minutes}
                     />
+                    <Label htmlFor="every-2-minutes" className="flex items-center gap-2">
+                      <Timer size={16} />
+                      Post every 2 minutes
+                    </Label>
                   </div>
+                  {every2Minutes && (
+                    <Alert className="bg-muted">
+                      <AlertDescription>
+                        Your pet will post something random every 2 minutes. All other schedule settings will be ignored.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="frequency">Posting frequency</Label>
-                    <Select value={frequency} onValueChange={setFrequency}>
-                      <SelectTrigger id="frequency">
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="random">Random</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="time">Best time to post</Label>
-                    <Select value={postingTime} onValueChange={setPostingTime}>
-                      <SelectTrigger id="time">
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="morning">Morning (8 AM - 12 PM)</SelectItem>
-                        <SelectItem value="afternoon">Afternoon (12 PM - 5 PM)</SelectItem>
-                        <SelectItem value="evening">Evening (5 PM - 10 PM)</SelectItem>
-                        <SelectItem value="random">Random Times</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {!every2Minutes && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Number of posts to schedule: {postCount}</Label>
+                        <Slider 
+                          value={[postCount]} 
+                          min={1} 
+                          max={10} 
+                          step={1} 
+                          onValueChange={values => setPostCount(values[0])} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="frequency">Posting frequency</Label>
+                        <Select value={frequency} onValueChange={setFrequency}>
+                          <SelectTrigger id="frequency">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="random">Random</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="time">Best time to post</Label>
+                        <Select value={postingTime} onValueChange={setPostingTime}>
+                          <SelectTrigger id="time">
+                            <SelectValue placeholder="Select time" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="morning">Morning (8 AM - 12 PM)</SelectItem>
+                            <SelectItem value="afternoon">Afternoon (12 PM - 5 PM)</SelectItem>
+                            <SelectItem value="evening">Evening (5 PM - 10 PM)</SelectItem>
+                            <SelectItem value="random">Random Times</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex items-center space-x-2">
                     <Switch 
                       id="include-images" 
                       checked={includeImages}
                       onCheckedChange={setIncludeImages}
+                      disabled={every2Minutes}
                     />
                     <Label htmlFor="include-images" className="flex items-center gap-2">
                       <ImageIcon size={16} />
