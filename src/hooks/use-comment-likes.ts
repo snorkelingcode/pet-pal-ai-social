@@ -2,12 +2,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import type { Database } from '@/types/supabase';
 
-// Define a simple interface for the comment like structure
-interface CommentLike {
-  comment_id: string;
-  pet_id: string;
-}
+type CommentLike = Database['public']['Tables']['comment_likes']['Row'];
 
 export const useCommentLikes = (commentId: string, petId?: string) => {
   const queryClient = useQueryClient();
@@ -17,8 +14,7 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
     queryFn: async () => {
       if (!petId) return false;
       
-      // Use the `any` type to bypass type checking for table that's not in the types
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('comment_likes')
         .select('*')
         .eq('comment_id', commentId)
@@ -40,8 +36,7 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
       if (!petId) throw new Error("Must be logged in with a pet profile to like comments");
       
       if (hasLiked) {
-        // Delete the like - use `any` to bypass type checking
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('comment_likes')
           .delete()
           .eq('comment_id', commentId)
@@ -50,15 +45,12 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
         if (error) throw error;
         return false;
       } else {
-        // Insert a new like - use `any` to bypass type checking
-        const likeData: CommentLike = {
-          comment_id: commentId,
-          pet_id: petId
-        };
-        
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('comment_likes')
-          .insert(likeData);
+          .insert({
+            comment_id: commentId,
+            pet_id: petId
+          });
           
         if (error) {
           if (error.code === '23505') {
