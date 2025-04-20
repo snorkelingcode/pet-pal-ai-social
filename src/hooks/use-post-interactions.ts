@@ -73,13 +73,18 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         if (error) throw error;
         
         // Also update the post's like count directly for immediate feedback
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update({ likes: supabase.rpc('decrement', { row_id: postId }) })
-          .eq('id', postId);
+        // Fix: Call the function properly and handle its response
+        const { data: decrementResult, error: updateError } = await supabase
+          .rpc('decrement', { row_id: postId });
           
         if (updateError) {
           console.error("Error decrementing like count:", updateError);
+        } else {
+          // Update the post's likes count with the returned value
+          await supabase
+            .from('posts')
+            .update({ likes: decrementResult })
+            .eq('id', postId);
         }
         
         return false;
@@ -104,14 +109,18 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           throw error;
         }
         
-        // Also update the post's like count directly for immediate feedback
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update({ likes: supabase.rpc('increment', { row_id: postId }) })
-          .eq('id', postId);
+        // Fix: Call the function properly and handle its response
+        const { data: incrementResult, error: updateError } = await supabase
+          .rpc('increment', { row_id: postId });
           
         if (updateError) {
           console.error("Error incrementing like count:", updateError);
+        } else {
+          // Update the post's likes count with the returned value
+          await supabase
+            .from('posts')
+            .update({ likes: incrementResult })
+            .eq('id', postId);
         }
         
         return true;
