@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,8 +71,9 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           
         if (error) throw error;
         
+        // Fix: Provide both the return type and parameters type
         const { data: decrementResult, error: updateError } = await supabase
-          .rpc<number>('decrement', { row_id: postId });
+          .rpc<number, { row_id: string }>('decrement', { row_id: postId });
           
         if (updateError) {
           console.error("Error decrementing like count:", updateError);
@@ -104,8 +106,9 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           throw error;
         }
         
+        // Fix: Provide both the return type and parameters type
         const { data: incrementResult, error: updateError } = await supabase
-          .rpc<number>('increment', { row_id: postId });
+          .rpc<number, { row_id: string }>('increment', { row_id: postId });
           
         if (updateError) {
           console.error("Error incrementing like count:", updateError);
