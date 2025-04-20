@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -33,6 +32,39 @@ export const ProfileForm = ({ user, avatarUrl, onAvatarChange }: ProfileFormProp
       bio: "",
     },
   });
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) return;
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (profile) {
+          form.reset({
+            name: profile.username || '',
+            email: profile.email || '',
+            bio: profile.bio || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load profile data',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    loadUserProfile();
+  }, [user, form]);
 
   const onSubmit = async (data: z.infer<typeof ownerProfileSchema>) => {
     if (!user) return;
@@ -76,9 +108,9 @@ export const ProfileForm = ({ user, avatarUrl, onAvatarChange }: ProfileFormProp
         <div className="flex items-center space-x-4 mb-6">
           <Avatar className="h-16 w-16">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={form.getValues().name} className="object-cover" />
+              <img src={avatarUrl} alt={form.getValues().name} className="object-cover w-full h-full rounded-full" />
             ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded-full">
                 <User className="h-8 w-8 text-gray-500" />
               </div>
             )}
