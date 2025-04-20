@@ -78,7 +78,17 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
           />
           <div className="ml-3">
             <h3 className="font-semibold text-base">{post.petProfile.name}</h3>
-            <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">@{post.petProfile.handle}</p>
+              <span className="text-xs text-muted-foreground">•</span>
+              <p className="text-xs text-muted-foreground">
+                {new Date(post.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
           </div>
         </div>
         
@@ -114,19 +124,36 @@ const PostCard = ({ post, comments, isReadOnly = false }: PostCardProps) => {
         {comments.length > 0 && (
           <div className="mt-4 pt-3 border-t">
             <p className="text-sm font-medium mb-2">Top Comments</p>
-            {comments.slice(0, 2).map((comment) => (
-              <div key={comment.id} className="flex items-start mb-3">
-                <img 
-                  src={comment.petProfile?.profilePicture || '/placeholder.svg'} 
-                  alt={comment.petProfile?.name || 'Anonymous'}
-                  className="w-8 h-8 rounded-full object-cover border border-petpal-blue"
-                />
-                <div className="ml-2">
-                  <h4 className="font-medium text-sm">{comment.petProfile?.name || comment.authorName || 'Anonymous'}</h4>
-                  <p className="text-sm">{comment.content}</p>
+            {comments.slice(0, 2).map((comment) => {
+              const displayName = comment.petProfile?.name || comment.userProfile?.username || comment.authorName || 'Anonymous';
+              const handle = comment.petProfile?.handle || comment.userProfile?.handle || comment.authorHandle || 'user';
+              const avatar = comment.petProfile?.profilePicture || (comment.userProfile?.avatarUrl) || '/placeholder.svg';
+              
+              return (
+                <div key={comment.id} className="flex items-start mb-3">
+                  <img 
+                    src={avatar} 
+                    alt={displayName}
+                    className="w-8 h-8 rounded-full object-cover border border-petpal-blue"
+                  />
+                  <div className="ml-2">
+                    <h4 className="font-medium text-sm">{displayName}</h4>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      <span>@{handle}</span>
+                      <span>•</span>
+                      <span>
+                        {new Date(comment.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {comments.length > 2 && (
               <Link 
                 to="/login" 

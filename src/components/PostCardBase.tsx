@@ -110,8 +110,21 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
       return comment.petProfile.name;
     } else if (comment.userProfile) {
       return comment.userProfile.username;
+    } else if (comment.authorName) {
+      return comment.authorName;
     }
     return "User";
+  };
+
+  const getHandle = (comment: Comment) => {
+    if (comment.petProfile) {
+      return comment.petProfile.handle;
+    } else if (comment.userProfile) {
+      return comment.userProfile.handle;
+    } else if (comment.authorHandle) {
+      return comment.authorHandle;
+    }
+    return "user";
   };
 
   const getAvatarUrl = (comment: Comment) => {
@@ -225,20 +238,13 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           {localComments.map((comment) => (
             <div key={comment.id} className="flex items-start mb-3">
               <Avatar className="h-8 w-8">
-                {comment.petProfile ? (
-                  <img src={comment.petProfile.profilePicture || '/placeholder.svg'} alt={comment.petProfile.name} />
-                ) : comment.userProfile?.avatarUrl ? (
-                  <img src={comment.userProfile.avatarUrl} alt={comment.userProfile.username} />
-                ) : (
-                  <User className="h-5 w-5" />
-                )}
+                <AvatarImage src={getAvatarUrl(comment) || '/placeholder.svg'} alt={getDisplayName(comment)} />
+                <AvatarFallback>{getAvatarFallback(comment)}</AvatarFallback>
               </Avatar>
               <div className="ml-2">
-                <h4 className="font-medium text-sm">
-                  {comment.petProfile ? comment.petProfile.name : comment.userProfile?.username}
-                </h4>
+                <h4 className="font-medium text-sm">{getDisplayName(comment)}</h4>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                  <span>@{comment.petProfile ? comment.petProfile.handle : comment.userProfile?.username?.toLowerCase()}</span>
+                  <span>@{getHandle(comment)}</span>
                   <span>•</span>
                   <span>{formatDate(comment.createdAt)}</span>
                 </div>

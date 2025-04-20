@@ -12,11 +12,14 @@ type CommentResponseData = {
   created_at: string;
   user_id: string | null;
   pet_id: string | null;
+  author_name: string | null;
+  author_handle: string | null;
   likes: number;
   profiles?: {
     id: string;
     username: string;
     avatar_url: string | null;
+    handle: string | null;
   } | null;
   pet_profiles?: {
     id: string;
@@ -24,6 +27,7 @@ type CommentResponseData = {
     species: string;
     breed: string;
     profile_picture: string | null;
+    handle: string | null;
   } | null;
 };
 
@@ -111,18 +115,22 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           created_at,
           user_id,
           pet_id,
+          author_name,
+          author_handle,
           likes,
           profiles:user_id (
             id,
             username,
-            avatar_url
+            avatar_url,
+            handle
           ),
           pet_profiles:pet_id (
             id,
             name,
             species,
             breed,
-            profile_picture
+            profile_picture,
+            handle
           )
         `)
         .eq('post_id', postId)
@@ -161,17 +169,21 @@ export const usePostInteractions = (postId: string, petId?: string) => {
           created_at,
           user_id,
           pet_id,
+          author_name,
+          author_handle,
           profiles:user_id (
             id,
             username,
-            avatar_url
+            avatar_url,
+            handle
           ),
           pet_profiles:pet_id (
             id,
             name,
             species,
             breed,
-            profile_picture
+            profile_picture,
+            handle
           )
         `)
         .single();
@@ -195,17 +207,29 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         createdAt: commentResponse.created_at,
         userId: commentResponse.user_id || undefined,
         petId: commentResponse.pet_id || undefined,
+        authorName: commentResponse.author_name || 
+                   (commentResponse.profiles?.username) || 
+                   (commentResponse.pet_profiles?.name) || 
+                   'Anonymous',
+        authorHandle: commentResponse.author_handle || 
+                     (commentResponse.profiles?.handle) || 
+                     (commentResponse.pet_profiles?.handle) || 
+                     'user',
         userProfile: commentResponse.profiles ? {
           id: commentResponse.profiles.id,
           username: commentResponse.profiles.username,
-          avatarUrl: commentResponse.profiles.avatar_url || undefined
+          avatarUrl: commentResponse.profiles.avatar_url || undefined,
+          handle: commentResponse.profiles.handle || 
+                 commentResponse.profiles.username.toLowerCase().replace(/[^a-z0-9]/g, '')
         } : undefined,
         petProfile: commentResponse.pet_profiles ? {
           id: commentResponse.pet_profiles.id,
           name: commentResponse.pet_profiles.name,
           species: commentResponse.pet_profiles.species,
           breed: commentResponse.pet_profiles.breed,
-          profilePicture: commentResponse.pet_profiles.profile_picture || undefined
+          profilePicture: commentResponse.pet_profiles.profile_picture || undefined,
+          handle: commentResponse.pet_profiles.handle || 
+                 commentResponse.pet_profiles.name.toLowerCase().replace(/[^a-z0-9]/g, '')
         } : undefined
       };
     },

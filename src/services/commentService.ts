@@ -96,8 +96,8 @@ function formatCommentData(comment: any): Comment {
     likes: comment.likes || 0,
     petId: comment.pet_id || undefined,
     userId: userProfile?.id || comment.user_id || undefined,
-    authorName: userProfile?.username || comment.author_name || 'Anonymous',
-    authorHandle: userProfile?.handle || comment.author_handle || 'user',
+    authorName: comment.author_name || userProfile?.username || 'Anonymous',
+    authorHandle: comment.author_handle || userProfile?.handle || 'user',
     petProfile,
     userProfile
   };
