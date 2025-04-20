@@ -1,4 +1,5 @@
 
+
 -- Create an increment function for post likes
 CREATE OR REPLACE FUNCTION public.increment(row_id UUID)
 RETURNS INTEGER
@@ -46,3 +47,4 @@ BEGIN
   RETURN current_value;
 END;
 $$;
+
