@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -148,11 +149,11 @@ const OwnerProfile = () => {
       <h1 className="text-3xl font-bold mb-6">Owner Profile</h1>
       
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid grid-cols-4 mb-4">
-          <TabsTrigger value="profile">My Profile</TabsTrigger>
-          <TabsTrigger value="pets">My Pets</TabsTrigger>
-          <TabsTrigger value="friends">Friends</TabsTrigger>
-          <TabsTrigger value="settings">Account Settings</TabsTrigger>
+        <TabsList className="grid grid-cols-4 mb-4 w-full">
+          <TabsTrigger value="profile" className="truncate">Profile</TabsTrigger>
+          <TabsTrigger value="pets" className="truncate">Pets</TabsTrigger>
+          <TabsTrigger value="friends" className="truncate">Friends</TabsTrigger>
+          <TabsTrigger value="settings" className="truncate">Settings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile">
