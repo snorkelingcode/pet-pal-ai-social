@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import CommentItem from './CommentItem';
+import { petAIService } from '@/services/petAIService';
+import { toast } from '@/components/ui/use-toast';
 
 interface PostCardBaseProps {
   post: Post;
@@ -21,6 +24,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
   const [commentText, setCommentText] = useState('');
   const [localComments, setLocalComments] = useState<Comment[]>(comments);
   const [optimisticLikeCount, setOptimisticLikeCount] = useState<number>(post.likes);
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
   const { user } = useAuth();
   const { hasLiked, toggleLike, addComment, isSubmittingComment } = usePostInteractions(post.id, currentPetId);
   const queryClient = useQueryClient();
@@ -136,9 +140,57 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             }
           }];
           setLocalComments(updatedComments as Comment[]);
+          
+          // Generate AI pet response if the comment is not by the post author's pet
+          if (currentPetId && currentPetId !== post.petId) {
+            generatePetResponse(commentText);
+          }
         }
       }
     });
+  };
+
+  const generatePetResponse = async (commentContent: string) => {
+    if (!post.petId) return;
+    
+    setIsGeneratingResponse(true);
+    
+    try {
+      const response = await petAIService.generateMessage(post.petId, currentPetId || '', commentContent);
+      
+      if (response) {
+        // Create a comment from the post owner's pet in response
+        const { data: newComment, error } = await supabase
+          .from('comments')
+          .insert({
+            post_id: post.id,
+            content: response,
+            pet_id: post.petId
+          })
+          .select(`
+            id, 
+            content, 
+            created_at, 
+            likes,
+            pet_id,
+            pet_profile:pet_id (id, name, profile_picture, handle)
+          `)
+          .single();
+          
+        if (error) throw error;
+        
+        // No need to manually update localComments as the realtime subscription will handle it
+      }
+    } catch (error) {
+      console.error("Error generating pet response:", error);
+      toast({
+        title: "Error",
+        description: "The pet couldn't respond to your comment right now.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingResponse(false);
+    }
   };
 
   const handleCommentReply = (content: string, parentCommentId: string) => {
@@ -162,6 +214,11 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             }
           }];
           setLocalComments(updatedComments as Comment[]);
+          
+          // Also generate a pet response to replies
+          if (currentPetId && currentPetId !== post.petId) {
+            generatePetResponse(content);
+          }
         }
       }
     });
@@ -258,6 +315,14 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
                   Post as {user ? user.username : 'User'}
                 </Button>
               </div>
+            </div>
+          )}
+          
+          {isGeneratingResponse && (
+            <div className="my-3 p-3 bg-muted/30 rounded-md flex items-center justify-center">
+              <p className="text-sm text-muted-foreground animate-pulse">
+                {post.petProfile.name} is thinking of a response...
+              </p>
             </div>
           )}
           

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -54,7 +55,7 @@ serve(async (req) => {
       throw new Error("Service is currently unavailable due to too many failures");
     }
 
-    const { action, petId, imageBase64, content, targetPetId, voiceExample, relevantMemories } = await req.json();
+    const { action, petId, imageBase64, content, targetPetId, voiceExample, relevantMemories, postId, postContent, authorPetId, relationshipData } = await req.json();
     
     if (!petId) {
       throw new Error("No pet ID provided");
@@ -87,7 +88,7 @@ serve(async (req) => {
         if (!targetPetId) {
           throw new Error("No target pet ID provided for message generation");
         }
-        result = await handleGenerateMessage(petProfile, aiPersona, targetPetId, content);
+        result = await handleGenerateMessage(petProfile, aiPersona, targetPetId, content, relationshipData, relevantMemories);
         break;
       
       case "generate_caption":
@@ -99,6 +100,13 @@ serve(async (req) => {
       
       case "suggest_pets_to_follow":
         result = await handleSuggestPetsToFollow(petProfile);
+        break;
+      
+      case "generate_post_comment":
+        if (!postId || !postContent) {
+          throw new Error("Missing post details for comment generation");
+        }
+        result = await handleGeneratePostComment(petProfile, aiPersona, postContent, authorPetId, relevantMemories, relationshipData);
         break;
       
       default:
@@ -264,7 +272,7 @@ YOU MUST VARIATE YOUR ENDINGS - NEVER fall into a pattern of ending posts the sa
 }
 
 // Generate a direct message to another pet
-async function handleGenerateMessage(petProfile, aiPersona, targetPetId, providedContent) {
+async function handleGenerateMessage(petProfile, aiPersona, targetPetId, providedContent, relationshipData = null, relevantMemories = []) {
   const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openaiApiKey) {
     throw new Error("OPENAI_API_KEY environment variable not set");
@@ -281,7 +289,7 @@ async function handleGenerateMessage(petProfile, aiPersona, targetPetId, provide
     throw new Error(`Error fetching target pet profile: ${targetError?.message || "Target pet not found"}`);
   }
 
-  const prompt = `You are ${petProfile.name}, a ${petProfile.species} (${petProfile.breed}).
+  let prompt = `You are ${petProfile.name}, a ${petProfile.species} (${petProfile.breed}).
   
 Personality traits: ${aiPersona.quirks.join(", ")}
 Tone of voice: ${aiPersona.tone}
@@ -290,10 +298,27 @@ Common phrases: ${aiPersona.catchphrases.join(", ")}
 Interests: ${aiPersona.interests.join(", ")}
 Dislikes: ${aiPersona.dislikes.join(", ")}
 
-You are sending a direct message to ${targetPet.name}, a ${targetPet.age} year old ${targetPet.species} (${targetPet.breed}).
-${providedContent ? `The message should be about: "${providedContent}"` : "Create a friendly message to initiate conversation."}
+You are sending a direct message to ${targetPet.name}, a ${targetPet.age} year old ${targetPet.species} (${targetPet.breed}).`;
 
-Write a short, friendly message that reflects your personality and would be appropriate for a pet social media platform.`;
+  if (relationshipData) {
+    prompt += `\n\nYour relationship with ${targetPet.name}:
+- Type: ${relationshipData.relationship_type} (${relationshipData.relationship_type === 'friendly' ? 'you like this pet' : relationshipData.relationship_type === 'adverse' ? 'you have tensions with this pet' : 'you have a neutral relationship'})
+- Familiarity: ${relationshipData.familiarity}/10 (${relationshipData.familiarity > 7 ? 'very familiar' : relationshipData.familiarity > 4 ? 'somewhat familiar' : 'not very familiar'})
+- You've interacted ${relationshipData.interaction_history?.length || 0} times before`;
+  }
+
+  if (relevantMemories && relevantMemories.length > 0) {
+    prompt += `\n\nYour memories related to ${targetPet.name}:
+${relevantMemories.map(memory => `- ${memory.content}`).join("\n")}`;
+  }
+
+  if (providedContent) {
+    prompt += `\n\nThe message should be about: "${providedContent}"`;
+  } else {
+    prompt += "\n\nCreate a friendly message to initiate conversation.";
+  }
+
+  prompt += "\n\nWrite a short, friendly message that reflects your personality and would be appropriate for a pet social media platform.";
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -450,5 +475,92 @@ async function handleSuggestPetsToFollow(petProfile) {
   
   return {
       pets: suggestedPets,
+    };
+}
+
+// New function to generate a comment response to a post
+async function handleGeneratePostComment(petProfile, aiPersona, postContent, authorPetId, relevantMemories = [], relationshipData = null) {
+  const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!openaiApiKey) {
+    throw new Error("OPENAI_API_KEY environment variable not set");
+  }
+
+  // Get the post author's profile
+  const { data: authorPet, error: authorError } = await supabase
+    .from("pet_profiles")
+    .select("*")
+    .eq("id", authorPetId)
+    .single();
+  
+  if (authorError || !authorPet) {
+    throw new Error(`Error fetching author pet profile: ${authorError?.message || "Author pet not found"}`);
+  }
+
+  let prompt = `You are ${petProfile.name}, a ${petProfile.species} (${petProfile.breed}).
+  
+Personality traits: ${aiPersona.quirks.join(", ")}
+Tone of voice: ${aiPersona.tone}
+Writing style: ${aiPersona.writing_style}
+Common phrases: ${aiPersona.catchphrases.join(", ")}
+Interests: ${aiPersona.interests.join(", ")}
+Dislikes: ${aiPersona.dislikes.join(", ")}
+
+You are responding to a social media post made by ${authorPet.name}, a ${authorPet.species} (${authorPet.breed}).`;
+
+  if (relationshipData) {
+    prompt += `\n\nYour relationship with ${authorPet.name}:
+- Type: ${relationshipData.relationship_type} (${relationshipData.relationship_type === 'friendly' ? 'you like this pet' : relationshipData.relationship_type === 'adverse' ? 'you have tensions with this pet' : 'you have a neutral relationship'})
+- Familiarity: ${relationshipData.familiarity}/10 (${relationshipData.familiarity > 7 ? 'very familiar' : relationshipData.familiarity > 4 ? 'somewhat familiar' : 'not very familiar'})
+- You've interacted ${relationshipData.interaction_history?.length || 0} times before`;
+  }
+
+  if (relevantMemories && relevantMemories.length > 0) {
+    prompt += `\n\nYour memories related to ${authorPet.name} or similar situations:
+${relevantMemories.map(memory => `- ${memory.content}`).join("\n")}`;
+  }
+
+  prompt += `\n\nThe post you're responding to says: "${postContent}"
+
+Write a short, conversational comment (30-100 characters) that:
+1. Reflects your unique personality
+2. Is contextually relevant to the post
+3. Shows your relationship with ${authorPet.name}
+4. Encourages further engagement
+5. Feels natural and pet-like, not formal or human-like`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${openaiApiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a pet's social media manager. Write authentic, engaging comments in the voice of the pet based on their personality. Keep it short, casual and pet-like.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        }
+      ],
+      max_tokens: 100,
+      temperature: 0.8,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("OpenAI API error:", errorData);
+    throw new Error(`OpenAI API error: ${errorData.error?.message || "Unknown error"}`);
+  }
+
+  const result = await response.json();
+  const commentContent = result.choices[0].message.content;
+  
+  return {
+      content: commentContent,
     };
 }

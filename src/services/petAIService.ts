@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile, Post } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -74,18 +75,80 @@ export const petAIService = {
     }
   },
 
-  generateMessage: async (petId: string, targetPetId: string, content?: string): Promise<string | null> => {
+  generateMessage: async (
+    petId: string, 
+    targetPetId: string, 
+    content?: string, 
+    useRelationshipContext: boolean = true
+  ): Promise<string | null> => {
     try {
+      // Get relevant memories if using relationship context
+      let relevantMemories = [];
+      let relationshipData = null;
+      
+      if (useRelationshipContext) {
+        // Fetch relationship data to add context to the message
+        const { data: relationships, error: relationshipError } = await supabase.functions.invoke(
+          'pet-ai-learning', 
+          {
+            body: {
+              action: 'get_relationships',
+              petId,
+            },
+          }
+        );
+        
+        if (!relationshipError && relationships?.relationships) {
+          relationshipData = relationships.relationships.find(
+            (r: any) => r.related_pet_id === targetPetId
+          );
+        }
+        
+        // Fetch memories related to the target pet
+        const { data: memoryResult, error: memoryError } = await supabase.functions.invoke(
+          'pet-ai-learning',
+          {
+            body: {
+              action: 'retrieve_memories_by_related_pet',
+              petId,
+              relatedPetId: targetPetId,
+              limit: 5
+            },
+          }
+        );
+        
+        if (!memoryError && memoryResult?.memories) {
+          relevantMemories = memoryResult.memories;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
         body: {
           action: 'generate_message',
           petId,
           targetPetId,
-          content
+          content,
+          relationshipData,
+          relevantMemories
         },
       });
 
       if (error) throw error;
+      
+      // Store this interaction as a memory
+      if (data.content) {
+        await supabase.functions.invoke('pet-ai-learning', {
+          body: {
+            action: 'store_memory',
+            petId,
+            content: `Wrote to ${targetPetId}: "${data.content}"`,
+            type: 'message',
+            relatedId: targetPetId,
+            relatedType: 'pet',
+          },
+        });
+      }
+      
       return data.content || null;
     } catch (error) {
       console.error('Error generating message:', error);
@@ -169,6 +232,18 @@ export const petAIService = {
         .single();
         
       if (error) throw error;
+      
+      // Store this post as a memory for the pet
+      await supabase.functions.invoke('pet-ai-learning', {
+        body: {
+          action: 'store_memory',
+          petId,
+          content: `Posted: "${generatedContent}"`,
+          type: 'post',
+          relatedId: post.id,
+          relatedType: 'post',
+        },
+      });
       
       const mappedPost: Post = {
         id: post.id,
@@ -312,6 +387,85 @@ export const petAIService = {
         variant: 'destructive'
       });
       return false;
+    }
+  },
+  
+  // New method to generate contextual responses to specific posts
+  generatePostResponse: async (
+    petId: string,
+    postId: string,
+    postContent: string,
+    postAuthorPetId: string
+  ): Promise<string | null> => {
+    try {
+      // First, let's get memories related to this post or its author
+      const { data: memoriesResult, error: memoriesError } = await supabase.functions.invoke(
+        'pet-ai-learning',
+        {
+          body: {
+            action: 'retrieve_relevant_memories',
+            petId,
+            content: postContent,
+          },
+        }
+      );
+      
+      const relevantMemories = memoriesError ? [] : (memoriesResult?.memories || []);
+      
+      // Get relationship data with the post author
+      const { data: relationshipResult, error: relationshipError } = await supabase.functions.invoke(
+        'pet-ai-learning',
+        {
+          body: {
+            action: 'get_relationships',
+            petId,
+          },
+        }
+      );
+      
+      const relationship = relationshipError 
+        ? null 
+        : (relationshipResult?.relationships || [])
+            .find((r: any) => r.related_pet_id === postAuthorPetId);
+      
+      // Call the AI agent to generate a comment response
+      const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
+        body: {
+          action: 'generate_post_comment',
+          petId,
+          postId,
+          postContent,
+          authorPetId: postAuthorPetId,
+          relevantMemories,
+          relationship
+        },
+      });
+      
+      if (error) throw error;
+      
+      // Store this interaction as a memory
+      if (data.content) {
+        await supabase.functions.invoke('pet-ai-learning', {
+          body: {
+            action: 'store_memory',
+            petId,
+            content: `Commented on post: "${postContent}" with: "${data.content}"`,
+            type: 'comment',
+            relatedId: postId,
+            relatedType: 'post',
+          },
+        });
+      }
+      
+      return data.content || null;
+    } catch (error) {
+      console.error('Error generating post response:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate response to post',
+        variant: 'destructive'
+      });
+      return null;
     }
   }
 };

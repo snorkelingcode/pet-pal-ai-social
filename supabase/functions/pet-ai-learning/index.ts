@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -96,13 +97,21 @@ async function updateRelationship(petId: string, relatedPetId: string, sentiment
     
     const newFamiliarity = Math.min(10, currentFamiliarity + interactionWeight);
     
+    // Apply decay factor to old sentiment (0.8) and weight new sentiment (0.2)
     const newSentiment = (currentSentiment * 0.8) + (sentiment * 0.2);
+    
+    // Determine relationship type based on sentiment
+    let relationshipType = existingRelationship.relationship_type;
+    if (newSentiment > 0.3) relationshipType = 'friendly';
+    else if (newSentiment < -0.3) relationshipType = 'adverse';
+    else relationshipType = 'neutral';
     
     const { error: updateError } = await supabase
       .from('pet_relationships')
       .update({
         familiarity: newFamiliarity,
         sentiment: newSentiment,
+        relationship_type: relationshipType,
         last_interaction_at: new Date().toISOString()
       })
       .eq('id', existingRelationship.id);
@@ -371,13 +380,36 @@ async function trackInteraction(petId: string, relatedPetId: string, content: st
   }
 }
 
+// New function to retrieve memories by related pet
+async function retrieveMemoriesByRelatedPet(petId: string, relatedPetId: string, limit: number = 5) {
+  try {
+    const { data: memories, error } = await supabase
+      .from('pet_memories')
+      .select('*')
+      .eq('pet_id', petId)
+      .eq('related_pet_id', relatedPetId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error("Error retrieving memories by related pet:", error);
+      return [];
+    }
+    
+    return memories;
+  } catch (error) {
+    console.error("Error in retrieveMemoriesByRelatedPet:", error);
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { action, petId, content, type, relatedId, relatedType } = await req.json();
+    const { action, petId, content, type, relatedId, relatedType, relatedPetId, limit } = await req.json();
 
     switch (action) {
       case 'store_memory': {
@@ -465,6 +497,15 @@ serve(async (req) => {
             })
             .eq('id', memory.id);
         }
+        
+        return new Response(
+          JSON.stringify({ success: true, memories }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'retrieve_memories_by_related_pet': {
+        const memories = await retrieveMemoriesByRelatedPet(petId, relatedPetId, limit);
         
         return new Response(
           JSON.stringify({ success: true, memories }),
