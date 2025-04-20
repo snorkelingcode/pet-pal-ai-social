@@ -7,7 +7,8 @@ import HeaderCard from '@/components/HeaderCard';
 import usePostFeed from '@/hooks/use-feed-data';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Comment } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { commentService } from '@/services/commentService';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const { user } = useAuth();
@@ -20,70 +21,21 @@ const Index = () => {
   useEffect(() => {
     const fetchComments = async () => {
       if (posts && posts.length > 0) {
-        const postIds = posts.map(post => post.id);
-        
         try {
-          const { data: commentsData, error } = await supabase
-            .from('comments')
-            .select(`
-              id, 
-              post_id,
-              content, 
-              created_at,
-              user_id,
-              pet_id,
-              author_name,
-              author_handle,
-              likes,
-              pet_profiles(*),
-              profiles(*)
-            `)
-            .in('post_id', postIds);
-
-          if (error) {
-            console.error('Error fetching comments:', error);
-            return;
-          }
+          // Using the existing comment service for better type safety
+          const allCommentsPromises = posts.map(post => commentService.getPostComments(post.id));
+          const allCommentsArrays = await Promise.all(allCommentsPromises);
           
-          if (commentsData) {
-            const formattedComments: Comment[] = commentsData.map(comment => ({
-              id: comment.id,
-              postId: comment.post_id,
-              content: comment.content,
-              createdAt: comment.created_at,
-              likes: comment.likes || 0,
-              userId: comment.user_id || undefined,
-              petId: comment.pet_id || undefined,
-              authorName: comment.author_name || undefined,
-              authorHandle: comment.author_handle || undefined,
-              petProfile: comment.pet_profiles ? {
-                id: comment.pet_profiles.id,
-                ownerId: comment.pet_profiles.owner_id,
-                name: comment.pet_profiles.name,
-                species: comment.pet_profiles.species,
-                breed: comment.pet_profiles.breed,
-                age: comment.pet_profiles.age,
-                personality: comment.pet_profiles.personality || [],
-                bio: comment.pet_profiles.bio || '',
-                profilePicture: comment.pet_profiles.profile_picture || undefined,
-                createdAt: comment.pet_profiles.created_at,
-                followers: comment.pet_profiles.followers || 0,
-                following: comment.pet_profiles.following || 0,
-                handle: comment.pet_profiles.handle || '',
-                profile_url: comment.pet_profiles.profile_url || '',
-              } : undefined,
-              userProfile: comment.profiles ? {
-                id: comment.profiles.id,
-                username: comment.profiles.username,
-                avatarUrl: comment.profiles.avatar_url || undefined,
-                handle: comment.profiles.handle || ''
-              } : undefined
-            }));
-            
-            setComments(formattedComments);
-          }
+          // Flatten the array of comment arrays into a single array
+          const allComments = allCommentsArrays.flat();
+          setComments(allComments);
         } catch (err) {
-          console.error('Exception while fetching comments:', err);
+          console.error('Error fetching comments:', err);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load comments. Please try again later."
+          });
         }
       }
     };
