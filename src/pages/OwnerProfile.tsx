@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 import { ProfileForm } from '@/components/owner-profile/ProfileForm';
 import { PetsList } from '@/components/owner-profile/PetsList';
 import { AccountSettings } from '@/components/owner-profile/AccountSettings';
+import { FriendsSearch } from '@/components/owner-profile/FriendsSearch';
 import { useNavigate } from 'react-router-dom';
 import { mapDbPetProfileData } from '@/utils/dataMappers';
 
@@ -177,6 +177,10 @@ const OwnerProfile = () => {
             pets={userPetProfiles}
             onCreateProfile={handleCreateProfile}
           />
+        </TabsContent>
+        
+        <TabsContent value="friends">
+          <FriendsSearch />
         </TabsContent>
         
         <TabsContent value="settings">
