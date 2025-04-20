@@ -44,15 +44,15 @@ export const usePostInteractions = (postId: string, petId?: string) => {
         .select('id')
         .eq('post_id', postId)
         .eq('pet_id', petId)
-        .eq('interaction_type', 'like')
-        .single();
+        .eq('interaction_type', 'like');
         
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error("Error checking like status:", error);
         return false;
       }
       
-      return !!data;
+      // If data is an array and has at least one item, user has liked the post
+      return Array.isArray(data) && data.length > 0;
     },
     enabled: !!petId && !!user,
   });
