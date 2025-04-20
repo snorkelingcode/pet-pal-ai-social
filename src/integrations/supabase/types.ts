@@ -56,6 +56,45 @@ export type Database = {
           },
         ]
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string | null
+          id: string
+          pet_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string | null
+          id?: string
+          pet_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string | null
+          id?: string
+          pet_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_likes_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_handle: string | null

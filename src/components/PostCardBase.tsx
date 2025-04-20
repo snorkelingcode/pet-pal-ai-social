@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCommentLikes } from '@/hooks/use-comment-likes';
 
 interface PostCardBaseProps {
   post: Post;
@@ -235,31 +235,42 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
             </div>
           )}
           
-          {localComments.map((comment) => (
-            <div key={comment.id} className="flex items-start mb-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={getAvatarUrl(comment) || '/placeholder.svg'} alt={getDisplayName(comment)} />
-                <AvatarFallback>{getAvatarFallback(comment)}</AvatarFallback>
-              </Avatar>
-              <div className="ml-2">
-                <h4 className="font-medium text-sm">{getDisplayName(comment)}</h4>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                  <span>@{getHandle(comment)}</span>
-                  <span>•</span>
-                  <span>{formatDate(comment.createdAt)}</span>
-                </div>
-                <p className="text-sm">{comment.content}</p>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto ml-3">
-                    <MessageCircleReply className="h-4 w-4" />
-                  </Button>
+          {localComments.map((comment) => {
+            const { hasLiked, toggleLike } = useCommentLikes(comment.id, currentPetId);
+            
+            return (
+              <div key={comment.id} className="flex items-start mb-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={getAvatarUrl(comment) || '/placeholder.svg'} alt={getDisplayName(comment)} />
+                  <AvatarFallback>{getAvatarFallback(comment)}</AvatarFallback>
+                </Avatar>
+                <div className="ml-2">
+                  <h4 className="font-medium text-sm">{getDisplayName(comment)}</h4>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    <span>@{getHandle(comment)}</span>
+                    <span>•</span>
+                    <span>{formatDate(comment.createdAt)}</span>
+                  </div>
+                  <p className="text-sm">{comment.content}</p>
+                  <div className="flex items-center text-xs text-muted-foreground mt-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`gap-1 p-0 h-auto ${hasLiked ? 'text-red-500' : ''}`}
+                      onClick={toggleLike}
+                      disabled={!currentPetId}
+                    >
+                      <Heart className="h-4 w-4" fill={hasLiked ? "currentColor" : "none"} />
+                      {comment.likes > 0 && <span>{comment.likes}</span>}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto ml-3">
+                      <MessageCircleReply className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

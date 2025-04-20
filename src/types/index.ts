@@ -53,6 +53,7 @@ export interface Comment {
     avatarUrl?: string;
     handle: string;
   };
+  hasLiked?: boolean;
 }
 
 export interface AIPersona {
