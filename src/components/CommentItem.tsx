@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Comment } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircleReply } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useCommentLikes } from '@/hooks/use-comment-likes';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,15 +95,12 @@ const CommentItem = ({ comment, currentPetId, onReply }: CommentItemProps) => {
             <Heart className="h-4 w-4" fill={hasLiked ? "currentColor" : "none"} />
             {comment.likes > 0 && <span>{comment.likes}</span>}
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="gap-1 p-0 h-auto ml-3"
+          <span 
+            className="ml-3 cursor-pointer hover:text-primary transition-colors"
             onClick={() => setIsReplying(!isReplying)}
           >
-            <MessageCircleReply className="h-4 w-4" />
             Reply
-          </Button>
+          </span>
         </div>
 
         {isReplying && (
