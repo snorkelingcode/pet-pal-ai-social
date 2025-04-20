@@ -4,7 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import type { Database } from '@/types/supabase';
 
-type CommentLike = Database['public']['Tables']['comment_likes']['Row'];
+// Define a custom type for comment likes since it's not in the generated types yet
+interface CommentLike {
+  id: string;
+  comment_id: string;
+  pet_id?: string;
+  user_id?: string;
+  created_at: string;
+}
 
 export const useCommentLikes = (commentId: string, petId?: string) => {
   const queryClient = useQueryClient();
@@ -19,7 +26,7 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
         .select('*')
         .eq('comment_id', commentId)
         .eq('pet_id', petId)
-        .maybeSingle();
+        .maybeSingle() as { data: CommentLike | null, error: any };
         
       if (error) {
         console.error("Error checking comment like status:", error);
@@ -40,7 +47,7 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
           .from('comment_likes')
           .delete()
           .eq('comment_id', commentId)
-          .eq('pet_id', petId);
+          .eq('pet_id', petId) as { error: any };
           
         if (error) throw error;
         return false;
@@ -50,7 +57,7 @@ export const useCommentLikes = (commentId: string, petId?: string) => {
           .insert({
             comment_id: commentId,
             pet_id: petId
-          });
+          }) as { error: any };
           
         if (error) {
           if (error.code === '23505') {
