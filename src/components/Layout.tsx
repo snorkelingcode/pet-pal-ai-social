@@ -41,7 +41,7 @@ const Layout = ({
           <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} />
         </div>}
         
-        <main className={`flex-1 p-4 flex justify-center ${isMobile ? 'w-full' : ''}`}>
+        <main className={`flex-1 p-4 flex justify-center ${isMobile ? 'w-full px-2' : ''}`}>
           <div className={`w-full ${!hideRightSidebar && !isMobile ? 'max-w-[600px]' : ''}`}>
             {children}
           </div>
@@ -49,7 +49,7 @@ const Layout = ({
         </main>
         
         {authReady && isMobile && user && (
-          <div className="fixed bottom-0 left-0 right-0 bg-petpal-mint/20 border-t z-10">
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-background border-t z-10">
             <div className="flex justify-around items-center py-3">
               <button 
                 onClick={() => handleNavigation('feed')}
