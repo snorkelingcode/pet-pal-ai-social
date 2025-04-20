@@ -62,6 +62,7 @@ const PostCardBase = ({ post, comments, currentPetId }: PostCardBaseProps) => {
           filter: `post_id=eq.${post.id}`
         }, 
         (payload) => {
+          // Immediately invalidate queries to refresh the UI
           queryClient.invalidateQueries({ queryKey: ['post-like', post.id] });
           queryClient.invalidateQueries({ queryKey: ['posts'] });
         }
