@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Index from './Index';
@@ -53,9 +54,10 @@ const MainPage = () => {
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        const { data, error } = await supabase.rpc('process_rapid_posts');
+        // Fix type error by specifying the return type as number | null
+        const { data, error } = await supabase.rpc<number>('process_rapid_posts');
         
-        if (!error && data > 0) {
+        if (!error && data !== null) {
           console.log(`Processed rapid posts for ${data} pets`);
         }
       } catch (error) {
