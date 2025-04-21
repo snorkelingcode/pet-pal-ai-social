@@ -77,7 +77,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const [petRelationships, setPetRelationships] = useState<any[]>([]);
   const [useMemories, setUseMemories] = useState(true);
   const [every2Minutes, setEvery2Minutes] = useState(false);
-  const { data: scheduledPosts, refetch: refetchScheduledPosts } = useScheduledPosts(petProfile.id);
+  const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
   const [serviceError, setServiceError] = useState(false);
   const isMobile = useIsMobile();
 
@@ -162,7 +162,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
     setLoading(true);
     try {
       const relevantMemories = await getRelevantMemories(voiceExample);
-      const options = {
+      const options: any = {
         frequency,
         postingTime,
         includeImages,
@@ -178,9 +178,6 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         options
       );
       if (success) {
-        // Refetch the scheduled posts to show the new ones
-        refetchScheduledPosts();
-        
         toast({
           title: "Posts Scheduled",
           description: every2Minutes
