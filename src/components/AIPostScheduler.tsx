@@ -88,13 +88,13 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         const relationships = await petMemoryService.getPetRelationships(petProfile.id);
         setPetMemories(memories);
         setPetRelationships(relationships);
-        
+
         const { data, error } = await supabase
           .from('pet_profiles')
           .select('rapid_posting')
           .eq('id', petProfile.id)
           .single();
-          
+
         if (!error && data) {
           setEvery2Minutes(!!data.rapid_posting);
         }
@@ -228,26 +228,25 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         .from('pet_profiles')
         .update({ rapid_posting: enabled })
         .eq('id', petProfile.id);
-        
+
       if (error) {
         throw error;
       }
-      
+
       setEvery2Minutes(enabled);
       toast({
         title: enabled ? "Rapid Posting Enabled" : "Rapid Posting Disabled",
-        description: enabled 
-          ? "Your pet will now post something new every 2 minutes!" 
+        description: enabled
+          ? "Your pet will now post something new every 2 minutes!"
           : "Your pet will return to normal posting schedule.",
       });
-      
+
       await storeMemory(
-        enabled 
-          ? "Enabled rapid posting mode - posting every 2 minutes" 
+        enabled
+          ? "Enabled rapid posting mode - posting every 2 minutes"
           : "Disabled rapid posting mode",
         'settings_change'
       );
-      
     } catch (error) {
       console.error("Error updating rapid posting setting:", error);
       toast({

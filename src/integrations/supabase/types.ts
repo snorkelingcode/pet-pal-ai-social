@@ -342,6 +342,7 @@ export type Database = {
           personality: string[]
           profile_picture: string | null
           profile_url: string
+          rapid_posting: boolean | null
           species: string
         }
         Insert: {
@@ -358,6 +359,7 @@ export type Database = {
           personality?: string[]
           profile_picture?: string | null
           profile_url?: string
+          rapid_posting?: boolean | null
           species: string
         }
         Update: {
@@ -374,6 +376,7 @@ export type Database = {
           personality?: string[]
           profile_picture?: string | null
           profile_url?: string
+          rapid_posting?: boolean | null
           species?: string
         }
         Relationships: [
@@ -757,6 +760,10 @@ export type Database = {
           content: string
           similarity: number
         }[]
+      }
+      process_rapid_posts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       process_scheduled_posts: {
         Args: Record<PropertyKey, never>

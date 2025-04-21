@@ -12,6 +12,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'owner-profile';
 
+const SECTION_TYPES: SectionType[] = [
+  'feed', 'profile', 'messages', 'notifications', 'favorites', 'owner-profile'
+];
+
 export const MainPageContext = React.createContext<{
   activeSection: SectionType;
 }>({
@@ -26,13 +30,13 @@ const MainPage = () => {
   const petIdFromParams = params.petId;
   
   const getInitialSection = (): SectionType => {
-    const hash = location.hash.replace('#', '') as SectionType;
+    const hash = location.hash.replace('#', '');
     // If we're on a pet profile URL, default to the profile section
     if (petIdFromParams) {
       return 'profile';
     }
-    return ['feed', 'profile', 'messages', 'notifications', 'favorites', 'owner-profile'].includes(hash) 
-      ? hash 
+    return SECTION_TYPES.includes(hash as SectionType)
+      ? (hash as SectionType)
       : 'feed';
   };
   

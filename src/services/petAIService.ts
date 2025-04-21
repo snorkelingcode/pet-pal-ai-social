@@ -274,8 +274,8 @@ export const petAIService = {
     options?: ScheduleOptions
   ): Promise<boolean> => {
     try {
-      const { 
-        frequency = 'daily', 
+      const {
+        frequency = 'daily',
         postingTime = 'random',
         includeImages = true,
         voiceExample = '',
@@ -289,32 +289,11 @@ export const petAIService = {
           .from('pet_profiles')
           .update({ rapid_posting: true })
           .eq('id', petId);
-          
         if (updateError) throw updateError;
-
-        const now = new Date();
-        const scheduledPosts = [];
-        for (let i = 0; i < 10; i++) {
-          const scheduledDate = new Date(now.getTime() + i * 2 * 60 * 1000);
-          scheduledPosts.push({
-            pet_id: petId,
-            scheduled_for: scheduledDate.toISOString(),
-            content_theme: contentTheme,
-            include_images: includeImages,
-            voice_example: voiceExample,
-            status: 'pending'
-          });
-        }
-
-        const { data, error } = await supabase
-          .from('scheduled_posts')
-          .insert(scheduledPosts);
-
-        if (error) throw error;
 
         toast({
           title: 'Rapid Posts Scheduled',
-          description: `Your pet will post something random every 2 minutes for the next 20 minutes!`,
+          description: `Your pet will post something random every 2 minutes for as long as rapid posting is enabled!`,
         });
 
         return true;

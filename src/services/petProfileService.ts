@@ -94,10 +94,10 @@ export const petProfileService = {
   updatePetProfile: async (petId: string, profileData: Partial<PetProfile>): Promise<PetProfile> => {
     try {
       console.log("Updating pet profile:", petId, profileData);
-      
+
       // Convert from frontend structure to database structure
       const updates: Partial<DbPetProfile> = {};
-      
+
       if (profileData.name !== undefined) updates.name = profileData.name;
       if (profileData.species !== undefined) updates.species = profileData.species;
       if (profileData.breed !== undefined) updates.breed = profileData.breed;
@@ -109,20 +109,24 @@ export const petProfileService = {
         updates.handle = profileData.handle;
         updates.profile_url = `/pet/${profileData.handle}`;
       }
-      
+      if ((profileData as any).rapid_posting !== undefined) {
+        // Cast required due to type uncertainty
+        (updates as any).rapid_posting = (profileData as any).rapid_posting;
+      }
+
       const { data, error } = await supabase
         .from('pet_profiles')
         .update(updates)
         .eq('id', petId)
         .select()
         .single();
-        
+
       if (error) throw error;
-      
+
       console.log("Pet profile updated successfully:", data);
-      
+
       if (!data) throw new Error('No data returned from pet profile update');
-      
+
       return mapDbPetProfileData(data);
     } catch (error) {
       console.error('Error updating pet profile:', error);

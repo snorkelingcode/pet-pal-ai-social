@@ -131,6 +131,9 @@ export interface Database {
           personality: string[]
           profile_picture: string | null
           species: string
+          rapid_posting: boolean
+          handle: string
+          profile_url: string
         }
         Insert: {
           age: number
@@ -145,6 +148,9 @@ export interface Database {
           personality?: string[]
           profile_picture?: string | null
           species: string
+          rapid_posting?: boolean
+          handle: string
+          profile_url: string
         }
         Update: {
           age?: number
@@ -159,6 +165,9 @@ export interface Database {
           personality?: string[]
           profile_picture?: string | null
           species?: string
+          rapid_posting?: boolean
+          handle?: string
+          profile_url?: string
         }
         Relationships: [
           {
