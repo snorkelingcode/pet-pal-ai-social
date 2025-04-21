@@ -54,8 +54,8 @@ const MainPage = () => {
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        // Fix type error by specifying the return type as number | null
-        const { data, error } = await supabase.rpc<number>('process_rapid_posts');
+        // Fix type error by specifying both required type parameters: return type and parameters type
+        const { data, error } = await supabase.rpc<number, {}>('process_rapid_posts');
         
         if (!error && data !== null) {
           console.log(`Processed rapid posts for ${data} pets`);
