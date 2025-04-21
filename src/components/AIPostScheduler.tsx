@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +79,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
   const { data: scheduledPosts } = useScheduledPosts(petProfile.id);
   const [serviceError, setServiceError] = useState(false);
   const isMobile = useIsMobile();
+  const [updatingRapidPosting, setUpdatingRapidPosting] = useState(false);
 
   useEffect(() => {
     if (open && petProfile.id) {
@@ -88,6 +88,16 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
         const relationships = await petMemoryService.getPetRelationships(petProfile.id);
         setPetMemories(memories);
         setPetRelationships(relationships);
+        
+        const { data, error } = await supabase
+          .from('pet_profiles')
+          .select('rapid_posting')
+          .eq('id', petProfile.id)
+          .single();
+          
+        if (!error && data) {
+          setEvery2Minutes(!!data.rapid_posting);
+        }
       };
       
       fetchPetData();
@@ -209,6 +219,49 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateRapidPosting = async (enabled: boolean) => {
+    setUpdatingRapidPosting(true);
+    try {
+      const { error } = await supabase
+        .from('pet_profiles')
+        .update({ rapid_posting: enabled })
+        .eq('id', petProfile.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setEvery2Minutes(enabled);
+      toast({
+        title: enabled ? "Rapid Posting Enabled" : "Rapid Posting Disabled",
+        description: enabled 
+          ? "Your pet will now post something new every 2 minutes!" 
+          : "Your pet will return to normal posting schedule.",
+      });
+      
+      await storeMemory(
+        enabled 
+          ? "Enabled rapid posting mode - posting every 2 minutes" 
+          : "Disabled rapid posting mode",
+        'settings_change'
+      );
+      
+    } catch (error) {
+      console.error("Error updating rapid posting setting:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update rapid posting setting",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingRapidPosting(false);
+    }
+  };
+
+  const handleRapidPostingToggle = (enabled: boolean) => {
+    updateRapidPosting(enabled);
   };
 
   const isVoiceExampleProvided = voiceExample.trim().length > 0;
@@ -439,17 +492,19 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
                     <Switch
                       id="every-2-minutes"
                       checked={every2Minutes}
-                      onCheckedChange={setEvery2Minutes}
+                      onCheckedChange={handleRapidPostingToggle}
+                      disabled={updatingRapidPosting}
                     />
                     <Label htmlFor="every-2-minutes" className="flex items-center gap-2">
                       <Timer size={16} />
                       Post every 2 minutes
+                      {updatingRapidPosting && <span className="text-xs text-muted-foreground ml-2">(Updating...)</span>}
                     </Label>
                   </div>
                   {every2Minutes && (
                     <Alert className="bg-muted">
                       <AlertDescription>
-                        Your pet will post something random every 2 minutes. All other schedule settings will be ignored.
+                        <strong>Rapid posting enabled:</strong> Your pet will post something new every 2 minutes. This setting is persistent and will continue even when you're not logged in.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -515,7 +570,7 @@ const AIPostScheduler = ({ petProfile }: AIPostSchedulerProps) => {
             <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6 pb-6">
               <Button 
                 onClick={scheduleAIPosts} 
-                disabled={loading || !isVoiceExampleProvided || serviceError}
+                disabled={loading || !isVoiceExampleProvided || serviceError || every2Minutes}
                 className="w-full sm:w-auto"
               >
                 {loading ? "Processing..." : "Schedule Posts"}

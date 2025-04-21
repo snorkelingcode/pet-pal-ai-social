@@ -7,6 +7,8 @@ import Notifications from './Notifications';
 import Favorites from './Favorites';
 import OwnerProfile from './OwnerProfile';
 import { useLocation, useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 type SectionType = 'feed' | 'profile' | 'messages' | 'notifications' | 'favorites' | 'owner-profile';
 
@@ -42,6 +44,31 @@ const MainPage = () => {
       setActiveSection('profile');
     }
   }, [petIdFromParams]);
+
+  // Effect to check for and activate the cron process for rapid posting
+  useEffect(() => {
+    const activateRapidPostingProcess = async () => {
+      try {
+        const { data, error } = await supabase.rpc('process_rapid_posts');
+        
+        if (!error && data > 0) {
+          console.log(`Processed rapid posts for ${data} pets`);
+        }
+      } catch (error) {
+        console.error("Error activating rapid posting process:", error);
+      }
+    };
+
+    // Run once on component mount
+    activateRapidPostingProcess();
+
+    // Set up a polling interval (every 5 minutes) to keep the cron job active
+    const interval = setInterval(() => {
+      activateRapidPostingProcess();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
   
   const changeSection = (section: SectionType) => {
     setActiveSection(section);
