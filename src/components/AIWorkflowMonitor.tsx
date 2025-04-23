@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, AlertTriangle, Clock, RefreshCw } from 'lucide-react';
 import { n8nMonitoringService } from '@/services/n8nMonitoringService';
 import { formatDistanceToNow } from 'date-fns';
-import { WorkflowExecution } from '@/types';
+import { WorkflowExecution } from '@/types/workflow';
 
 const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
@@ -85,11 +86,12 @@ const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
   };
 
   const getStatusBadge = (status: string) => {
+    // Changed type to only include valid badge variants
     let variant: 'default' | 'destructive' | 'outline' | 'secondary' = 'outline';
     
     switch (status) {
       case 'completed':
-        variant = 'default';
+        variant = 'default'; // Use default (green) instead of "success"
         break;
       case 'error':
       case 'failed':

@@ -303,15 +303,7 @@ export const petAIService = {
   scheduleAIPosts: async (
     petId: string, 
     numberOfPosts: number = 5,
-    options?: {
-      frequency?: string;
-      postingTime?: string;
-      includeImages?: boolean;
-      voiceExample?: string;
-      contentTheme?: string;
-      memories?: any[];
-      every2Minutes?: boolean;
-    }
+    options?: ScheduleOptions
   ): Promise<boolean> => {
     try {
       const {

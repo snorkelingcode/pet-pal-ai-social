@@ -1,18 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { WorkflowExecution } from '@/types';
+import { WorkflowExecution } from '@/types/workflow';
 
 export const n8nMonitoringService = {
   getRecentWorkflows: async (limit: number = 20): Promise<WorkflowExecution[]> => {
     try {
-      // Use RPC function instead of direct table access
+      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc('get_recent_workflows', {
         limit_count: limit
       });
         
       if (error) throw error;
-      return data || [];
+      return data as WorkflowExecution[] || [];
     } catch (error) {
       console.error('Error fetching workflow executions:', error);
       toast({
@@ -26,13 +26,13 @@ export const n8nMonitoringService = {
   
   getPetWorkflows: async (petId: string): Promise<WorkflowExecution[]> => {
     try {
-      // Use RPC function instead of direct table access
+      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc('get_pet_workflows', {
         p_pet_id: petId
       });
         
       if (error) throw error;
-      return data || [];
+      return data as WorkflowExecution[] || [];
     } catch (error) {
       console.error('Error fetching pet workflow executions:', error);
       toast({
@@ -52,6 +52,7 @@ export const n8nMonitoringService = {
     success_rate: number
   }> => {
     try {
+      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc('get_workflow_stats');
         
       if (error) throw error;
@@ -77,6 +78,7 @@ export const n8nMonitoringService = {
   
   retryWorkflow: async (workflowId: string, executionId: string): Promise<boolean> => {
     try {
+      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc('retry_n8n_workflow', {
         p_workflow_id: workflowId,
         p_execution_id: executionId

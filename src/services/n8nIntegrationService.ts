@@ -5,8 +5,7 @@ import { toast } from '@/components/ui/use-toast';
 export const n8nIntegrationService = {
   setWebhookUrl: async (petId: string, webhookUrl: string): Promise<boolean> => {
     try {
-      // The error is because n8n_webhook_url doesn't exist in the type definition
-      // We'll use a raw update query instead
+      // Use the RPC function which was created in the database
       const { error } = await supabase.rpc('update_pet_webhook_url', {
         p_pet_id: petId,
         p_webhook_url: webhookUrl
@@ -33,6 +32,7 @@ export const n8nIntegrationService = {
   
   testIntegration: async (petId: string): Promise<boolean> => {
     try {
+      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc('start_n8n_workflow', {
         workflow_id: 'test-integration',
         workflow_name: 'Test n8n Integration',
@@ -65,7 +65,7 @@ export const n8nIntegrationService = {
   
   checkWorkflowStatus: async (workflowId: string, executionId: string): Promise<string> => {
     try {
-      // Use a custom RPC function instead of direct table access
+      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc('get_workflow_status', {
         p_workflow_id: workflowId,
         p_execution_id: executionId

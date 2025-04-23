@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Index from './Index';
@@ -53,10 +54,10 @@ const MainPage = () => {
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        // Use properly typed RPC call
-        const { data, error } = await supabase.rpc<number, {}>('trigger_n8n_rapid_posts');
+        // Use properly typed RPC call without generic typing
+        const { data, error } = await supabase.rpc('trigger_n8n_rapid_posts');
         
-        if (!error && data !== null) {
+        if (!error && data) {
           console.log(`Triggered n8n workflows for ${data} pets`);
         }
       } catch (error) {
