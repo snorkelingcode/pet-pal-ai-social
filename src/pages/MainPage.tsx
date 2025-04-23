@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Index from './Index';
@@ -32,7 +31,6 @@ const MainPage = () => {
   
   const getInitialSection = (): SectionType => {
     const hash = location.hash.replace('#', '');
-    // If we're on a pet profile URL, default to the profile section
     if (petIdFromParams) {
       return 'profile';
     }
@@ -43,20 +41,16 @@ const MainPage = () => {
   
   const [activeSection, setActiveSection] = useState<SectionType>(getInitialSection());
   
-  // Effect to update section when URL params change
   useEffect(() => {
     if (petIdFromParams) {
       setActiveSection('profile');
     }
   }, [petIdFromParams]);
 
-  // Effect to check for and activate the n8n process for rapid posting
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        // Use properly typed RPC call - no parameters needed for this function
         const { data, error } = await supabase.rpc('trigger_n8n_rapid_posts');
-        
         if (!error && data) {
           console.log(`Triggered n8n workflows for ${data} pets`);
         }
@@ -65,20 +59,17 @@ const MainPage = () => {
       }
     };
 
-    // Run once on component mount
     activateRapidPostingProcess();
 
-    // Set up a polling interval (every 5 minutes) to keep the cron job active
     const interval = setInterval(() => {
       activateRapidPostingProcess();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
-  
+
   const changeSection = (section: SectionType) => {
     setActiveSection(section);
-    // If we're on a pet profile URL, maintain that in the hash navigation
     if (petIdFromParams) {
       navigate(`/pet/${petIdFromParams}#${section}`);
     } else {

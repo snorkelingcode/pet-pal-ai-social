@@ -1,42 +1,27 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-// Define types for RPC function parameters and return types
-type UpdatePetWebhookUrlParams = {
-  p_pet_id: string;
-  p_webhook_url: string;
-}
-
-type StartN8nWorkflowParams = {
-  workflow_id: string;
-  workflow_name: string;
-  webhook_url: string;
-  payload: string;
-  pet_id: string;
-}
-
-type GetWorkflowStatusParams = {
-  p_workflow_id: string;
-  p_execution_id: string;
-}
+type UpdatePetWebhookUrlParams = Database['public']['Functions']['update_pet_webhook_url']['Args'];
+type StartN8nWorkflowParams = Database['public']['Functions']['start_n8n_workflow']['Args'];
+type GetWorkflowStatusParams = Database['public']['Functions']['get_workflow_status']['Args'];
 
 export const n8nIntegrationService = {
   setWebhookUrl: async (petId: string, webhookUrl: string): Promise<boolean> => {
     try {
-      // Use the RPC function which was created in the database
       const { error } = await supabase.rpc(
-        'update_pet_webhook_url', 
+        'update_pet_webhook_url',
         { p_pet_id: petId, p_webhook_url: webhookUrl } as UpdatePetWebhookUrlParams
       );
-      
+
       if (error) throw error;
-      
+
       toast({
         title: 'Webhook URL Updated',
         description: 'Your n8n webhook URL has been updated successfully'
       });
-      
+
       return true;
     } catch (error) {
       console.error('Error updating webhook URL:', error);
@@ -48,31 +33,31 @@ export const n8nIntegrationService = {
       return false;
     }
   },
-  
+
   testIntegration: async (petId: string): Promise<boolean> => {
     try {
-      // Use typed parameters for RPC call
-      const { data, error } = await supabase.rpc(
-        'start_n8n_workflow', 
+      const { error } = await supabase.rpc(
+        'start_n8n_workflow',
         {
           workflow_id: 'test-integration',
           workflow_name: 'Test n8n Integration',
           webhook_url: 'https://n8n.example.com/webhook/test',
-          payload: JSON.stringify({
+          payload: {
             petId,
             testMessage: 'This is a test from PetPal AI'
-          }),
-          pet_id: petId
+          },
+          pet_id: petId,
+          action_type: 'test_integration'
         } as StartN8nWorkflowParams
       );
-      
+
       if (error) throw error;
-      
+
       toast({
         title: 'Test Successful',
         description: 'Successfully connected to n8n'
       });
-      
+
       return true;
     } catch (error) {
       console.error('Error testing n8n integration:', error);
@@ -84,20 +69,18 @@ export const n8nIntegrationService = {
       return false;
     }
   },
-  
+
   checkWorkflowStatus: async (workflowId: string, executionId: string): Promise<string> => {
     try {
-      // Use typed parameters for RPC call
       const { data, error } = await supabase.rpc(
-        'get_workflow_status', 
+        'get_workflow_status',
         {
           p_workflow_id: workflowId,
           p_execution_id: executionId
         } as GetWorkflowStatusParams
       );
-      
+
       if (error) throw error;
-      
       return data || 'unknown';
     } catch (error) {
       console.error('Error checking workflow status:', error);

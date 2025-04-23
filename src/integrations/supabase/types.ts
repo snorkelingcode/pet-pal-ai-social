@@ -180,6 +180,85 @@ export type Database = {
           },
         ]
       }
+      n8n_workflow_executions: {
+        Row: {
+          action_type:
+            | Database["public"]["Enums"]["workflow_action_type"]
+            | null
+          completed_at: string | null
+          error: string | null
+          execution_data: Json | null
+          execution_id: string | null
+          id: string
+          pet_id: string | null
+          post_id: string | null
+          scheduled_post_id: string | null
+          started_at: string
+          status: string
+          webhook_url: string | null
+          workflow_id: string
+          workflow_name: string
+        }
+        Insert: {
+          action_type?:
+            | Database["public"]["Enums"]["workflow_action_type"]
+            | null
+          completed_at?: string | null
+          error?: string | null
+          execution_data?: Json | null
+          execution_id?: string | null
+          id?: string
+          pet_id?: string | null
+          post_id?: string | null
+          scheduled_post_id?: string | null
+          started_at?: string
+          status?: string
+          webhook_url?: string | null
+          workflow_id: string
+          workflow_name: string
+        }
+        Update: {
+          action_type?:
+            | Database["public"]["Enums"]["workflow_action_type"]
+            | null
+          completed_at?: string | null
+          error?: string | null
+          execution_data?: Json | null
+          execution_id?: string | null
+          id?: string
+          pet_id?: string | null
+          post_id?: string | null
+          scheduled_post_id?: string | null
+          started_at?: string
+          status?: string
+          webhook_url?: string | null
+          workflow_id?: string
+          workflow_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "n8n_workflow_executions_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pet_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "n8n_workflow_executions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "n8n_workflow_executions_scheduled_post_id_fkey"
+            columns: ["scheduled_post_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_follows: {
         Row: {
           created_at: string
@@ -337,6 +416,7 @@ export type Database = {
           following: number
           handle: string
           id: string
+          n8n_webhook_url: string | null
           name: string
           owner_id: string
           personality: string[]
@@ -354,6 +434,7 @@ export type Database = {
           following?: number
           handle: string
           id?: string
+          n8n_webhook_url?: string | null
           name: string
           owner_id: string
           personality?: string[]
@@ -371,6 +452,7 @@ export type Database = {
           following?: number
           handle?: string
           id?: string
+          n8n_webhook_url?: string | null
           name?: string
           owner_id?: string
           personality?: string[]
@@ -692,6 +774,62 @@ export type Database = {
           sentiment: number | null
         }[]
       }
+      get_pet_workflows: {
+        Args: { p_pet_id: string }
+        Returns: {
+          action_type:
+            | Database["public"]["Enums"]["workflow_action_type"]
+            | null
+          completed_at: string | null
+          error: string | null
+          execution_data: Json | null
+          execution_id: string | null
+          id: string
+          pet_id: string | null
+          post_id: string | null
+          scheduled_post_id: string | null
+          started_at: string
+          status: string
+          webhook_url: string | null
+          workflow_id: string
+          workflow_name: string
+        }[]
+      }
+      get_recent_workflows: {
+        Args: { limit_count?: number }
+        Returns: {
+          action_type:
+            | Database["public"]["Enums"]["workflow_action_type"]
+            | null
+          completed_at: string | null
+          error: string | null
+          execution_data: Json | null
+          execution_id: string | null
+          id: string
+          pet_id: string | null
+          post_id: string | null
+          scheduled_post_id: string | null
+          started_at: string
+          status: string
+          webhook_url: string | null
+          workflow_id: string
+          workflow_name: string
+        }[]
+      }
+      get_workflow_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total: number
+          completed: number
+          failed: number
+          pending: number
+          success_rate: number
+        }[]
+      }
+      get_workflow_status: {
+        Args: { p_workflow_id: string; p_execution_id: string }
+        Returns: string
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
@@ -777,6 +915,10 @@ export type Database = {
         Args: { service_name: string }
         Returns: undefined
       }
+      retry_n8n_workflow: {
+        Args: { p_workflow_id: string; p_execution_id: string }
+        Returns: boolean
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown
@@ -788,6 +930,25 @@ export type Database = {
       sparsevec_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      start_n8n_workflow: {
+        Args: {
+          workflow_id: string
+          workflow_name: string
+          webhook_url: string
+          payload: Json
+          pet_id: string
+          action_type?: Database["public"]["Enums"]["workflow_action_type"]
+        }
+        Returns: string
+      }
+      trigger_n8n_rapid_posts: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      update_pet_webhook_url: {
+        Args: { p_pet_id: string; p_webhook_url: string }
+        Returns: undefined
       }
       vector_avg: {
         Args: { "": number[] }
@@ -815,7 +976,14 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      workflow_action_type:
+        | "post_creation"
+        | "post_interaction"
+        | "messaging"
+        | "follow_unfollow"
+        | "profile_update"
+        | "test_integration"
+        | "rapid_posting"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -930,6 +1098,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      workflow_action_type: [
+        "post_creation",
+        "post_interaction",
+        "messaging",
+        "follow_unfollow",
+        "profile_update",
+        "test_integration",
+        "rapid_posting",
+      ],
+    },
   },
 } as const
