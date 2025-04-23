@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,33 +8,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, AlertTriangle, Clock, RefreshCw } from 'lucide-react';
 import { n8nMonitoringService } from '@/services/n8nMonitoringService';
 import { formatDistanceToNow } from 'date-fns';
-
-interface WorkflowExecution {
-  id: string;
-  workflow_id: string;
-  workflow_name: string;
-  execution_id: string | null;
-  status: string;
-  execution_data: any;
-  started_at: string;
-  completed_at: string | null;
-  error: string | null;
-  pet_id: string | null;
-  post_id: string | null;
-  scheduled_post_id: string | null;
-}
-
-interface WorkflowStats {
-  total: number;
-  completed: number;
-  failed: number;
-  pending: number;
-  success_rate: number;
-}
+import { WorkflowExecution } from '@/types';
 
 const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
-  const [stats, setStats] = useState<WorkflowStats>({
+  const [stats, setStats] = useState<{
+    total: number,
+    completed: number,
+    failed: number,
+    pending: number,
+    success_rate: number
+  }>({
     total: 0,
     completed: 0,
     failed: 0,
@@ -49,7 +32,6 @@ const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load workflows based on active tab
       let workflowsData: WorkflowExecution[] = [];
       if (activeTab === 'pet' && petId) {
         workflowsData = await n8nMonitoringService.getPetWorkflows(petId);
@@ -59,7 +41,6 @@ const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
       
       setExecutions(workflowsData);
       
-      // Load stats (if we're on the recent tab)
       if (activeTab === 'recent') {
         const statsData = await n8nMonitoringService.getWorkflowStats();
         setStats(statsData);
@@ -74,7 +55,6 @@ const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
   useEffect(() => {
     loadData();
     
-    // Set up interval to refresh data every minute
     const intervalId = setInterval(loadData, 60000);
     
     return () => clearInterval(intervalId);
@@ -88,7 +68,6 @@ const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
 
   const handleRetry = async (workflowId: string, executionId: string) => {
     await n8nMonitoringService.retryWorkflow(workflowId, executionId);
-    // Reload after retry
     loadData();
   };
 
@@ -106,11 +85,11 @@ const AIWorkflowMonitor = ({ petId }: { petId?: string }) => {
   };
 
   const getStatusBadge = (status: string) => {
-    let variant: 'default' | 'destructive' | 'outline' | 'secondary' | 'success' = 'outline';
+    let variant: 'default' | 'destructive' | 'outline' | 'secondary' = 'outline';
     
     switch (status) {
       case 'completed':
-        variant = 'success';
+        variant = 'default';
         break;
       case 'error':
       case 'failed':

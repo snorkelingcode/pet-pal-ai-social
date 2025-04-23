@@ -123,13 +123,13 @@ export const petAIService = {
         workflow_id: 'generate-pet-message',
         workflow_name: 'Pet Message Generation',
         webhook_url: 'https://n8n.example.com/webhook/generate-message',
-        payload: {
+        payload: JSON.stringify({
           petId,
           targetPetId,
           content,
           relationshipData,
           relevantMemories
-        },
+        }),
         pet_id: petId
       });
 
@@ -207,13 +207,13 @@ export const petAIService = {
         workflow_id: 'create-ai-post',
         workflow_name: 'Create AI Post',
         webhook_url: 'https://n8n.example.com/webhook/create-post',
-        payload: {
+        payload: JSON.stringify({
           petId,
           content,
           imageBase64,
           voiceExample,
           relevantMemories
-        },
+        }),
         pet_id: petId
       });
 
@@ -303,7 +303,15 @@ export const petAIService = {
   scheduleAIPosts: async (
     petId: string, 
     numberOfPosts: number = 5,
-    options?: ScheduleOptions
+    options?: {
+      frequency?: string;
+      postingTime?: string;
+      includeImages?: boolean;
+      voiceExample?: string;
+      contentTheme?: string;
+      memories?: any[];
+      every2Minutes?: boolean;
+    }
   ): Promise<boolean> => {
     try {
       const {
@@ -327,10 +335,10 @@ export const petAIService = {
           workflow_id: 'setup-rapid-posting',
           workflow_name: 'Setup Rapid Posting',
           webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
-          payload: {
+          payload: JSON.stringify({
             petId,
             enabled: true
-          },
+          }),
           pet_id: petId
         });
         
@@ -519,10 +527,10 @@ export const petAIService = {
         workflow_id: 'setup-rapid-posting',
         workflow_name: 'Setup Rapid Posting',
         webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
-        payload: {
+        payload: JSON.stringify({
           petId,
           enabled
-        },
+        }),
         pet_id: petId
       });
       

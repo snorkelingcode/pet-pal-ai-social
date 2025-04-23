@@ -5,10 +5,12 @@ import { toast } from '@/components/ui/use-toast';
 export const n8nIntegrationService = {
   setWebhookUrl: async (petId: string, webhookUrl: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('pet_profiles')
-        .update({ n8n_webhook_url: webhookUrl })
-        .eq('id', petId);
+      // The error is because n8n_webhook_url doesn't exist in the type definition
+      // We'll use a raw update query instead
+      const { error } = await supabase.rpc('update_pet_webhook_url', {
+        p_pet_id: petId,
+        p_webhook_url: webhookUrl
+      });
       
       if (error) throw error;
       
@@ -35,10 +37,10 @@ export const n8nIntegrationService = {
         workflow_id: 'test-integration',
         workflow_name: 'Test n8n Integration',
         webhook_url: 'https://n8n.example.com/webhook/test',
-        payload: {
+        payload: JSON.stringify({
           petId,
           testMessage: 'This is a test from PetPal AI'
-        },
+        }),
         pet_id: petId
       });
       
@@ -63,16 +65,15 @@ export const n8nIntegrationService = {
   
   checkWorkflowStatus: async (workflowId: string, executionId: string): Promise<string> => {
     try {
-      const { data, error } = await supabase
-        .from('n8n_workflow_executions')
-        .select('status')
-        .eq('workflow_id', workflowId)
-        .eq('execution_id', executionId)
-        .single();
+      // Use a custom RPC function instead of direct table access
+      const { data, error } = await supabase.rpc('get_workflow_status', {
+        p_workflow_id: workflowId,
+        p_execution_id: executionId
+      });
       
       if (error) throw error;
       
-      return data?.status || 'unknown';
+      return data || 'unknown';
     } catch (error) {
       console.error('Error checking workflow status:', error);
       return 'error';

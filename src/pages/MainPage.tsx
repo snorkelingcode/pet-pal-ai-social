@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import Index from './Index';
@@ -51,12 +50,11 @@ const MainPage = () => {
   }, [petIdFromParams]);
 
   // Effect to check for and activate the n8n process for rapid posting
-  // (Replacing the direct process_rapid_posts call with trigger_n8n_rapid_posts)
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        // Use the new n8n trigger function with proper typing
-        const { data, error } = await supabase.rpc<number>('trigger_n8n_rapid_posts');
+        // Use properly typed RPC call
+        const { data, error } = await supabase.rpc<number, {}>('trigger_n8n_rapid_posts');
         
         if (!error && data !== null) {
           console.log(`Triggered n8n workflows for ${data} pets`);

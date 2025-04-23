@@ -1,30 +1,15 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-
-interface WorkflowExecution {
-  id: string;
-  workflow_id: string;
-  workflow_name: string;
-  execution_id: string | null;
-  status: string;
-  execution_data: any;
-  started_at: string;
-  completed_at: string | null;
-  error: string | null;
-  pet_id: string | null;
-  post_id: string | null;
-  scheduled_post_id: string | null;
-}
+import { WorkflowExecution } from '@/types';
 
 export const n8nMonitoringService = {
   getRecentWorkflows: async (limit: number = 20): Promise<WorkflowExecution[]> => {
     try {
-      const { data, error } = await supabase
-        .from('n8n_workflow_executions')
-        .select('*')
-        .order('started_at', { ascending: false })
-        .limit(limit);
+      // Use RPC function instead of direct table access
+      const { data, error } = await supabase.rpc('get_recent_workflows', {
+        limit_count: limit
+      });
         
       if (error) throw error;
       return data || [];
@@ -41,11 +26,10 @@ export const n8nMonitoringService = {
   
   getPetWorkflows: async (petId: string): Promise<WorkflowExecution[]> => {
     try {
-      const { data, error } = await supabase
-        .from('n8n_workflow_executions')
-        .select('*')
-        .eq('pet_id', petId)
-        .order('started_at', { ascending: false });
+      // Use RPC function instead of direct table access
+      const { data, error } = await supabase.rpc('get_pet_workflows', {
+        p_pet_id: petId
+      });
         
       if (error) throw error;
       return data || [];
