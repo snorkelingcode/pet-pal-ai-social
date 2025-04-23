@@ -54,7 +54,7 @@ const MainPage = () => {
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        // Use properly typed RPC call without generic typing
+        // Use properly typed RPC call - no parameters needed for this function
         const { data, error } = await supabase.rpc('trigger_n8n_rapid_posts');
         
         if (!error && data) {

@@ -19,6 +19,14 @@ interface ScheduleOptions {
   every2Minutes?: boolean; // Added this property for the 2-minute scheduling
 }
 
+type StartN8nWorkflowParams = {
+  workflow_id: string;
+  workflow_name: string;
+  webhook_url: string;
+  payload: string;
+  pet_id: string;
+}
+
 export const petAIService = {
   generatePost: async (
     petId: string, 
@@ -119,19 +127,22 @@ export const petAIService = {
         }
       }
 
-      const { data, error } = await supabase.rpc('start_n8n_workflow', {
-        workflow_id: 'generate-pet-message',
-        workflow_name: 'Pet Message Generation',
-        webhook_url: 'https://n8n.example.com/webhook/generate-message',
-        payload: JSON.stringify({
-          petId,
-          targetPetId,
-          content,
-          relationshipData,
-          relevantMemories
-        }),
-        pet_id: petId
-      });
+      const { data, error } = await supabase.rpc(
+        'start_n8n_workflow', 
+        {
+          workflow_id: 'generate-pet-message',
+          workflow_name: 'Pet Message Generation',
+          webhook_url: 'https://n8n.example.com/webhook/generate-message',
+          payload: JSON.stringify({
+            petId,
+            targetPetId,
+            content,
+            relationshipData,
+            relevantMemories
+          }),
+          pet_id: petId
+        } as StartN8nWorkflowParams
+      );
 
       if (error) throw error;
       
@@ -203,19 +214,22 @@ export const petAIService = {
     relevantMemories?: any[]
   ): Promise<Post | null> => {
     try {
-      const { data: workflowData, error: workflowError } = await supabase.rpc('start_n8n_workflow', {
-        workflow_id: 'create-ai-post',
-        workflow_name: 'Create AI Post',
-        webhook_url: 'https://n8n.example.com/webhook/create-post',
-        payload: JSON.stringify({
-          petId,
-          content,
-          imageBase64,
-          voiceExample,
-          relevantMemories
-        }),
-        pet_id: petId
-      });
+      const { data: workflowData, error: workflowError } = await supabase.rpc(
+        'start_n8n_workflow', 
+        {
+          workflow_id: 'create-ai-post',
+          workflow_name: 'Create AI Post',
+          webhook_url: 'https://n8n.example.com/webhook/create-post',
+          payload: JSON.stringify({
+            petId,
+            content,
+            imageBase64,
+            voiceExample,
+            relevantMemories
+          }),
+          pet_id: petId
+        } as StartN8nWorkflowParams
+      );
 
       if (workflowError) throw workflowError;
 
@@ -323,16 +337,19 @@ export const petAIService = {
           .eq('id', petId);
         if (updateError) throw updateError;
 
-        const { data: workflowData, error: workflowError } = await supabase.rpc('start_n8n_workflow', {
-          workflow_id: 'setup-rapid-posting',
-          workflow_name: 'Setup Rapid Posting',
-          webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
-          payload: JSON.stringify({
-            petId,
-            enabled: true
-          }),
-          pet_id: petId
-        });
+        const { data: workflowData, error: workflowError } = await supabase.rpc(
+          'start_n8n_workflow', 
+          {
+            workflow_id: 'setup-rapid-posting',
+            workflow_name: 'Setup Rapid Posting',
+            webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
+            payload: JSON.stringify({
+              petId,
+              enabled: true
+            }),
+            pet_id: petId
+          } as StartN8nWorkflowParams
+        );
         
         if (workflowError) throw workflowError;
 
@@ -515,16 +532,19 @@ export const petAIService = {
       
       if (error) throw error;
       
-      const { data: workflowData, error: workflowError } = await supabase.rpc('start_n8n_workflow', {
-        workflow_id: 'setup-rapid-posting',
-        workflow_name: 'Setup Rapid Posting',
-        webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
-        payload: JSON.stringify({
-          petId,
-          enabled
-        }),
-        pet_id: petId
-      });
+      const { data: workflowData, error: workflowError } = await supabase.rpc(
+        'start_n8n_workflow', 
+        {
+          workflow_id: 'setup-rapid-posting',
+          workflow_name: 'Setup Rapid Posting',
+          webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
+          payload: JSON.stringify({
+            petId,
+            enabled
+          }),
+          pet_id: petId
+        } as StartN8nWorkflowParams
+      );
       
       if (workflowError) throw workflowError;
       

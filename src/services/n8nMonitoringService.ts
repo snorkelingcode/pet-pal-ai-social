@@ -3,13 +3,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { WorkflowExecution } from '@/types/workflow';
 
+// Define types for RPC function parameters
+type GetRecentWorkflowsParams = {
+  limit_count: number;
+}
+
+type GetPetWorkflowsParams = {
+  p_pet_id: string;
+}
+
+type RetryWorkflowParams = {
+  p_workflow_id: string;
+  p_execution_id: string;
+}
+
 export const n8nMonitoringService = {
   getRecentWorkflows: async (limit: number = 20): Promise<WorkflowExecution[]> => {
     try {
       // Use typed parameters for RPC call
-      const { data, error } = await supabase.rpc('get_recent_workflows', {
-        limit_count: limit
-      });
+      const { data, error } = await supabase.rpc(
+        'get_recent_workflows', 
+        { limit_count: limit } as GetRecentWorkflowsParams
+      );
         
       if (error) throw error;
       return data as WorkflowExecution[] || [];
@@ -27,9 +42,10 @@ export const n8nMonitoringService = {
   getPetWorkflows: async (petId: string): Promise<WorkflowExecution[]> => {
     try {
       // Use typed parameters for RPC call
-      const { data, error } = await supabase.rpc('get_pet_workflows', {
-        p_pet_id: petId
-      });
+      const { data, error } = await supabase.rpc(
+        'get_pet_workflows', 
+        { p_pet_id: petId } as GetPetWorkflowsParams
+      );
         
       if (error) throw error;
       return data as WorkflowExecution[] || [];
@@ -52,7 +68,7 @@ export const n8nMonitoringService = {
     success_rate: number
   }> => {
     try {
-      // Use typed parameters for RPC call
+      // Use properly typed RPC call
       const { data, error } = await supabase.rpc('get_workflow_stats');
         
       if (error) throw error;
@@ -79,10 +95,13 @@ export const n8nMonitoringService = {
   retryWorkflow: async (workflowId: string, executionId: string): Promise<boolean> => {
     try {
       // Use typed parameters for RPC call
-      const { data, error } = await supabase.rpc('retry_n8n_workflow', {
-        p_workflow_id: workflowId,
-        p_execution_id: executionId
-      });
+      const { data, error } = await supabase.rpc(
+        'retry_n8n_workflow', 
+        {
+          p_workflow_id: workflowId,
+          p_execution_id: executionId
+        } as RetryWorkflowParams
+      );
         
       if (error) throw error;
       

@@ -2,14 +2,33 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
+// Define types for RPC function parameters and return types
+type UpdatePetWebhookUrlParams = {
+  p_pet_id: string;
+  p_webhook_url: string;
+}
+
+type StartN8nWorkflowParams = {
+  workflow_id: string;
+  workflow_name: string;
+  webhook_url: string;
+  payload: string;
+  pet_id: string;
+}
+
+type GetWorkflowStatusParams = {
+  p_workflow_id: string;
+  p_execution_id: string;
+}
+
 export const n8nIntegrationService = {
   setWebhookUrl: async (petId: string, webhookUrl: string): Promise<boolean> => {
     try {
       // Use the RPC function which was created in the database
-      const { error } = await supabase.rpc('update_pet_webhook_url', {
-        p_pet_id: petId,
-        p_webhook_url: webhookUrl
-      });
+      const { error } = await supabase.rpc(
+        'update_pet_webhook_url', 
+        { p_pet_id: petId, p_webhook_url: webhookUrl } as UpdatePetWebhookUrlParams
+      );
       
       if (error) throw error;
       
@@ -33,16 +52,19 @@ export const n8nIntegrationService = {
   testIntegration: async (petId: string): Promise<boolean> => {
     try {
       // Use typed parameters for RPC call
-      const { data, error } = await supabase.rpc('start_n8n_workflow', {
-        workflow_id: 'test-integration',
-        workflow_name: 'Test n8n Integration',
-        webhook_url: 'https://n8n.example.com/webhook/test',
-        payload: JSON.stringify({
-          petId,
-          testMessage: 'This is a test from PetPal AI'
-        }),
-        pet_id: petId
-      });
+      const { data, error } = await supabase.rpc(
+        'start_n8n_workflow', 
+        {
+          workflow_id: 'test-integration',
+          workflow_name: 'Test n8n Integration',
+          webhook_url: 'https://n8n.example.com/webhook/test',
+          payload: JSON.stringify({
+            petId,
+            testMessage: 'This is a test from PetPal AI'
+          }),
+          pet_id: petId
+        } as StartN8nWorkflowParams
+      );
       
       if (error) throw error;
       
@@ -66,10 +88,13 @@ export const n8nIntegrationService = {
   checkWorkflowStatus: async (workflowId: string, executionId: string): Promise<string> => {
     try {
       // Use typed parameters for RPC call
-      const { data, error } = await supabase.rpc('get_workflow_status', {
-        p_workflow_id: workflowId,
-        p_execution_id: executionId
-      });
+      const { data, error } = await supabase.rpc(
+        'get_workflow_status', 
+        {
+          p_workflow_id: workflowId,
+          p_execution_id: executionId
+        } as GetWorkflowStatusParams
+      );
       
       if (error) throw error;
       
