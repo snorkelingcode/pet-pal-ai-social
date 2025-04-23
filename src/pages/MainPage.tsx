@@ -50,18 +50,19 @@ const MainPage = () => {
     }
   }, [petIdFromParams]);
 
-  // Effect to check for and activate the cron process for rapid posting
+  // Effect to check for and activate the n8n process for rapid posting
+  // (Replacing the direct process_rapid_posts call with trigger_n8n_rapid_posts)
   useEffect(() => {
     const activateRapidPostingProcess = async () => {
       try {
-        // Specify return type number, param type {} and pass empty parameters object
-        const { data, error } = await supabase.rpc<number, {}>('process_rapid_posts', {});
+        // Use the new n8n trigger function with proper typing
+        const { data, error } = await supabase.rpc<number>('trigger_n8n_rapid_posts');
         
         if (!error && data !== null) {
-          console.log(`Processed rapid posts for ${data} pets`);
+          console.log(`Triggered n8n workflows for ${data} pets`);
         }
       } catch (error) {
-        console.error("Error activating rapid posting process:", error);
+        console.error("Error triggering n8n rapid posting process:", error);
       }
     };
 
@@ -125,4 +126,3 @@ const MainPage = () => {
 };
 
 export default MainPage;
-

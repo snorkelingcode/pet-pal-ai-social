@@ -119,7 +119,23 @@ export const petAIService = {
         }
       }
 
-      const { data, error } = await supabase.functions.invoke('pet-ai-agent', {
+      const { data, error } = await supabase.rpc('start_n8n_workflow', {
+        workflow_id: 'generate-pet-message',
+        workflow_name: 'Pet Message Generation',
+        webhook_url: 'https://n8n.example.com/webhook/generate-message',
+        payload: {
+          petId,
+          targetPetId,
+          content,
+          relationshipData,
+          relevantMemories
+        },
+        pet_id: petId
+      });
+
+      if (error) throw error;
+      
+      const { data: agentData, error: agentError } = await supabase.functions.invoke('pet-ai-agent', {
         body: {
           action: 'generate_message',
           petId,
@@ -130,14 +146,14 @@ export const petAIService = {
         },
       });
 
-      if (error) throw error;
+      if (agentError) throw agentError;
       
-      if (data.content) {
+      if (agentData?.content) {
         await supabase.functions.invoke('pet-ai-learning', {
           body: {
             action: 'store_memory',
             petId,
-            content: `Wrote to ${targetPetId}: "${data.content}"`,
+            content: `Wrote to ${targetPetId}: "${agentData.content}"`,
             type: 'message',
             relatedId: targetPetId,
             relatedType: 'pet',
@@ -145,7 +161,7 @@ export const petAIService = {
         });
       }
       
-      return data.content || null;
+      return agentData?.content || null;
     } catch (error) {
       console.error('Error generating message:', error);
       toast({
@@ -187,6 +203,22 @@ export const petAIService = {
     relevantMemories?: any[]
   ): Promise<Post | null> => {
     try {
+      const { data: workflowData, error: workflowError } = await supabase.rpc('start_n8n_workflow', {
+        workflow_id: 'create-ai-post',
+        workflow_name: 'Create AI Post',
+        webhook_url: 'https://n8n.example.com/webhook/create-post',
+        payload: {
+          petId,
+          content,
+          imageBase64,
+          voiceExample,
+          relevantMemories
+        },
+        pet_id: petId
+      });
+
+      if (workflowError) throw workflowError;
+
       const generatedContent = await petAIService.generatePost(petId, content, imageBase64, voiceExample, relevantMemories);
       
       if (!generatedContent) return null;
@@ -291,6 +323,19 @@ export const petAIService = {
           .eq('id', petId);
         if (updateError) throw updateError;
 
+        const { data: workflowData, error: workflowError } = await supabase.rpc('start_n8n_workflow', {
+          workflow_id: 'setup-rapid-posting',
+          workflow_name: 'Setup Rapid Posting',
+          webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
+          payload: {
+            petId,
+            enabled: true
+          },
+          pet_id: petId
+        });
+        
+        if (workflowError) throw workflowError;
+
         toast({
           title: 'Rapid Posts Scheduled',
           description: `Your pet will post something random every 2 minutes for as long as rapid posting is enabled!`,
@@ -313,6 +358,7 @@ export const petAIService = {
       const now = new Date();
       const scheduledPosts = [];
       const firstDayPosts = Math.max(0, numberOfPosts - 1);
+      
       for (let i = 0; i < firstDayPosts; i++) {
         let scheduledDate = new Date(now);
         if (postingTime === 'morning') {
@@ -333,6 +379,7 @@ export const petAIService = {
           status: 'pending'
         });
       }
+      
       for (let i = 1; i < 7; i++) {
         for (let j = 0; j < numberOfPosts; j++) {
           let scheduledDate = new Date(now);
@@ -363,10 +410,12 @@ export const petAIService = {
           });
         }
       }
+      
       const { data, error } = await supabase
         .from('scheduled_posts')
         .insert(scheduledPosts);
       if (error) throw error;
+      
       toast({
         title: 'Posts Scheduled',
         description: `Initial post created and ${scheduledPosts.length} posts have been scheduled for ${frequency === 'daily' ? 'daily' : frequency === 'weekly' ? 'weekly' : 'random'} posting`,
@@ -465,6 +514,19 @@ export const petAIService = {
         .eq('id', petId);
       
       if (error) throw error;
+      
+      const { data: workflowData, error: workflowError } = await supabase.rpc('start_n8n_workflow', {
+        workflow_id: 'setup-rapid-posting',
+        workflow_name: 'Setup Rapid Posting',
+        webhook_url: 'https://n8n.example.com/webhook/setup-rapid-posting',
+        payload: {
+          petId,
+          enabled
+        },
+        pet_id: petId
+      });
+      
+      if (workflowError) throw workflowError;
       
       return true;
     } catch (error) {
