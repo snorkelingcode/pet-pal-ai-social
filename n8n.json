@@ -1,0 +1,227 @@
+{
+    "name": "PetPal AI Scheduled Posts",
+    "nodes": [
+      {
+        "parameters": {},
+        "id": "trigger",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [0, 0]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT * FROM scheduled_posts WHERE status = 'pending' AND scheduled_for <= NOW()"
+        },
+        "id": "get-scheduled-posts",
+        "name": "Get Pending Scheduled Posts",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [200, 0]
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "post_content",
+                "value": "={{ $json.content_theme }}"
+              },
+              {
+                "name": "pet_id",
+                "value": "={{ $json.pet_id }}"
+              },
+              {
+                "name": "include_images",
+                "value": "={{ $json.include_images }}"
+              },
+              {
+                "name": "voice_example",
+                "value": "={{ $json.voice_example }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "set-post-details",
+        "name": "Prepare Post Generation",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [400, 0]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://[YOUR_SUPABASE_FUNCTION_URL]/pet-ai-agent",
+          "authentication": "basicAuth",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "action",
+                "value": "generate_post"
+              },
+              {
+                "name": "petId",
+                "value": "={{ $json.pet_id }}"
+              },
+              {
+                "name": "content",
+                "value": "={{ $json.post_content }}"
+              },
+              {
+                "name": "voiceExample",
+                "value": "={{ $json.voice_example }}"
+              }
+            ]
+          }
+        },
+        "id": "generate-ai-post",
+        "name": "Generate AI Post",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [600, 0]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://[YOUR_SUPABASE_URL]/rest/v1/posts",
+          "authentication": "headerAuth",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "[YOUR_SUPABASE_ANON_KEY]"
+              },
+              {
+                "name": "Authorization",
+                "value": "[YOUR_SUPABASE_SERVICE_ROLE_KEY]"
+              },
+              {
+                "name": "Prefer",
+                "value": "return=representation"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "content",
+                "value": "={{ $json.content }}"
+              },
+              {
+                "name": "pet_id",
+                "value": "={{ $json.pet_id }}"
+              }
+            ]
+          }
+        },
+        "id": "create-post",
+        "name": "Create Post in Supabase",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [800, 0]
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "https://[YOUR_SUPABASE_URL]/rest/v1/scheduled_posts",
+          "authentication": "headerAuth",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "[YOUR_SUPABASE_ANON_KEY]"
+              },
+              {
+                "name": "Authorization",
+                "value": "[YOUR_SUPABASE_SERVICE_ROLE_KEY]"
+              },
+              {
+                "name": "Prefer",
+                "value": "return=representation"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "status",
+                "value": "completed"
+              },
+              {
+                "name": "post_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        },
+        "id": "update-scheduled-post",
+        "name": "Update Scheduled Post Status",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [1000, 0]
+      }
+    ],
+    "connections": {
+      "trigger": {
+        "main": [
+          [
+            {
+              "node": "get-scheduled-posts"
+            }
+          ]
+        ]
+      },
+      "get-scheduled-posts": {
+        "main": [
+          [
+            {
+              "node": "set-post-details"
+            }
+          ]
+        ]
+      },
+      "set-post-details": {
+        "main": [
+          [
+            {
+              "node": "generate-ai-post"
+            }
+          ]
+        ]
+      },
+      "generate-ai-post": {
+        "main": [
+          [
+            {
+              "node": "create-post"
+            }
+          ]
+        ]
+      },
+      "create-post": {
+        "main": [
+          [
+            {
+              "node": "update-scheduled-post"
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "succeedWhenAnySucceeds"
+    }
+  }

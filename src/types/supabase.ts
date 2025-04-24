@@ -404,8 +404,18 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
-    }
+      start_n8n_workflow: {
+        Args: {
+          workflow_id: string;
+          workflow_name: string;
+          webhook_url: string;
+          payload: any;
+          pet_id: string;
+          action_type?: string;
+        };
+        Returns: string;
+      }
+      };
     Enums: {
       [_ in never]: never
     }

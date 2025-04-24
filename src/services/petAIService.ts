@@ -132,7 +132,7 @@ export const petAIService = {
         {
           workflow_id: 'generate-pet-message',
           workflow_name: 'Pet Message Generation',
-          webhook_url: 'https://n8n.example.com/webhook/generate-message',
+          webhook_url: 'https://mistadane.app.n8n.cloud/webhook-test/98ce3085-c2cc-4775-8eef-81b7f5dd5b61',
           payload: JSON.stringify({
             petId,
             targetPetId,
