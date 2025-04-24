@@ -1,282 +1,284 @@
-
 {
-  "name": "PetPal AI Scheduled Posts",
-  "nodes": [
-    {
-      "parameters": {},
-      "id": "trigger",
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 1,
-      "position": [0, 0]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT * FROM scheduled_posts WHERE status = 'pending' AND scheduled_for <= NOW()"
-      },
-      "id": "get-scheduled-posts",
-      "name": "Get Pending Scheduled Posts",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 1,
-      "position": [200, 0]
-    },
-    {
-      "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "post_content",
-              "value": "={{ $json.content_theme }}"
-            },
-            {
-              "name": "pet_id",
-              "value": "={{ $json.pet_id }}"
-            },
-            {
-              "name": "include_images",
-              "value": "={{ $json.include_images }}"
-            },
-            {
-              "name": "voice_example",
-              "value": "={{ $json.voice_example }}"
-            }
-          ]
+    "name": "PetPal AI Post Generator",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "pet-post-generator",
+          "options": {}
         },
-        "options": {}
+        "id": "webhook-trigger",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [250, 300]
       },
-      "id": "set-post-details",
-      "name": "Prepare Post Generation",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 1,
-      "position": [400, 0]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://syvxflddmryziujvzlxk.supabase.co/functions/v1/pet-ai-agent",
-        "authentication": "headerAuth",
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "petId",
+                "value": "={{ $json.body.petId }}"
+              },
+              {
+                "name": "contentTheme",
+                "value": "={{ $json.body.contentTheme || 'general' }}"
+              },
+              {
+                "name": "includeImages",
+                "value": "={{ $json.body.includeImages === true }}"
+              },
+              {
+                "name": "voiceExample",
+                "value": "={{ $json.body.voiceExample || '' }}"
+              }
+            ]
+          }
         },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "action",
-              "value": "generate_post"
-            },
-            {
-              "name": "petId",
-              "value": "={{ $json.pet_id }}"
-            },
-            {
-              "name": "content",
-              "value": "={{ $json.post_content }}"
-            },
-            {
-              "name": "voiceExample",
-              "value": "={{ $json.voice_example }}"
-            }
-          ]
-        }
+        "id": "prepare-data",
+        "name": "Set Post Parameters",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [450, 300]
       },
-      "id": "generate-ai-post",
-      "name": "Generate AI Post",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [600, 0]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://syvxflddmryziujvzlxk.supabase.co/rest/v1/posts",
-        "authentication": "headerAuth",
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDE3OTA0NSwiZXhwIjoyMDU5NzU1MDQ1fQ.HdRqArj-BkhnIJJUJ6CqOeJJPrsfKjtJkgwoP25Y_AM"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://syvxflddmryziujvzlxk.supabase.co/functions/v1/pet-ai-agent",
+          "authentication": "headerAuth",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "action",
+                "value": "generate_post"
+              },
+              {
+                "name": "petId",
+                "value": "={{ $node[\"prepare-data\"].json.petId }}"
+              },
+              {
+                "name": "content",
+                "value": "={{ $node[\"prepare-data\"].json.contentTheme }}"
+              },
+              {
+                "name": "voiceExample",
+                "value": "={{ $node[\"prepare-data\"].json.voiceExample }}"
+              }
+            ]
+          }
         },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "content",
-              "value": "={{ $json.content }}"
-            },
-            {
-              "name": "pet_id",
-              "value": "={{ $json.pet_id }}"
-            }
-          ]
-        }
+        "id": "generate-content",
+        "name": "Generate AI Content",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [650, 300]
       },
-      "id": "create-post",
-      "name": "Create Post in Supabase",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [800, 0]
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "https://syvxflddmryziujvzlxk.supabase.co/rest/v1/scheduled_posts",
-        "authentication": "headerAuth",
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDE3OTA0NSwiZXhwIjoyMDU5NzU1MDQ1fQ.HdRqArj-BkhnIJJUJ6CqOeJJPrsfKjtJkgwoP25Y_AM"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://syvxflddmryziujvzlxk.supabase.co/rest/v1/posts",
+          "authentication": "headerAuth",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
+              },
+              {
+                "name": "Authorization",
+                "value": "=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Prefer",
+                "value": "return=representation"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "content",
+                "value": "={{ $node[\"generate-content\"].json.content }}"
+              },
+              {
+                "name": "pet_id",
+                "value": "={{ $node[\"prepare-data\"].json.petId }}"
+              },
+              {
+                "name": "likes",
+                "value": "0"
+              },
+              {
+                "name": "comments",
+                "value": "0"
+              }
+            ]
+          }
         },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "status",
-              "value": "completed"
-            },
-            {
-              "name": "post_id",
-              "value": "={{ $json.id }}"
-            }
-          ]
+        "id": "create-post",
+        "name": "Create Post",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [850, 300]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://syvxflddmryziujvzlxk.supabase.co/rest/v1/n8n_workflow_executions",
+          "authentication": "headerAuth",
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
+              },
+              {
+                "name": "Authorization",
+                "value": "=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "workflow_id",
+                "value": "={{ $execution.id }}"
+              },
+              {
+                "name": "workflow_name",
+                "value": "PetPal AI Post Generator"
+              },
+              {
+                "name": "status",
+                "value": "completed"
+              },
+              {
+                "name": "pet_id",
+                "value": "={{ $node[\"prepare-data\"].json.petId }}"
+              },
+              {
+                "name": "post_id",
+                "value": "={{ $node[\"create-post\"].json[0].id }}"
+              },
+              {
+                "name": "action_type",
+                "value": "post_creation"
+              }
+            ]
+          }
         },
-        "queryParameters": {
-          "parameters": [
+        "id": "log-execution",
+        "name": "Log Workflow Execution",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [1050, 300]
+      },
+      {
+        "parameters": {
+          "content": "=Error executing workflow: {{ $json.message }}",
+          "jsCode": "// Error handling code\nconst errorInfo = {\n  workflow_id: $execution.id,\n  error: $input.all()[0].error,\n  node: $input.all()[0].nodeName,\n};\n\nreturn { error: errorInfo };"
+        },
+        "id": "error-handler",
+        "name": "Error Handler",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 1,
+        "position": [850, 500]
+      }
+    ],
+    "connections": {
+      "webhook-trigger": {
+        "main": [
+          [
             {
-              "name": "id",
-              "value": "={{ $node[\"get-scheduled-posts\"].json[\"id\"] }}"
+              "node": "prepare-data",
+              "type": "main",
+              "index": 0
             }
           ]
-        }
+        ]
       },
-      "id": "update-scheduled-post",
-      "name": "Update Scheduled Post Status",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [1000, 0]
-    },
-    {
-      "parameters": {
-        "errorMessage": "=Failed to process scheduled post: {{ $json }}",
-        "jsCode": "// Record error in the database\nconst errorData = {\n  workflow_id: $execution.id,\n  error_message: $input.all()[0].error ? $input.all()[0].error.message : \"Unknown error\",\n  node_name: $input.all()[0].nodeName,\n  timestamp: new Date().toISOString(),\n  data: JSON.stringify($input.all()[0])\n};\n\n// Make an HTTP request to log the error\nconst options = {\n  url: 'https://syvxflddmryziujvzlxk.supabase.co/rest/v1/workflow_errors',\n  method: 'POST',\n  body: JSON.stringify(errorData),\n  headers: {\n    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxNzkwNDUsImV4cCI6MjA1OTc1NTA0NX0.iKFhA8mL36el0Yjhr2EAjHRsR99u3v-n5wEOYMX0p2w',\n    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dnhmbGRkbXJ5eml1anZ6bHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDE3OTA0NSwiZXhwIjoyMDU5NzU1MDQ1fQ.HdRqArj-BkhnIJJUJ6CqOeJJPrsfKjtJkgwoP25Y_AM',\n    'Content-Type': 'application/json',\n    'Prefer': 'return=minimal'\n  }\n};\n\ntry {\n  const result = $http.request(options);\n  return { error_logged: true };\n} catch (e) {\n  // If we can't log to DB, at least return the error\n  return { error_logged: false, error: $input.all()[0].error };\n}\n"
+      "prepare-data": {
+        "main": [
+          [
+            {
+              "node": "generate-content",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       },
-      "id": "error-handler",
-      "name": "Handle Errors",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 1,
-      "position": [800, 200]
-    }
-  ],
-  "connections": {
-    "trigger": {
-      "main": [
-        [
-          {
-            "node": "get-scheduled-posts"
-          }
+      "generate-content": {
+        "main": [
+          [
+            {
+              "node": "create-post",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ],
+        "error": [
+          [
+            {
+              "node": "error-handler",
+              "type": "main",
+              "index": 0
+            }
+          ]
         ]
-      ]
+      },
+      "create-post": {
+        "main": [
+          [
+            {
+              "node": "log-execution",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ],
+        "error": [
+          [
+            {
+              "node": "error-handler",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
     },
-    "get-scheduled-posts": {
-      "main": [
-        [
-          {
-            "node": "set-post-details"
-          }
-        ]
-      ]
+    "settings": {
+      "executionOrder": "v1"
     },
-    "set-post-details": {
-      "main": [
-        [
-          {
-            "node": "generate-ai-post"
-          }
-        ]
-      ]
-    },
-    "generate-ai-post": {
-      "main": [
-        [
-          {
-            "node": "create-post"
-          }
-        ]
-      ],
-      "error": [
-        [
-          {
-            "node": "error-handler"
-          }
-        ]
-      ]
-    },
-    "create-post": {
-      "main": [
-        [
-          {
-            "node": "update-scheduled-post"
-          }
-        ]
-      ],
-      "error": [
-        [
-          {
-            "node": "error-handler"
-          }
-        ]
-      ]
-    },
-    "update-scheduled-post": {
-      "error": [
-        [
-          {
-            "node": "error-handler"
-          }
-        ]
-      ]
-    }
-  },
-  "settings": {
-    "executionOrder": "v1"
+    "staticData": null,
+    "pinData": {},
+    "versionId": "1",
+    "triggerCount": 1
   }
-}
+  
