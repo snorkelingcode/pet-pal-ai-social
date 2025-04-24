@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -415,55 +414,8 @@ export interface Database {
           action_type?: string;
         };
         Returns: string;
+      }
       };
-      update_pet_webhook_url: {
-        Args: {
-          p_pet_id: string;
-          p_webhook_url: string;
-        };
-        Returns: void;
-      };
-      get_workflow_status: {
-        Args: {
-          p_workflow_id: string;
-          p_execution_id: string;
-        };
-        Returns: string;
-      };
-      get_recent_workflows: {
-        Args: {
-          limit_count: number;
-        };
-        Returns: any[];
-      };
-      get_pet_workflows: {
-        Args: {
-          p_pet_id: string;
-        };
-        Returns: any[];
-      };
-      get_workflow_stats: {
-        Args: Record<string, never>;
-        Returns: {
-          total: number;
-          completed: number;
-          failed: number;
-          pending: number;
-          success_rate: number;
-        }[];
-      };
-      retry_n8n_workflow: {
-        Args: {
-          p_workflow_id: string;
-          p_execution_id: string;
-        };
-        Returns: boolean;
-      };
-      trigger_n8n_rapid_posts: {
-        Args: Record<string, never>;
-        Returns: number;
-      };
-    }
     Enums: {
       [_ in never]: never
     }

@@ -25,7 +25,7 @@ export const n8nMonitoringService = {
       );
 
       if (error) throw error;
-      return (data as unknown as WorkflowExecution[]) || [];
+      return (data as WorkflowExecution[]) || [];
     } catch (error) {
       console.error('Error fetching workflow executions:', error);
       toast({
@@ -45,7 +45,7 @@ export const n8nMonitoringService = {
       );
 
       if (error) throw error;
-      return (data as unknown as WorkflowExecution[]) || [];
+      return (data as WorkflowExecution[]) || [];
     } catch (error) {
       console.error('Error fetching pet workflow executions:', error);
       toast({
@@ -95,7 +95,7 @@ export const n8nMonitoringService = {
 
   retryWorkflow: async (workflowId: string, executionId: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc(
+      const { error } = await supabase.rpc(
         'retry_n8n_workflow',
         {
           p_workflow_id: workflowId,
@@ -110,7 +110,7 @@ export const n8nMonitoringService = {
         description: 'The workflow has been queued for retry'
       });
 
-      return data || false;
+      return true;
     } catch (error) {
       console.error('Error retrying workflow:', error);
       toast({
