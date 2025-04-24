@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { PetProfile, Post } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -15,8 +16,8 @@ interface ScheduleOptions {
   includeImages?: boolean;
   voiceExample?: string;
   contentTheme?: string;
-  memories?: any[]; // Added this property for the memories
-  every2Minutes?: boolean; // Added this property for the 2-minute scheduling
+  memories?: any[];
+  every2Minutes?: boolean;
 }
 
 type StartN8nWorkflowParams = {
@@ -25,7 +26,8 @@ type StartN8nWorkflowParams = {
   webhook_url: string;
   payload: string;
   pet_id: string;
-}
+  action_type?: 'post_creation' | 'post_interaction' | 'messaging' | 'follow_unfollow' | 'profile_update' | 'test_integration' | 'rapid_posting';
+};
 
 export const petAIService = {
   generatePost: async (
@@ -127,7 +129,7 @@ export const petAIService = {
         }
       }
 
-      const { data, error } = await supabase.rpc(
+      const { data: workflowData, error: workflowError } = await supabase.rpc(
         'start_n8n_workflow', 
         {
           workflow_id: 'generate-pet-message',
@@ -140,11 +142,12 @@ export const petAIService = {
             relationshipData,
             relevantMemories
           }),
-          pet_id: petId
+          pet_id: petId,
+          action_type: 'messaging'
         } as StartN8nWorkflowParams
       );
 
-      if (error) throw error;
+      if (workflowError) throw workflowError;
       
       const { data: agentData, error: agentError } = await supabase.functions.invoke('pet-ai-agent', {
         body: {
@@ -227,7 +230,8 @@ export const petAIService = {
             voiceExample,
             relevantMemories
           }),
-          pet_id: petId
+          pet_id: petId,
+          action_type: 'post_creation'
         } as StartN8nWorkflowParams
       );
 
@@ -347,7 +351,8 @@ export const petAIService = {
               petId,
               enabled: true
             }),
-            pet_id: petId
+            pet_id: petId,
+            action_type: 'rapid_posting'
           } as StartN8nWorkflowParams
         );
         
@@ -542,7 +547,8 @@ export const petAIService = {
             petId,
             enabled
           }),
-          pet_id: petId
+          pet_id: petId,
+          action_type: 'rapid_posting'
         } as StartN8nWorkflowParams
       );
       

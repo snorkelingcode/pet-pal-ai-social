@@ -1,11 +1,25 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import type { Database } from '@/integrations/supabase/types';
 
-type UpdatePetWebhookUrlParams = Database['public']['Functions']['update_pet_webhook_url']['Args'];
-type StartN8nWorkflowParams = Database['public']['Functions']['start_n8n_workflow']['Args'];
-type GetWorkflowStatusParams = Database['public']['Functions']['get_workflow_status']['Args'];
+export type UpdatePetWebhookUrlParams = {
+  p_pet_id: string;
+  p_webhook_url: string;
+};
+
+export type StartN8nWorkflowParams = {
+  workflow_id: string;
+  workflow_name: string;
+  webhook_url: string;
+  payload: any;
+  pet_id: string;
+  action_type?: 'post_creation' | 'post_interaction' | 'messaging' | 'follow_unfollow' | 'profile_update' | 'test_integration' | 'rapid_posting';
+};
+
+export type GetWorkflowStatusParams = {
+  p_workflow_id: string;
+  p_execution_id: string;
+};
 
 export const n8nIntegrationService = {
   setWebhookUrl: async (petId: string, webhookUrl: string): Promise<boolean> => {
@@ -42,10 +56,10 @@ export const n8nIntegrationService = {
           workflow_id: 'test-integration',
           workflow_name: 'Test n8n Integration',
           webhook_url: 'https://n8n.example.com/webhook/test',
-          payload: {
+          payload: JSON.stringify({
             petId,
             testMessage: 'This is a test from PetPal AI'
-          },
+          }),
           pet_id: petId,
           action_type: 'test_integration'
         } as StartN8nWorkflowParams

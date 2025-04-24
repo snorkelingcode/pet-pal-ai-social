@@ -2,11 +2,19 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { WorkflowExecution } from '@/types/workflow';
-import type { Database } from '@/integrations/supabase/types';
 
-type GetRecentWorkflowsParams = Database['public']['Functions']['get_recent_workflows']['Args'];
-type GetPetWorkflowsParams = Database['public']['Functions']['get_pet_workflows']['Args'];
-type RetryWorkflowParams = Database['public']['Functions']['retry_n8n_workflow']['Args'];
+type GetRecentWorkflowsParams = {
+  limit_count: number;
+};
+
+type GetPetWorkflowsParams = {
+  p_pet_id: string;
+};
+
+type RetryWorkflowParams = {
+  p_workflow_id: string;
+  p_execution_id: string;
+};
 
 export const n8nMonitoringService = {
   getRecentWorkflows: async (limit: number = 20): Promise<WorkflowExecution[]> => {
@@ -58,11 +66,14 @@ export const n8nMonitoringService = {
   }> => {
     try {
       const { data, error } = await supabase.rpc('get_workflow_stats');
-      // Supabase's .rpc returns data as an array if returns TABLE (...), so use first entry
+      
       if (error) throw error;
-      if (Array.isArray(data) && data.length > 0) {
+      
+      // Properly handle the data types
+      if (data && Array.isArray(data) && data.length > 0) {
         return data[0];
       }
+      
       return {
         total: 0,
         completed: 0,
